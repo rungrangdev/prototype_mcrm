@@ -1,6 +1,7 @@
+<meta charset="UTF-8">
 <link rel="stylesheet" href="main.css">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.31/vue.global.prod.min.js"></script>
+<script src="store.js"></script>
 <style>
 @font-face {
     font-family: "Krungsri-med";
@@ -41,7 +42,6 @@ input, textarea, select { border: none !important; }
 .cell-date{white-space:nowrap;color:#4B5563;}
 .muted-dash{color:#C6CBD6;}
 
-/* chip แบบเดียวกับหน้า workflow */
 .wl-chip{
   display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.3px;
   padding:2px 8px;border-radius:999px;white-space:nowrap;
@@ -50,7 +50,6 @@ input, textarea, select { border: none !important; }
 .wl-chip.lead{background:#F4F5F7;border-color:#DDE1EA;color:#4B5563;}
 .wl-chip.sup{background:#FDF3D3;border-color:#EFD98F;color:#8A6A03;}
 
-/* status pill — โทนเดียวกับ note-pill ของหน้า workflow */
 .wl-pill{
   display:inline-flex;align-items:center;gap:6px;
   font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:999px;white-space:nowrap;
@@ -61,14 +60,12 @@ input, textarea, select { border: none !important; }
 .wp-completed{background:#E4F7EF;color:#0E9F6E;}
 .wp-incomplete{background:#FDE8E8;color:#DC2626;}
 
-/* dropdown ⋮ (ปิดใช้งาน) */
 .dropdown-container{position:relative;display:inline-block;}
 .btn-dots{
   border:none;background:white;font-size:17px;color:#6B7280;
   padding:2px 8px;border-radius:7px;line-height:1;font-family:inherit;cursor:pointer;
 }
 .btn-dots:hover:not(:disabled){background:white;color:#1E2433;}
-/* .btn-dots:disabled{color:#D5DAE5;cursor:not-allowed;} */
 .dropdown-menu{
   position:absolute;right:0;background:#fff;border:1px solid #E4E7EF;border-radius:9px;
   box-shadow:0 6px 20px rgba(20,30,60,.14);min-width:120px;padding:4px;display:none;z-index:50;
@@ -81,153 +78,203 @@ input, textarea, select { border: none !important; }
 .dropdown-menu button:hover{background:#F0F2F8;}
 
 .wl-empty{padding:26px 12px;text-align:center;font-size:12.5px;color:#9AA2B1;}
+
+.btn-run{
+  background:#5B4F4B;color:#FFFFFF;border:none;border-radius:7px;
+  padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;
+}
+.btn-run:hover{background:#6F5F5E}
+.btn-ghost{
+  background:#FFFFFF;color:#5B4F4B;border:1px solid #E0D9D2;border-radius:7px;
+  padding:7px 16px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;
+}
+.btn-ghost:hover{background:#F3EEE9}
+.modal-overlay{position:fixed;inset:0;background:rgba(30,36,51,.42);display:flex;align-items:center;justify-content:center;z-index:1100}
+.modal-box{background:#fff;border-radius:12px;padding:24px;width:440px;max-width:92vw;box-shadow:0 12px 40px rgba(30,36,51,.22)}
+.modal-box h3{margin:0 0 8px;font-size:16px;}
+.modal-box p{margin:0 0 16px;color:#6B7280;font-size:13.5px;line-height:1.6}
+.field-group{margin-bottom:14px}
+.field-group label{display:block;font-size:12.5px;font-weight:600;color:#4B5563;margin-bottom:6px}
+.field-group input,.field-group select{width:100%;padding:9px 12px;border:1px solid #E4E7EF !important;border-radius:8px;font-size:13.5px;font-family:inherit;color:#1E2433;background:#FBFCFE}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+.btn-danger{background:#DC2626;color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-danger:hover{background:#b91c1c}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1E2433;color:#fff;padding:10px 20px;border-radius:8px;font-size:13.5px;box-shadow:0 4px 14px rgba(0,0,0,.25);z-index:9998;}
 </style>
 
-<div id="worklist_page" class="page_all wl-page">
-  <div class="wl-head">
-    <h3>Worklist</h3>
-  </div>
-
-  <table id="worklist_table" width="100%">
-    <thead>
-      <tr>
-        <th>Lead ID</th>
-        <th>Lead Name</th>
-        <th>Lead Type</th>
-        <th>Entity</th>
-        <th>Transaction ID</th>
-        <th>Flow ID</th>
-        <th>Flow Name</th>
-        <th>Suppression</th>
-        <th>Submit Date</th>
-        <th>Complete Date</th>
-        <th>Status</th>
-        <th style="width:44px"></th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</div>
+<div id="app"></div>
 
 <script>
-/* ============================================================
-   MOCK DATA — worklist
-   status : Wait | Inprogress | Completed | Incomplete
-   ============================================================ */
-const WORKLIST = [
-//   {
-//     lead_id:      'L2026000001',
-//     lead_name:    'X Sell Pool',
-//     lead_sub:     'X Sell Pool',
-//     lead_type:    'CRM_X_SELL_POOL',
-//     entity:       'KA',
-//     flow_id:      '',
-//     flow_name:    '',
-//     tran_id:      '',
-//     suppression:  '',
-//     submit_date:  '',
-//     complete_date:'',
-//     status:       'LEAD_OPENED'
-//   }
-];
+const { createApp, ref, reactive, computed, onMounted } = Vue;
 
-const STATUS_LABEL = {
-  Wait:'Wait', Inprogress:'In Progress', Completed:'Completed', Incomplete:'Failed'
-};
-
-const dash = '<span class="muted-dash">—</span>';
-
-function renderWorklist(){
-  const tbody = document.querySelector('#worklist_table tbody');
-  tbody.innerHTML = '';
-
-  if(!WORKLIST.length){
-    tbody.innerHTML = `<tr><td colspan="9" class="wl-empty">Data Not Found</td></tr>`;
-    // document.getElementById('wlCount').textContent = '';
-    return;
-  }
-
-  WORKLIST.forEach(row => {
-    const st = STATUS_LABEL[row.status] ? row.status : 'LEAD_OPENED';
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td align="center" class="cell-id">${row.lead_id}</td>
-      <td>
-        ${row.lead_name}
-      </td>
-      <td>${row.lead_type}</td>
-      <td align="center">${row.entity}</td>
-      <td align="center">${row.tran_id}</td>
-        <td align="center">${row.flow_id}</td>
-      <td align="center">${row.flow_name}</td>
-      <td></td>
-      <td align="center" class="cell-date"></td>
-      <td align="center" class="cell-date"></td>
-      <td align="center">${st}</td>
-      <td align="center">
-        
-      </td>`;
-    tbody.appendChild(tr);
-  });
-
-  const n = WORKLIST.length;
-//   document.getElementById('wlCount').textContent = `${n} lead${n>1?'s':''}`;
-}
-
-/* เปิดใช้งานเมนู ⋮ ภายหลังได้โดยเอา disabled ออก แล้วใช้ toggleDropdown */
 function toggleDropdown(event, button){
   event.stopPropagation();
   const menu = button.nextElementSibling;
-  document.querySelectorAll('.dropdown-menu').forEach(m => { if(m !== menu) m.classList.remove('show'); });
+  document.querySelectorAll('.dropdown-menu').forEach(m => { if (m !== menu) m.classList.remove('show'); });
   menu.classList.toggle('show');
 }
 document.addEventListener('click', function(){
   document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
 });
 
-function viewLead(lead_id){
-  console.log('view lead', lead_id);
-}
+const STATUS_LABEL = { Wait:'Wait', Inprogress:'In Progress', Completed:'Completed', Incomplete:'Failed' };
+const STATUS_PILL_CLASS = { Wait:'wp-wait', Inprogress:'wp-inprogress', Completed:'wp-completed', Incomplete:'wp-incomplete' };
 
+createApp({
+  setup(){
+    /* ---- worklist entries: shared with workflow_management.html, which pushes
+       a new lead here whenever a workflow's "Register Lead" step runs. ---- */
+    const worklist = MCRM.db.worklist;
 
-// ready
-$(function(){
-    // const url = `worklist.html?lead_id=${data.lead_id}&lead_name=${encodeURIComponent(data.lead_name)}&lead_sub=${encodeURIComponent(data.lead_sub)}&lead_type=${data.lead_type}&entity=${data.entity}&suppression=${data.suppression}&submit_date=${data.submit_date}&complete_date=${data.complete_date}&status=${data.status}`;
-
-    let lead_id = new URLSearchParams(window.location.search).get('lead_id');
-    let lead_name = new URLSearchParams(window.location.search).get('lead_name');
-    let lead_sub = new URLSearchParams(window.location.search).get('lead_sub');
-    let entity = new URLSearchParams(window.location.search).get('entity');
-    let flow_id = new URLSearchParams(window.location.search).get('flow_id');
-    let flow_name = new URLSearchParams(window.location.search).get('flow_name');
-    let tran_id = new URLSearchParams(window.location.search).get('tran_id');
-    let suppression = new URLSearchParams(window.location.search).get('suppression');
-    let submit_date = new URLSearchParams(window.location.search).get('submit_date');
-    let complete_date = new URLSearchParams(window.location.search).get('complete_date');
-    let status = new URLSearchParams(window.location.search).get('status');
-    let lead_type = new URLSearchParams(window.location.search).get('lead_type');
-    console.log('lead_id:', lead_id, 'lead_name:', lead_name, 'lead_sub:', lead_sub, 'entity:', entity, 'suppression:', suppression, 'submit_date:', submit_date, 'complete_date:', complete_date, 'status:', status, 'lead_type:', lead_type);
-    if (lead_id ) {
-        WORKLIST.push({
-            lead_id: lead_id,
-            lead_name: lead_name,
-            lead_sub: lead_sub,
-            entity: entity,
-            flow_id: flow_id,
-            flow_name: flow_name,
-            tran_id: tran_id,
-            suppression: suppression,
-            submit_date: submit_date,
-            complete_date: complete_date,
-            status: status,
-            lead_type: lead_type
+    /* one-time backward-compat: a lead can still be handed off via URL query
+       params (e.g. worklist.html?lead_id=...&flow_id=...) — pick it up once
+       into the shared store instead of a page-local array that resets on reload. */
+    onMounted(() => {
+      const qs = new URLSearchParams(window.location.search);
+      const lead_id = qs.get('lead_id');
+      if (lead_id && !worklist.some(w => w.lead_id === lead_id)){
+        worklist.push({
+          lead_id, lead_name: qs.get('lead_name')||'', lead_sub: qs.get('lead_sub')||'',
+          lead_type: qs.get('lead_type')||'', entity: qs.get('entity')||'',
+          flow_id: qs.get('flow_id')||'', flow_name: qs.get('flow_name')||'',
+          tran_id: qs.get('tran_id')||'', suppression: qs.get('suppression')||'',
+          submit_date: qs.get('submit_date')||'', complete_date: qs.get('complete_date')||'',
+          status: qs.get('status')||'Wait',
         });
+      }
+    });
+
+    const rows = MCRM.db.rows;
+    const leadTypeMaster = computed(() => rows.filter(r=>r.TYPE==='LEAD_TYPE' && r.ACTIVE==='Y'));
+    const entityMaster = computed(() => rows.filter(r=>r.TYPE==='ENTITY' && r.ACTIVE==='Y'));
+    const flows = MCRM.db.workflows;
+
+    function statusLabel(st){ return STATUS_LABEL[st] || st || '-'; }
+    function statusPillClass(st){ return STATUS_PILL_CLASS[st] || 'wp-wait'; }
+
+    /* ---- add a lead manually ---- */
+    const showAdd = ref(false);
+    const formModel = reactive({ lead_id:'', lead_name:'', lead_type:'', entity:'', flow_id:'', tran_id:'', suppression:'', status:'Wait' });
+    function nextLeadId(){ return 'L' + String(2026000000 + worklist.length + 1); }
+    function openAdd(){
+      Object.assign(formModel, { lead_id: nextLeadId(), lead_name:'', lead_type: leadTypeMaster.value[0]?.CODE||'', entity: entityMaster.value[0]?.CODE||'', flow_id:'', tran_id:'', suppression:'', status:'Wait' });
+      showAdd.value = true;
+    }
+    function closeAdd(){ showAdd.value = false; }
+    function saveAdd(){
+      if (!formModel.lead_id.trim() || !formModel.lead_name.trim()){ showToast('กรุณากรอก Lead ID และ Lead Name', false); return; }
+      if (worklist.some(w => w.lead_id === formModel.lead_id)){ showToast('มี Lead ID นี้อยู่แล้ว', false); return; }
+      const flow = flows.find(f => f.flow_id === formModel.flow_id);
+      worklist.push({
+        lead_id: formModel.lead_id, lead_name: formModel.lead_name, lead_sub: formModel.lead_name,
+        lead_type: formModel.lead_type, entity: formModel.entity,
+        flow_id: formModel.flow_id, flow_name: flow ? flow.flow_name : '',
+        tran_id: formModel.tran_id, suppression: formModel.suppression,
+        submit_date: MCRM.nowStr(), complete_date: '', status: formModel.status,
+      });
+      showAdd.value = false;
+      showToast(`เพิ่ม Lead "${formModel.lead_id}" เรียบร้อย`);
     }
 
+    /* ---- view / delete ---- */
+    function viewLead(lead_id){ console.log('view lead', lead_id); }
+    const confirmDeleteLead = ref(null);
+    function askDelete(row){ confirmDeleteLead.value = row; }
+    function confirmDelete(){
+      const row = confirmDeleteLead.value;
+      worklist.splice(worklist.findIndex(w => w === row), 1);
+      confirmDeleteLead.value = null;
+      showToast(`ลบ Lead "${row.lead_id}" แล้ว`);
+    }
 
-/* ready */
-renderWorklist();
+    const toast = reactive({ show:false, msg:'', ok:true });
+    let toastTimer = null;
+    function showToast(msg, ok=true){ toast.msg=msg; toast.ok=ok; toast.show=true; clearTimeout(toastTimer); toastTimer=setTimeout(()=>toast.show=false,2600); }
 
-});
+    return {
+      worklist, leadTypeMaster, entityMaster, flows,
+      statusLabel, statusPillClass,
+      showAdd, formModel, openAdd, closeAdd, saveAdd,
+      viewLead, confirmDeleteLead, askDelete, confirmDelete,
+      toast,
+    };
+  },
+  template: `
+  <div id="app">
+    <div class="wl-page">
+      <div class="wl-head">
+        <h3>Worklist</h3>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="wl-count">{{ worklist.length }} lead{{ worklist.length!==1?'s':'' }}</span>
+          <button class="btn-run" @click="openAdd">+ Add Lead</button>
+        </div>
+      </div>
 
+      <table id="worklist_table" width="100%">
+        <thead>
+          <tr>
+            <th>Lead ID</th><th>Lead Name</th><th>Lead Type</th><th>Entity</th><th>Transaction ID</th>
+            <th>Flow ID</th><th>Flow Name</th><th>Suppression</th><th>Submit Date</th><th>Complete Date</th>
+            <th>Status</th><th style="width:44px"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-if="!worklist.length"><td colspan="12" class="wl-empty">Data Not Found</td></tr>
+          <tr v-for="row in worklist" :key="row.lead_id">
+            <td align="center" class="cell-id">{{ row.lead_id }}</td>
+            <td><div class="cell-name">{{ row.lead_name }}</div><div class="cell-sub" v-if="row.lead_sub && row.lead_sub!==row.lead_name">{{ row.lead_sub }}</div></td>
+            <td>{{ row.lead_type }}</td>
+            <td align="center">{{ row.entity }}</td>
+            <td align="center"><span v-if="row.tran_id">{{ row.tran_id }}</span><span v-else class="muted-dash">—</span></td>
+            <td align="center"><span v-if="row.flow_id">{{ row.flow_id }}</span><span v-else class="muted-dash">—</span></td>
+            <td align="center"><span v-if="row.flow_name">{{ row.flow_name }}</span><span v-else class="muted-dash">—</span></td>
+            <td align="center"><span v-if="row.suppression" class="wl-chip sup">{{ row.suppression }}</span><span v-else class="muted-dash">—</span></td>
+            <td align="center" class="cell-date"><span v-if="row.submit_date">{{ row.submit_date }}</span><span v-else class="muted-dash">—</span></td>
+            <td align="center" class="cell-date"><span v-if="row.complete_date">{{ row.complete_date }}</span><span v-else class="muted-dash">—</span></td>
+            <td align="center"><span class="wl-pill" :class="statusPillClass(row.status)">{{ statusLabel(row.status) }}</span></td>
+            <td align="center">
+              <div class="dropdown-container">
+                <button class="btn-dots" onclick="toggleDropdown(event, this)">⋮</button>
+                <div class="dropdown-menu">
+                  <button @click="viewLead(row.lead_id)">View</button>
+                  <button @click="askDelete(row)">Delete</button>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="modal-overlay" v-if="showAdd" @click.self="closeAdd">
+      <div class="modal-box">
+        <h3>Add Lead</h3>
+        <div class="field-group"><label>Lead ID</label><input v-model="formModel.lead_id"></div>
+        <div class="field-group"><label>Lead Name</label><input v-model="formModel.lead_name"></div>
+        <div class="field-group"><label>Lead Type</label>
+          <select v-model="formModel.lead_type"><option value="">— Select —</option><option v-for="l in leadTypeMaster" :key="l.CODE" :value="l.CODE">{{ l.NAME }}</option></select>
+        </div>
+        <div class="field-group"><label>Entity</label>
+          <select v-model="formModel.entity"><option value="">— Select —</option><option v-for="e in entityMaster" :key="e.CODE" :value="e.CODE">{{ e.NAME }}</option></select>
+        </div>
+        <div class="field-group"><label>Flow</label>
+          <select v-model="formModel.flow_id"><option value="">— Select —</option><option v-for="f in flows" :key="f.flow_id" :value="f.flow_id">{{ f.flow_id }} · {{ f.flow_name }}</option></select>
+        </div>
+        <div class="field-group"><label>Transaction ID</label><input v-model="formModel.tran_id"></div>
+        <div class="modal-actions"><button class="btn-ghost" @click="closeAdd">ยกเลิก</button><button class="btn-run" @click="saveAdd">เพิ่ม Lead</button></div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" v-if="confirmDeleteLead" @click.self="confirmDeleteLead=null">
+      <div class="modal-box">
+        <h3>Delete this lead?</h3>
+        <p>You are about to remove <strong>{{ confirmDeleteLead.lead_id }}</strong> ({{ confirmDeleteLead.lead_name }}) from the worklist.</p>
+        <div class="modal-actions"><button class="btn-ghost" @click="confirmDeleteLead=null">ยกเลิก</button><button class="btn-danger" @click="confirmDelete">Delete</button></div>
+      </div>
+    </div>
+
+    <div class="toast" v-if="toast.show">{{ toast.msg }}</div>
+  </div>
+  `
+}).mount('#app');
 </script>

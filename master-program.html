@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ตู้ข้อมูลหลัก · Master Data Manager</title>
+<title>Program Setup</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.31/vue.global.prod.min.js"></script>
+<script src="store.js"></script>
 <style>
   /* @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap'); */
 
@@ -37,7 +38,7 @@
     --shadow-md:0 8px 24px rgba(20,30,50,.12);
   }
   *{box-sizing:border-box;
-    font-family: 'Krungsri-med';    
+    font-family: 'Krungsri-med';
 }
   html,body{margin:0;padding:0;}
   body{background:var(--bg);font-family:'Krungsri-med', sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;}
@@ -60,10 +61,6 @@
   .tab-btn.active{color:#fff;border-bottom-color:var(--accent);}
   .tab-btn.active .num{background:var(--accent);color:var(--primary-dark);}
 
-  /* .layout{flex:1;display:grid;grid-template-columns:280px 1fr;gap:20px;padding:20px 28px 32px;max-width:1360px;width:100%;margin:0 auto;}
-  .layout.single{grid-template-columns:1fr;} */
-  /* @media (max-width:860px){.layout{grid-template-columns:1fr;}} */
-
   .cabinet{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;height:fit-content;}
   .cabinet h2{font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);margin:4px 8px 12px;font-weight:600;}
   .drawer{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:11px 12px;border-radius:8px;border:1px solid transparent;background:transparent;cursor:pointer;margin-bottom:4px;font-family:'Krungsri-med';font-size:14px;color:var(--text);position:relative;transition:transform .12s ease, background .12s ease;}
@@ -81,7 +78,6 @@
   .add-drawer-btn{width:100%;margin-top:8px;padding:11px 12px;border-radius:8px;border:1.5px dashed #C7CEDA;background:transparent;color:var(--text-secondary);font-family:'Krungsri-med';font-size:13.5px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:.12s;}
   .add-drawer-btn:hover{border-color:var(--primary);color:var(--primary);background:var(--surface-alt);}
 
-  /* .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-direction:column;min-height:520px;} */
   .panel-head{padding:20px 24px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;}
   .panel-title-row{display:flex;align-items:center;gap:10px;}
   .panel-head h2{margin:0;font-size:19px;font-weight:700;}
@@ -207,26 +203,22 @@
     letter-spacing: .02em;
     background: #6f5f5e;
     padding: 13px 18px;
-    /* border-bottom: 1px solid var(--border); */
     border : 1px solid #dedede;
   }
   table.data-table tbody td{
     padding: 14px 18px;
-    /* border-bottom: 1px solid var(--border); */
     border : 1px solid #dedede;
     vertical-align: middle;
     color: var(--text);
   }
-  /* table.data-table tbody tr:last-child td{ border-bottom: none; } */
   table.data-table tbody tr:hover{ background: var(--brown-lighter); }
-
 
   /* กล่องครอบ */
 .dropdown-container {
     position: relative;
     display: inline-block;
   }
-  
+
   /* ปุ่ม 3 จุด */
   .btn-dots {
     background: none;
@@ -237,54 +229,45 @@
     color: #6b7280; /* สีเทา */
     transition: color 0.2s;
   }
-  
+
   .btn-dots:hover {
     color: #000000; /* เปลี่ยนสีเมื่อเอาเมาส์วาง */
   }
-  
+
 .dropdown-menu {
     display: none;
     position: absolute;
-    
-    /*--- จัดตำแหน่งให้อยู่ใต้ปุ่ม 3 จุดและชิดขวาพอดี ---*/
-    top: 100%; 
-    right: 0; /* เปลี่ยนจาก right: -70px เป็น 0 เพื่อให้ขอบขวาตรงกับปุ่ม 3 จุดพอดี */
-    
-    /* ลบคำสั่ง transform: translateX(-50%) ออก เพื่อไม่ให้พิกัดเพี้ยน */
-    
-    /*--- ความกว้างและพื้นที่ภายใน ---*/
-    width: max-content; /* ปล่อยให้กล่องกว้างพอดีคำที่ยาวที่สุด (Delete) อัตโนมัติ */
-    min-width: 100px;   /* กำหนดขั้นต่ำไว้เล็กน้อยเพื่อความสวยงาม */
-    padding: 6px;       /* ปรับพื้นที่รอบๆ ปรับจาก 8px ลงมาหน่อยให้ดูกระชับ */
-    
-    /*--- หน้าตาและมิติ ---*/
+    top: 100%;
+    right: 0;
+    width: max-content;
+    min-width: 100px;
+    padding: 6px;
     background-color: #ffffff;
-    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1); /* เพิ่มความฟุ้งของเงาให้ดูโมเดิร์นลอยขึ้น */
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
     border: 1px solid #e5e7eb;
     border-radius: 6px;
     z-index: 10;
 
     button {
-        display: block;   /* บังคับให้ปุ่มแยกแถวกันชัดเจน */
-        width: 100%;      /* ให้ปุ่มขยายกว้างเต็มพื้นที่กล่องแม่ */
-        font-size: 16px;  /* แนะนำให้ใช้ px (ประมาณ 10-11pt) จะคุมขนาดบนหน้าเว็บได้นิ่งกว่า pt */
-        padding: 6px 12px; /* เพิ่ม padding ซ้าย-ขวา ให้มีช่องไฟหายใจ ไม่ติดขอบกล่อง */
+        display: block;
+        width: 100%;
+        font-size: 16px;
+        padding: 6px 12px;
         border: none;
         background-color: transparent;
         cursor: pointer;
-        text-align: left; /* ชิดซ้ายตามสไตล์เมนูทั่วไป */
-        color: #1f2937;   /* สีตัวอักษรเทาเข้มเกือบดำ ดูพรีเมียมกว่าสีดำสนิท */
-        white-space: nowrap; /* ล็อกไว้ไม่ให้ตัวหนังสือตกบรรทัด */
+        text-align: left;
+        color: #1f2937;
+        white-space: nowrap;
     }
-    
+
     button:hover {
-        background-color: #F3F4F6; /* สีเทาอ่อนเวลาชี้แบบในรูปของคุณ */
+        background-color: #F3F4F6;
         border-radius: 4px;
         color: #000000;
     }
 }
-  
-  /* คลาสที่จะถูกเปิดด้วย JavaScript เมื่อคลิก */
+
   .dropdown-menu.show {
     display: block;
   }
@@ -306,24 +289,16 @@
 const { createApp, ref, reactive, computed } = Vue;
 
 function toggleDropdown(event, button) {
-    // กันไม่ให้ Event ลามไปยัง Element อื่น
     event.stopPropagation();
-    
-    // หาเมนูที่อยู่ข้าง ๆ ปุ่มที่คลิก
     const currentMenu = button.nextElementSibling;
-    
-    // ปิด Dropdown ตัวอื่น ๆ ที่อาจจะเปิดค้างอยู่บนหน้าจอ
     document.querySelectorAll('.dropdown-menu').forEach(menu => {
         if (menu !== currentMenu) {
         menu.classList.remove('show');
         }
     });
-
-    // สลับการเปิด/ปิด (Toggle) เมนูปัจจุบัน
     currentMenu.classList.toggle('show');
     }
 
-    // ถ้าคลิกพื้นที่อื่นภายนอกปุ่ม ให้ปิดเมนูทันที
     document.addEventListener('click', function() {
     document.querySelectorAll('.dropdown-menu').forEach(menu => {
         menu.classList.remove('show');
@@ -332,123 +307,17 @@ function toggleDropdown(event, button) {
 
 createApp({
   setup(){
-    const now = () => { const d = new Date(); return d.toLocaleDateString('en-US') + ' ' + d.toTimeString().slice(0,5); };
+    const now = MCRM.nowStr;
 
-    const rows = reactive([
-      { TYPE:'SYS_TYPE', CODE:'ENTITY',    NAME:'Entity',    DESCRIPTION:'ประเภทข้อมูลองค์กร / นิติบุคคล',            ORDER:'1', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'12/25/2023 10:07', UPDATE_BY:'SYSTEM', UPDATE_DATE:'12/25/2023 10:07' },
-      { TYPE:'SYS_TYPE', CODE:'LEAD_TYPE', NAME:'Lead Type', DESCRIPTION:'ประเภทของลีด / ช่องทางแคมเปญ',              ORDER:'2', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'12/25/2023 10:07', UPDATE_BY:'SYSTEM', UPDATE_DATE:'12/25/2023 10:07' },
-      { TYPE:'SYS_TYPE', CODE:'PROGRAM',   NAME:'Program',   DESCRIPTION:'แคตตาล็อกชื่อโปรแกรมทั้งหมดในระบบ',       ORDER:'3', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'SYS_TYPE', CODE:'PARAMETER', NAME:'Parameter', DESCRIPTION:'พจนานุกรม Base Key ที่ใช้ประกอบเงื่อนไข', ORDER:'4', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-
-      { TYPE:'ENTITY', CODE:'KA', NAME:'KA', DESCRIPTION:'KA entity', ORDER:'1', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'12/25/2023 10:07', UPDATE_BY:'SYSTEM', UPDATE_DATE:'12/25/2023 10:07' },
-      { TYPE:'ENTITY', CODE:'AY', NAME:'AY', DESCRIPTION:'AYCAL entity', ORDER:'2', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'12/25/2023 10:07', UPDATE_BY:'SYSTEM', UPDATE_DATE:'12/25/2023 10:07' },
-      
-      { TYPE:'LEAD_TYPE', CODE:'CRM_X_SELL_POOL',  NAME:'CRM_X_SELL_POOL',  DESCRIPTION:'',       ORDER:'1', ACTIVE:'Y', DEPEND_ON:'',    CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'LEAD_TYPE', CODE:'INS_PPI', NAME:'INS_PPI', DESCRIPTION:'',      ORDER:'2', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'LEAD_TYPE', CODE:'EV_NETA', NAME:'EV_NETA', DESCRIPTION:'',       ORDER:'3', ACTIVE:'Y', DEPEND_ON:'',    CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'LEAD_TYPE', CODE:'RETENTION', NAME:'RETENTION', DESCRIPTION:'',    ORDER:'4', ACTIVE:'N', DEPEND_ON:'',    CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-
-      { TYPE:'PROGRAM', CODE:'TOPUP',          NAME:'Topup',             DESCRIPTION:'สินเชื่อเพิ่มวงเงิน',        ORDER:'1', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PROGRAM', CODE:'REVOLVING_LOAN', NAME:'Revolving Loan',    DESCRIPTION:'สินเชื่อหมุนเวียน',          ORDER:'2', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PROGRAM', CODE:'PRE_APPROVE_R',  NAME:'Pre-Approve (R)',   DESCRIPTION:'อนุมัติล่วงหน้า - Renew',    ORDER:'3', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PROGRAM', CODE:'PRE_APPROVE_NU', NAME:'Pre-Approve (N/U)', DESCRIPTION:'อนุมัติล่วงหน้า - New/Used', ORDER:'4', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PROGRAM', CODE:'PRE_APPROVE_MC', NAME:'Pre-Approve (MC)',  DESCRIPTION:'อนุมัติล่วงหน้า - MC',       ORDER:'5', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PROGRAM', CODE:'PRIVILEGE_NUR',  NAME:'Privilege (N/U/R)', DESCRIPTION:'สิทธิพิเศษ - N/U/R',          ORDER:'6', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PROGRAM', CODE:'PRIVILEGE_MC',   NAME:'Privilege (MC)',    DESCRIPTION:'สิทธิพิเศษ - MC',             ORDER:'7', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PROGRAM', CODE:'PPI_PA_LIFE',    NAME:'PPI_PA and LIFE',   DESCRIPTION:'ประกัน PA และ LIFE',          ORDER:'8', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PROGRAM', CODE:'PPI_PA',         NAME:'PPI_PA',            DESCRIPTION:'ประกัน PA',                   ORDER:'9', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-
-      { TYPE:'PARAMETER', CODE:'account_type',      NAME:'account_type',          DESCRIPTION:'ประเภทบัญชี',                  ORDER:'1',  ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'auto_group',         NAME:'auto_group',            DESCRIPTION:'กลุ่มรถยนต์',                  ORDER:'2',  ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'b_score_account',    NAME:'b_score_account',       DESCRIPTION:'B-Score ระดับบัญชี',           ORDER:'3',  ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'b_score_customer',   NAME:'b_score_customer',      DESCRIPTION:'B-Score ระดับลูกค้า',          ORDER:'4',  ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'b_score_m_customer', NAME:'B-Score band_MKT_Cust', DESCRIPTION:'B-Score ระดับลูกค้าฝั่งการตลาด', ORDER:'5', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'car_age',            NAME:'car_age',               DESCRIPTION:'อายุรถ',                       ORDER:'6',  ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'cash_offer',         NAME:'cash_offer',            DESCRIPTION:'วงเงินที่เสนอ',                ORDER:'7',  ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'iir',                NAME:'iir',                   DESCRIPTION:'Internal Interest Rate',       ORDER:'8',  ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'model_type_group',   NAME:'model_type_group',      DESCRIPTION:'กลุ่มรุ่นรถ',                  ORDER:'9',  ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'pay_slip',           NAME:'pay_slip',              DESCRIPTION:'สลิปเงินเดือน',                ORDER:'10', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'product_base',       NAME:'product_base',          DESCRIPTION:'ผลิตภัณฑ์หลัก',                ORDER:'11', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'receipt_term',       NAME:'receipt_term',          DESCRIPTION:'งวดการรับเอกสาร',              ORDER:'12', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'region',             NAME:'region',                DESCRIPTION:'ภูมิภาค',                      ORDER:'13', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'remaining_term',     NAME:'remaining_term',        DESCRIPTION:'งวดคงเหลือ',                  ORDER:'14', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-    ]);
-
-    const drawers = computed(() => rows.filter(r => r.TYPE === 'SYS_TYPE').sort((a,b) => Number(a.ORDER) - Number(b.ORDER)));
-    const memberCount = (typeCode) => rows.filter(r => r.TYPE === typeCode).length;
-    const activeCount  = (typeCode) => rows.filter(r => r.TYPE === typeCode && r.ACTIVE==='Y').length;
-
+    /* ---- shared master data catalog (Entity / Lead Type / Program / Parameter) ----
+       Same store.js records used by Master Data Manager and Parameter Master Setup. */
+    const rows = MCRM.db.rows;
     const entityMaster = computed(() => rows.filter(r=>r.TYPE==='ENTITY' && r.ACTIVE==='Y').sort((a,b)=>Number(a.ORDER)-Number(b.ORDER)));
     const leadTypeMaster = computed(() => rows.filter(r=>r.TYPE==='LEAD_TYPE' && r.ACTIVE==='Y').sort((a,b)=>Number(a.ORDER)-Number(b.ORDER)));
     const programMaster = computed(() => rows.filter(r=>r.TYPE==='PROGRAM' && r.ACTIVE==='Y').sort((a,b)=>Number(a.ORDER)-Number(b.ORDER)));
-    const paramMaster = computed(() => rows.filter(r=>r.TYPE==='PARAMETER' && r.ACTIVE==='Y').sort((a,b)=>Number(a.ORDER)-Number(b.ORDER)));
-    const nameOf = (list, code) => (list.find(x=>x.CODE===code)?.NAME) || code;
+    const nameOf = MCRM.nameOf;
 
-    const selectedTypeCode = ref('ENTITY');
-    const selectedDrawer = computed(() => drawers.value.find(d => d.CODE === selectedTypeCode.value));
-    const search = ref('');
-    const records = computed(() => {
-      let list = rows.filter(r => r.TYPE === selectedTypeCode.value);
-      if (search.value.trim()){
-        const q = search.value.trim().toLowerCase();
-        list = list.filter(r => r.CODE.toLowerCase().includes(q) || r.NAME.toLowerCase().includes(q) || r.DESCRIPTION.toLowerCase().includes(q));
-      }
-      return list.sort((a,b) => Number(a.ORDER) - Number(b.ORDER));
-    });
-    const dependOptions = computed(() => rows.filter(r => r.TYPE === selectedTypeCode.value && r.CODE !== formModel.CODE));
-
-    const showForm = ref(false);
-    const isEditing = ref(false);
-    const formModel = reactive({ CODE:'', NAME:'', DESCRIPTION:'', ORDER:'1', DEPEND_ON:'', ACTIVE:'Y', CREATE_BY:'', CREATE_DATE:'', UPDATE_BY:'', UPDATE_DATE:'' });
-
-    function openAddRecord(){
-      isEditing.value = false;
-      Object.assign(formModel, { CODE:'', NAME:'', DESCRIPTION:'', ORDER:String((records.value.length+1)), DEPEND_ON:'', ACTIVE:'Y', CREATE_BY:'', CREATE_DATE:'', UPDATE_BY:'', UPDATE_DATE:'' });
-      showForm.value = true;
-    }
-    function openEditRecord(row){ isEditing.value = true; Object.assign(formModel, row); showForm.value = true; }
-    function closeForm(){ showForm.value = false; }
-    function saveRecord(){
-      if (!formModel.CODE.trim() || !formModel.NAME.trim()){ showToast('กรุณากรอกรหัสและชื่อรายการให้ครบ', false); return; }
-      if (isEditing.value){
-        const idx = rows.findIndex(r => r.TYPE===selectedTypeCode.value && r.CODE===formModel.CODE);
-        rows[idx] = { ...rows[idx], ...formModel, UPDATE_BY:'ADMIN', UPDATE_DATE: now() };
-        showToast(`บันทึกการแก้ไข "${formModel.NAME}" เรียบร้อย`);
-      } else {
-        if (rows.some(r => r.TYPE===selectedTypeCode.value && r.CODE===formModel.CODE)){ showToast('รหัสนี้มีอยู่แล้วในหมวดหมู่นี้', false); return; }
-        rows.push({ TYPE:selectedTypeCode.value, ...formModel, CREATE_BY:'ADMIN', CREATE_DATE: now(), UPDATE_BY:'ADMIN', UPDATE_DATE: now() });
-        showToast(`เพิ่ม "${formModel.NAME}" เรียบร้อย`);
-      }
-      showForm.value = false;
-    }
-    function toggleActive(row){
-      row.ACTIVE = row.ACTIVE === 'Y' ? 'N' : 'Y'; row.UPDATE_BY='ADMIN'; row.UPDATE_DATE=now();
-      showToast(row.ACTIVE==='Y' ? `เปิดใช้งาน "${row.NAME}" แล้ว` : `ปิดใช้งาน "${row.NAME}" แล้ว`);
-    }
-
-    const confirmDeleteRow = ref(null);
-    function askDeleteRecord(row){ confirmDeleteRow.value = row; }
-    function cancelDelete(){ confirmDeleteRow.value = null; }
-    const blockingDependents = computed(() => !confirmDeleteRow.value ? [] : rows.filter(r => r.TYPE===selectedTypeCode.value && r.DEPEND_ON === confirmDeleteRow.value.CODE));
-    function confirmDelete(){
-      const row = confirmDeleteRow.value;
-      rows.splice(rows.findIndex(r => r===row), 1);
-      showToast(`ลบ "${row.NAME}" ออกจากระบบแล้ว`);
-      confirmDeleteRow.value = null;
-    }
-
-    const showAddType = ref(false);
-    const typeForm = reactive({ CODE:'', NAME:'', DESCRIPTION:'' });
-    function openAddType(){ Object.assign(typeForm, { CODE:'', NAME:'', DESCRIPTION:'' }); showAddType.value = true; }
-    function saveType(){
-      let code = typeForm.CODE.trim().toUpperCase().replace(/\s+/g,'_');
-      if (!code || !typeForm.NAME.trim()){ showToast('กรุณากรอกรหัสและชื่อหมวดหมู่', false); return; }
-      if (rows.some(r => r.TYPE==='SYS_TYPE' && r.CODE===code)){ showToast('มีหมวดหมู่นี้อยู่แล้ว', false); return; }
-      rows.push({ TYPE:'SYS_TYPE', CODE:code, NAME:typeForm.NAME.trim(), DESCRIPTION:typeForm.DESCRIPTION.trim(), ORDER:String((drawers.value.length+1)), ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
-      selectedTypeCode.value = code; showAddType.value = false;
-      showToast(`สร้างหมวดหมู่ "${typeForm.NAME}" เรียบร้อย`);
-    }
-
+    /* ---- quick-add a new Program into the shared catalog without leaving this form ---- */
     const quickAdd = reactive({ show:false, type:'', typeLabel:'', CODE:'', NAME:'' });
     function openQuickAdd(type, label){ Object.assign(quickAdd, { show:true, type, typeLabel:label, CODE:'', NAME:'' }); }
     function saveQuickAdd(){
@@ -461,19 +330,10 @@ createApp({
       quickAdd.show = false;
     }
 
-    const assignments = reactive([
-      { ENTITY:'KA', LEAD_TYPE:'CRM_X_SELL_POOL', PROGRAM_CODE:'TOPUP',          ORDER:'1', STATUS:'Y', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { ENTITY:'KA', LEAD_TYPE:'CRM_X_SELL_POOL', PROGRAM_CODE:'REVOLVING_LOAN', ORDER:'2', STATUS:'Y', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { ENTITY:'KA', LEAD_TYPE:'CRM_X_SELL_POOL', PROGRAM_CODE:'PRE_APPROVE_R',  ORDER:'3', STATUS:'Y', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { ENTITY:'KA', LEAD_TYPE:'CRM_X_SELL_POOL', PROGRAM_CODE:'PRE_APPROVE_NU', ORDER:'4', STATUS:'Y', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { ENTITY:'KA', LEAD_TYPE:'CRM_X_SELL_POOL', PROGRAM_CODE:'PRIVILEGE_NUR',  ORDER:'5', STATUS:'Y', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { ENTITY:'AY', LEAD_TYPE:'CRM_X_SELL_POOL', PROGRAM_CODE:'TOPUP',          ORDER:'1', STATUS:'Y', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { ENTITY:'AY', LEAD_TYPE:'CRM_X_SELL_POOL', PROGRAM_CODE:'PRE_APPROVE_R',  ORDER:'2', STATUS:'Y', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { ENTITY:'AY', LEAD_TYPE:'CRM_X_SELL_POOL', PROGRAM_CODE:'PRE_APPROVE_MC', ORDER:'3', STATUS:'Y', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { ENTITY:'AY', LEAD_TYPE:'CRM_X_SELL_POOL', PROGRAM_CODE:'PRIVILEGE_MC',   ORDER:'4', STATUS:'Y', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { ENTITY:'KA', LEAD_TYPE:'INS_PPI',         PROGRAM_CODE:'PPI_PA_LIFE',    ORDER:'1', STATUS:'Y', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { ENTITY:'AY', LEAD_TYPE:'INS_PPI',         PROGRAM_CODE:'PPI_PA',         ORDER:'1', STATUS:'Y', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-    ]);
+    /* =========================================================
+       Program Setup — which PROGRAMs are enabled per ENTITY + LEAD_TYPE
+       ========================================================= */
+    const assignments = MCRM.db.assignments;
 
     const assignEntity = ref('KA');
     const assignLeadType = ref('CRM_X_SELL_POOL');
@@ -511,161 +371,22 @@ createApp({
       confirmDeleteAssign.value = null;
     }
 
-    const paramConfigs = reactive([
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'TOPUP_OPTION',       PARAMETER_NAME:'Topup Option',      ORDER:'1',  ACTIVE:'Y', KEY_BASE:['b_score_m_customer','cash_offer','iir','product_base'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'MAX_LTV',            PARAMETER_NAME:'Max LTV',           ORDER:'2',  ACTIVE:'Y', KEY_BASE:['b_score_m_customer','product_base'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'RECEIPT_TERM',       PARAMETER_NAME:'Receipt Term',      ORDER:'3',  ACTIVE:'Y', KEY_BASE:['b_score_m_customer','product_base'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'X_INSTALLMENT_OPT1', PARAMETER_NAME:'X Installment OPT1',ORDER:'4',  ACTIVE:'Y', KEY_BASE:['b_score_m_customer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'X_INSTALLMENT_OPT2', PARAMETER_NAME:'X Installment OPT2',ORDER:'5',  ACTIVE:'Y', KEY_BASE:['b_score_m_customer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'X_INSTALLMENT_OPT3', PARAMETER_NAME:'X Installment OPT3',ORDER:'6',  ACTIVE:'Y', KEY_BASE:['b_score_m_customer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'X_INSTALLMENT_OPT4', PARAMETER_NAME:'X Installment OPT4',ORDER:'7',  ACTIVE:'Y', KEY_BASE:['b_score_m_customer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'FLAT_RATE_OPT1',     PARAMETER_NAME:'Flat rate OPTT1',   ORDER:'8',  ACTIVE:'Y', KEY_BASE:['b_score_account','product_base','auto_group','region'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'FLAT_RATE_OPT2',     PARAMETER_NAME:'Flat rate OPTT2',   ORDER:'9',  ACTIVE:'Y', KEY_BASE:['b_score_account','product_base','auto_group','region'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'FLAT_RATE_OPT3',     PARAMETER_NAME:'Flat rate OPTT3',   ORDER:'10', ACTIVE:'Y', KEY_BASE:['b_score_account','product_base','auto_group','region'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'FLAT_RATE_OPT4',     PARAMETER_NAME:'Flat rate OPTT4',   ORDER:'11', ACTIVE:'Y', KEY_BASE:['b_score_account','product_base','auto_group','region'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'NCB',                PARAMETER_NAME:'NCB',               ORDER:'12', ACTIVE:'Y', KEY_BASE:['b_score_m_customer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-
-      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'TOPUP_OPTION',       PARAMETER_NAME:'Topup Option',      ORDER:'1', ACTIVE:'Y', KEY_BASE:['b_score_customer','auto_group','cash_offer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'MAX_LTV',            PARAMETER_NAME:'Max LTV',           ORDER:'2', ACTIVE:'Y', KEY_BASE:['b_score_customer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'X_INSTALLMENT_OPT1', PARAMETER_NAME:'X Installment OPT1',ORDER:'3', ACTIVE:'Y', KEY_BASE:['b_score_customer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'X_INSTALLMENT_OPT2', PARAMETER_NAME:'X Installment OPT2',ORDER:'4', ACTIVE:'Y', KEY_BASE:['b_score_customer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'X_INSTALLMENT_OPT3', PARAMETER_NAME:'X Installment OPT3',ORDER:'5', ACTIVE:'Y', KEY_BASE:['b_score_customer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'X_INSTALLMENT_OPT4', PARAMETER_NAME:'X Installment OPT4',ORDER:'6', ACTIVE:'Y', KEY_BASE:['b_score_customer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'FLAT_RATE_OPT1',     PARAMETER_NAME:'Flat rate OPTT1',   ORDER:'7', ACTIVE:'Y', KEY_BASE:['b_score_customer','model_type_group'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'FLAT_RATE_OPT2',     PARAMETER_NAME:'Flat rate OPTT2',   ORDER:'8', ACTIVE:'Y', KEY_BASE:['b_score_customer','model_type_group'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'FLAT_RATE_OPT3',     PARAMETER_NAME:'Flat rate OPTT3',   ORDER:'9', ACTIVE:'Y', KEY_BASE:['b_score_customer','model_type_group'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'FLAT_RATE_OPT4',     PARAMETER_NAME:'Flat rate OPTT4',   ORDER:'10',ACTIVE:'Y', KEY_BASE:['b_score_customer','model_type_group'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'NCB',                PARAMETER_NAME:'NCB',               ORDER:'11',ACTIVE:'Y', KEY_BASE:['b_score_customer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-    ]);
-
-    const cfgProgram = ref('TOPUP');
-    const cfgEntity = ref('KA');
-    const cfgRecords = computed(() => paramConfigs.filter(c=>c.PROGRAM_CODE===cfgProgram.value && c.ENTITY===cfgEntity.value).sort((a,b)=>Number(a.ORDER)-Number(b.ORDER)));
-
-    const showCfgForm = ref(false);
-    const isEditingCfg = ref(false);
-    const cfgFormModel = reactive({ PARAMETER_CODE:'', PARAMETER_NAME:'', ORDER:'1', ACTIVE:'Y', KEY_BASE:[] });
-    function slugify(s){ return s.trim().toUpperCase().replace(/[^A-Z0-9]+/g,'_').replace(/^_|_$/g,''); }
-    function openAddCfg(){
-      isEditingCfg.value = false;
-      Object.assign(cfgFormModel, { PARAMETER_CODE:'', PARAMETER_NAME:'', ORDER:String((cfgRecords.value.length+1)), ACTIVE:'Y', KEY_BASE:[] });
-      showCfgForm.value = true;
-    }
-    function openEditCfg(row){ isEditingCfg.value = true; Object.assign(cfgFormModel, { ...row, KEY_BASE:[...row.KEY_BASE] }); showCfgForm.value = true; }
-    function closeCfgForm(){ showCfgForm.value = false; }
-    function toggleCfgKey(code){
-      const i = cfgFormModel.KEY_BASE.indexOf(code);
-      if (i>=0) cfgFormModel.KEY_BASE.splice(i,1); else cfgFormModel.KEY_BASE.push(code);
-    }
-    function removeCfgKeyAt(i){ cfgFormModel.KEY_BASE.splice(i,1); }
-    function saveCfg(){
-      if (!cfgFormModel.PARAMETER_NAME.trim()){ showToast('กรุณากรอกชื่อพารามิเตอร์', false); return; }
-      if (!cfgFormModel.KEY_BASE.length){ showToast('กรุณาเลือก Base Key อย่างน้อย 1 รายการ', false); return; }
-      const code = isEditingCfg.value ? cfgFormModel.PARAMETER_CODE : slugify(cfgFormModel.PARAMETER_NAME);
-      if (isEditingCfg.value){
-        const idx = paramConfigs.findIndex(c=>c.PROGRAM_CODE===cfgProgram.value && c.ENTITY===cfgEntity.value && c.PARAMETER_CODE===code);
-        paramConfigs[idx] = { ...paramConfigs[idx], ...cfgFormModel, PARAMETER_CODE:code, UPDATE_BY:'ADMIN', UPDATE_DATE:now() };
-      } else {
-        if (paramConfigs.some(c=>c.PROGRAM_CODE===cfgProgram.value && c.ENTITY===cfgEntity.value && c.PARAMETER_CODE===code)){ showToast('มีพารามิเตอร์นี้อยู่แล้ว', false); return; }
-        paramConfigs.push({ PROGRAM_CODE:cfgProgram.value, ENTITY:cfgEntity.value, ...cfgFormModel, PARAMETER_CODE:code, CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
-      }
-      showToast('บันทึกการตั้งค่าพารามิเตอร์เรียบร้อย');
-      showCfgForm.value = false;
-    }
-    function toggleCfgActive(row){ row.ACTIVE = row.ACTIVE==='Y'?'N':'Y'; row.UPDATE_BY='ADMIN'; row.UPDATE_DATE=now(); }
-    const confirmDeleteCfg = ref(null);
-    function askDeleteCfg(row){ confirmDeleteCfg.value = row; }
-    function confirmDeleteCfgRow(){
-      paramConfigs.splice(paramConfigs.findIndex(c=>c===confirmDeleteCfg.value),1);
-      showToast('ลบพารามิเตอร์แล้ว');
-      confirmDeleteCfg.value = null;
-    }
-    const cfgPreview = computed(() => ({
-      key: cfgFormModel.KEY_BASE.map(c=>nameOf(paramMaster.value,c)).join(' | '),
-      keyBase: cfgFormModel.KEY_BASE.join('|')
-    }));
-
     const toast = reactive({ show:false, msg:'', ok:true });
     let toastTimer = null;
     function showToast(msg, ok=true){ toast.msg=msg; toast.ok=ok; toast.show=true; clearTimeout(toastTimer); toastTimer=setTimeout(()=>toast.show=false,2600); }
 
-    function selectDrawer(code){ selectedTypeCode.value = code; search.value=''; }
-
-
-
-
-    const activeTab = ref('assign');
-
     return {
-      activeTab,
-      drawers, selectedTypeCode, selectedDrawer, selectDrawer, memberCount, activeCount,
-      search, records, dependOptions,
-      showForm, isEditing, formModel, openAddRecord, openEditRecord, closeForm, saveRecord, toggleActive,
-      confirmDeleteRow, askDeleteRecord, cancelDelete, confirmDelete, blockingDependents,
-      showAddType, typeForm, openAddType, saveType,
+      entityMaster, leadTypeMaster, programMaster, nameOf,
       quickAdd, openQuickAdd, saveQuickAdd,
-      entityMaster, leadTypeMaster, programMaster, paramMaster, nameOf,
       assignEntity, assignLeadType, assignRecords, showAssignForm, isEditingAssign, assignFormModel, assignableProgramOptions,
       openAddAssign, openEditAssign, closeAssignForm, saveAssign, toggleAssignStatus, confirmDeleteAssign, askDeleteAssign, confirmDeleteAssignRow,
-      cfgProgram, cfgEntity, cfgRecords, showCfgForm, isEditingCfg, cfgFormModel,
-      openAddCfg, openEditCfg, closeCfgForm, toggleCfgKey, removeCfgKeyAt, saveCfg, toggleCfgActive,
-      confirmDeleteCfg, askDeleteCfg, confirmDeleteCfgRow, cfgPreview,
       toast
     };
   },
   template: `
   <div id="app">
 
-    <div class="layout" v-if="activeTab==='master'">
-      <aside class="cabinet">
-        <h2>หมวดหมู่ข้อมูล</h2>
-        <button v-for="d in drawers" :key="d.CODE" class="drawer" :class="{active: d.CODE===selectedTypeCode}" @click="selectDrawer(d.CODE)">
-          <span class="drawer-icon"></span>
-          <span class="drawer-label">
-            <span class="drawer-name">{{ d.NAME }}</span>
-            <span class="drawer-code">{{ d.CODE }}<span v-if="d.ACTIVE!=='Y'" class="drawer-inactive-tag">ปิดใช้งาน</span></span>
-          </span>
-          <span class="drawer-count">{{ memberCount(d.CODE) }}</span>
-        </button>
-        <button class="add-drawer-btn" @click="openAddType">+ เพิ่มหมวดหมู่ใหม่</button>
-      </aside>
-
-      <section class="panel">
-        <div class="panel-head">
-          <div>
-            <div class="panel-title-row"><h2>{{ selectedDrawer?.NAME }}</h2><span class="type-badge">{{ selectedTypeCode }}</span></div>
-            <p class="desc">{{ selectedDrawer?.DESCRIPTION }} · ทั้งหมด {{ memberCount(selectedTypeCode) }} รายการ · ใช้งานอยู่ {{ activeCount(selectedTypeCode) }} รายการ</p>
-          </div>
-          <button class="btn btn-primary" @click="openAddRecord">+ เพิ่มรายการ</button>
-        </div>
-        <div class="toolbar">
-          <div class="search-box"><span>🔍</span><input type="text" v-model="search" placeholder="ค้นหาด้วยรหัส, ชื่อ หรือคำอธิบาย..."></div>
-        </div>
-        <div class="table-wrap">
-          <table v-if="records.length">
-            <thead><tr><th style="width:60px">ลำดับ</th><th style="width:110px">รหัส</th><th>ชื่อ / คำอธิบาย</th><th style="width:130px">ขึ้นอยู่กับ</th><th style="width:90px">ใช้งาน</th><th style="width:90px">จัดการ</th></tr></thead>
-            <tbody>
-              <tr v-for="row in records" :key="row.CODE">
-                <td><span class="order-pill">{{ row.ORDER }}</span></td>
-                <td><span class="code-pill">{{ row.CODE }}</span></td>
-                <td class="name-cell"><strong>{{ row.NAME }}</strong><span>{{ row.DESCRIPTION }}</span></td>
-                <td><span v-if="row.DEPEND_ON" class="depend-tag">{{ row.DEPEND_ON }}</span><span v-else style="color:var(--text-secondary);font-size:12px;">—</span></td>
-                <td><label class="switch"><input type="checkbox" :checked="row.ACTIVE==='Y'" @change="toggleActive(row)"><span class="slider"></span></label></td>
-                <td><div class="row-actions"><button class="icon-btn" title="แก้ไข" @click="openEditRecord(row)">✎</button><button class="icon-btn danger" title="ลบ" @click="askDeleteRecord(row)">🗑</button></div></td>
-              </tr>
-            </tbody>
-          </table>
-          <div v-else class="empty-state">
-            <div class="glyph"></div>
-            <h3 v-if="search">ไม่พบรายการที่ค้นหา</h3><h3 v-else>ยังไม่มีข้อมูลในหมวดหมู่นี้</h3>
-            <p>เริ่มเพิ่มรายการแรกของ "{{ selectedDrawer?.NAME }}" ได้เลย</p>
-            <button class="btn btn-primary" style="margin-top:12px" @click="openAddRecord">+ เพิ่มรายการ</button>
-          </div>
-        </div>
-      </section>
-    </div>
-
-    <div class="layout single" v-if="activeTab==='assign'">
+    <div class="layout single">
       <section class="panel">
         <div class="panel-head">
           <div>
@@ -683,7 +404,7 @@ createApp({
             <select v-model="assignLeadType"><option v-for="l in leadTypeMaster" :key="l.CODE" :value="l.CODE">{{ l.NAME }} ({{ l.CODE }})</option></select>
           </div>
         </div>
-        
+
         <div class="table-wrap">
           <table class="data-table" v-if="assignRecords.length">
             <thead><tr><th style="width:60px">No.</th><th>Program</th><th style="width:100px">Status</th><th style="width:90px"></th></tr></thead>
@@ -691,12 +412,11 @@ createApp({
               <tr v-for="row in assignRecords" :key="row.PROGRAM_CODE">
                 <td><span class="order-pill">{{ row.ORDER }}</span></td>
                 <td class="name-cell"><strong>{{ nameOf(programMaster, row.PROGRAM_CODE) }}</strong><span class="mono">{{ row.PROGRAM_CODE }}</span></td>
-                <td><label class="switch">
-                {{row.STATUS}}</span></label></td>
+                <td><label class="switch">{{row.STATUS}}</label></td>
                 <td>
                     <div class="dropdown-container">
                         <button class="btn-dots" onclick="toggleDropdown(event, this)">⋮</button>
-                        
+
                         <div class="dropdown-menu">
                             <button class="icon-btn" title="" @click="openEditAssign(row)">Edit</button><button class="icon-btn danger" title="" @click="askDeleteAssign(row)">Delete</button>
                     </div>
@@ -715,80 +435,6 @@ createApp({
       </section>
     </div>
 
-    <div class="layout single" v-if="activeTab==='cfg'">
-      <section class="panel">
-        <div class="panel-head">
-          <div>
-            <div class="panel-title-row"><h2>Parameter Master Setup</h2></div>
-          </div>
-          <button class="btn btn-primary" @click="openAddCfg">+ Add</button>
-        </div>
-        <div class="filter-row">
-          <div class="filter-field">
-            <label>Program</label>
-            <select v-model="cfgProgram"><option v-for="p in programMaster" :key="p.CODE" :value="p.CODE">{{ p.NAME }} ({{ p.CODE }})</option></select>
-          </div>
-          <div class="filter-field">
-            <label>Entity (gecid)</label>
-            <select v-model="cfgEntity"><option v-for="e in entityMaster" :key="e.CODE" :value="e.CODE">{{ e.NAME }} ({{ e.CODE }})</option></select>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table class="data-table" v-if="cfgRecords.length">
-            <thead><tr><th style="width:60px">ลำดับ</th><th style="width:180px">ชื่อพารามิเตอร์</th><th>Base Key ที่ใช้</th><th style="width:90px">ใช้งาน</th><th style="width:90px">จัดการ</th></tr></thead>
-            <tbody>
-              <tr v-for="row in cfgRecords" :key="row.PARAMETER_CODE">
-                <td><span class="order-pill">{{ row.ORDER }}</span></td>
-                <td class="name-cell"><strong>{{ row.PARAMETER_NAME }}</strong><span class="mono">{{ row.PARAMETER_CODE }}</span></td>
-                <td>
-                  <div class="key-chip-row">
-                    <span class="key-chip" v-for="(k,i) in row.KEY_BASE" :key="k"><span class="idx">{{ i+1 }}</span>{{ nameOf(paramMaster,k) }}</span>
-                  </div>
-                </td>
-                <td><label class="switch"><input type="checkbox" :checked="row.ACTIVE==='Y'" @change="toggleCfgActive(row)"><span class="slider"></span></label></td>
-                <td><div class="row-actions"><button class="icon-btn" title="แก้ไข" @click="openEditCfg(row)">✎</button><button class="icon-btn danger" title="ลบ" @click="askDeleteCfg(row)">🗑</button></div></td>
-              </tr>
-            </tbody>
-          </table>
-          <div v-else class="empty-state">
-            <div class="glyph"></div>
-            <h3>ยังไม่มีพารามิเตอร์สำหรับโปรแกรมนี้</h3>
-            <p>เพิ่มพารามิเตอร์แรกของ {{ cfgProgram }} / {{ cfgEntity }} ได้เลย</p>
-            <button class="btn btn-primary" style="margin-top:12px" @click="openAddCfg">+ เพิ่มพารามิเตอร์</button>
-          </div>
-        </div>
-      </section>
-    </div>
-
-    <div class="overlay" v-if="showForm" @click.self="closeForm">
-      <div class="side-drawer">
-        <div class="side-drawer-head"><h3>{{ isEditing ? 'แก้ไขรายการ' : 'เพิ่มรายการใหม่' }} · {{ selectedDrawer?.NAME }}</h3><button class="close-x" @click="closeForm">✕</button></div>
-        <div class="side-drawer-body">
-          <div class="field"><label>รหัส (CODE)</label><input type="text" v-model="formModel.CODE" :disabled="isEditing" placeholder="เช่น HOT, KA"><p class="hint" v-if="isEditing">ไม่สามารถแก้ไขรหัสของรายการเดิมได้</p></div>
-          <div class="field"><label>ชื่อรายการ (NAME)</label><input type="text" v-model="formModel.NAME"></div>
-          <div class="field"><label>คำอธิบาย (DESCRIPTION)</label><textarea v-model="formModel.DESCRIPTION"></textarea></div>
-          <div class="field"><label>ลำดับการแสดงผล (ORDER)</label><input type="number" v-model="formModel.ORDER"></div>
-          <div class="field"><label>ขึ้นอยู่กับรายการ (DEPEND_ON)</label>
-            <select v-model="formModel.DEPEND_ON"><option value="">— ไม่มี —</option><option v-for="opt in dependOptions" :key="opt.CODE" :value="opt.CODE">{{ opt.NAME }} ({{ opt.CODE }})</option></select>
-          </div>
-          <div class="field"><div class="active-toggle-row"><div class="lab"><strong>เปิดใช้งานรายการนี้</strong><span>รายการที่ปิดใช้งานจะไม่แสดงในระบบหน้าบ้าน</span></div><label class="switch"><input type="checkbox" v-model="formModel.ACTIVE" true-value="Y" false-value="N"><span class="slider"></span></label></div></div>
-          <div class="meta-box" v-if="isEditing">สร้างโดย {{ formModel.CREATE_BY }} เมื่อ {{ formModel.CREATE_DATE }}<br>แก้ไขล่าสุดโดย {{ formModel.UPDATE_BY }} เมื่อ {{ formModel.UPDATE_DATE }}</div>
-        </div>
-        <div class="side-drawer-foot"><button class="btn btn-ghost" @click="closeForm">ยกเลิก</button><button class="btn btn-primary" @click="saveRecord">บันทึกข้อมูล</button></div>
-      </div>
-    </div>
-
-    <div class="modal-overlay" v-if="showAddType" @click.self="showAddType=false">
-      <div class="modal-box">
-        <h3>เพิ่มหมวดหมู่ใหม่</h3>
-        <p>หมวดหมู่ใหม่จะกลายเป็น "ลิ้นชัก" ใหม่ในตู้ข้อมูล และสามารถเพิ่มรายการย่อยภายในได้ทันที</p>
-        <div class="field"><label>รหัสหมวดหมู่ (TYPE)</label><input type="text" v-model="typeForm.CODE" placeholder="เช่น LEAD_TYPE"></div>
-        <div class="field"><label>ชื่อที่แสดงผล</label><input type="text" v-model="typeForm.NAME"></div>
-        <div class="field"><label>คำอธิบาย</label><textarea v-model="typeForm.DESCRIPTION"></textarea></div>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="showAddType=false">ยกเลิก</button><button class="btn btn-primary" @click="saveType">สร้างหมวดหมู่</button></div>
-      </div>
-    </div>
-
     <div class="modal-overlay" v-if="quickAdd.show" @click.self="quickAdd.show=false">
       <div class="modal-box">
         <h3>เพิ่ม{{ quickAdd.typeLabel }}ใหม่</h3>
@@ -799,18 +445,9 @@ createApp({
       </div>
     </div>
 
-    <div class="modal-overlay" v-if="confirmDeleteRow" @click.self="cancelDelete">
-      <div class="modal-box">
-        <h3>ลบรายการนี้ใช่หรือไม่?</h3>
-        <p>คุณกำลังจะลบ <strong>{{ confirmDeleteRow.NAME }}</strong> ({{ confirmDeleteRow.CODE }}) การลบไม่สามารถย้อนกลับได้</p>
-        <div class="warn-box" v-if="blockingDependents.length">⚠ มี {{ blockingDependents.length }} รายการที่อ้างอิงถึงรายการนี้อยู่ ({{ blockingDependents.map(r=>r.NAME).join(', ') }})</div>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="cancelDelete">ยกเลิก</button><button class="btn btn-danger" @click="confirmDelete">ยืนยันลบ</button></div>
-      </div>
-    </div>
-
     <div class="overlay" v-if="showAssignForm" @click.self="closeAssignForm">
       <div class="side-drawer">
-        <div class="side-drawer-head"><h3>{{ isEditingAssign ? 'Program' : 'Program' }} · {{ assignEntity }} / {{ assignLeadType }}</h3><button class="close-x" @click="closeAssignForm">✕</button></div>
+        <div class="side-drawer-head"><h3>{{ isEditingAssign ? 'แก้ไขโปรแกรม' : 'เพิ่มโปรแกรม' }} · {{ assignEntity }} / {{ assignLeadType }}</h3><button class="close-x" @click="closeAssignForm">✕</button></div>
         <div class="side-drawer-body">
           <div class="field">
             <div class="field-inline">
@@ -821,11 +458,11 @@ createApp({
                   <option v-for="p in assignableProgramOptions" :key="p.CODE" :value="p.CODE">{{ p.NAME }} ({{ p.CODE }})</option>
                 </select>
               </div>
-              
+              <button class="btn-icon-sm" title="เพิ่มโปรแกรมใหม่ในแคตตาล็อก" @click="openQuickAdd('PROGRAM','โปรแกรม (Program)')">+</button>
             </div>
           </div>
-          <div class="field"><label>ORDER</label><input type="number" v-model="assignFormModel.ORDER" readonly></div>
-          <div class="field"><div class="active-toggle-row"><div class="lab"><strong>Active</strong><span>โปรแกรมที่ปิดใช้งานจะไม่แสดงให้ลูกค้ากลุ่มนี้</span></div><label class="switch"><input type="checkbox" v-model="assignFormModel.STATUS" true-value="Y" false-value="N"><span class="slider"></span></label></div></div>
+          <div class="field"><label>ลำดับการแสดงผล (ORDER)</label><input type="number" v-model="assignFormModel.ORDER"></div>
+          <div class="field"><div class="active-toggle-row"><div class="lab"><strong>เปิดใช้งานโปรแกรมนี้</strong><span>โปรแกรมที่ปิดใช้งานจะไม่แสดงให้ลูกค้ากลุ่มนี้</span></div><label class="switch"><input type="checkbox" v-model="assignFormModel.STATUS" true-value="Y" false-value="N"><span class="slider"></span></label></div></div>
         </div>
         <div class="side-drawer-foot"><button class="btn btn-ghost" @click="closeAssignForm">ยกเลิก</button><button class="btn btn-primary" @click="saveAssign">บันทึกข้อมูล</button></div>
       </div>
@@ -839,49 +476,11 @@ createApp({
       </div>
     </div>
 
-    <div class="overlay" v-if="showCfgForm" @click.self="closeCfgForm">
-      <div class="side-drawer">
-        <div class="side-drawer-head"><h3>{{ isEditingCfg ? 'แก้ไขพารามิเตอร์' : 'เพิ่มพารามิเตอร์' }} · {{ cfgProgram }} / {{ cfgEntity }}</h3><button class="close-x" @click="closeCfgForm">✕</button></div>
-        <div class="side-drawer-body">
-          <div class="field"><label>ชื่อพารามิเตอร์</label><input type="text" v-model="cfgFormModel.PARAMETER_NAME" placeholder="เช่น Topup Option, Flat rate OPTT1"></div>
-          <div class="field"><label>ลำดับการแสดงผล (ORDER)</label><input type="number" v-model="cfgFormModel.ORDER"></div>
-          <div class="field">
-            <div class="field-inline" style="margin-bottom:10px;">
-              <label style="margin-bottom:0;">Base Key ที่ใช้ (คลิกเพื่อเลือก/ยกเลิก — ลำดับคลิกมีผล)</label>
-              <button class="btn-icon-sm" title="เพิ่ม Base Key ใหม่" @click="openQuickAdd('PARAMETER','พารามิเตอร์พื้นฐาน (Base Key)')">+</button>
-            </div>
-            <div class="keybuilder">
-              <div class="key-option" v-for="p in paramMaster" :key="p.CODE" :class="{selected: cfgFormModel.KEY_BASE.includes(p.CODE)}" @click="toggleCfgKey(p.CODE)">
-                {{ p.NAME }} <span class="n">{{ p.CODE }}</span>
-              </div>
-            </div>
-            <div class="selected-keys-box">
-              <span v-if="!cfgFormModel.KEY_BASE.length" class="placeholder">ยังไม่ได้เลือก Base Key</span>
-              <span class="sel-chip" v-for="(k,i) in cfgFormModel.KEY_BASE" :key="k"><span class="idx">{{ i+1 }}</span>{{ nameOf(paramMaster,k) }}<button @click="removeCfgKeyAt(i)">✕</button></span>
-            </div>
-            <div class="preview-line" v-if="cfgFormModel.KEY_BASE.length">
-              <div><b>key:</b> {{ cfgPreview.key }}</div>
-              <div><b>key_base:</b> {{ cfgPreview.keyBase }}</div>
-            </div>
-          </div>
-          <div class="field"><div class="active-toggle-row"><div class="lab"><strong>เปิดใช้งานพารามิเตอร์นี้</strong><span>ตัวที่ปิดใช้งานจะไม่ถูกใช้ในการคำนวณ</span></div><label class="switch"><input type="checkbox" v-model="cfgFormModel.ACTIVE" true-value="Y" false-value="N"><span class="slider"></span></label></div></div>
-        </div>
-        <div class="side-drawer-foot"><button class="btn btn-ghost" @click="closeCfgForm">ยกเลิก</button><button class="btn btn-primary" @click="saveCfg">บันทึกข้อมูล</button></div>
-      </div>
-    </div>
-
-    <div class="modal-overlay" v-if="confirmDeleteCfg" @click.self="confirmDeleteCfg=null">
-      <div class="modal-box">
-        <h3>ลบพารามิเตอร์นี้ใช่หรือไม่?</h3>
-        <p>คุณกำลังจะลบ <strong>{{ confirmDeleteCfg.PARAMETER_NAME }}</strong> ออกจาก {{ cfgProgram }} / {{ cfgEntity }}</p>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmDeleteCfg=null">ยกเลิก</button><button class="btn btn-danger" @click="confirmDeleteCfgRow">ยืนยันลบ</button></div>
-      </div>
-    </div>
-
     <div class="toast" v-if="toast.show"><span class="tick">{{ toast.ok ? '✓' : '!' }}</span> {{ toast.msg }}</div>
   </div>
   `
 }).mount('#app');
+
 </script>
 </body>
 </html>

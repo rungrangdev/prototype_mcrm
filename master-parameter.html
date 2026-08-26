@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ตู้ข้อมูลหลัก · Master Data Manager</title>
+<title>Parameter Master Setup</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.31/vue.global.prod.min.js"></script>
+<script src="store.js"></script>
 <style>
   /* @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap'); */
 
@@ -37,7 +38,7 @@
     --shadow-md:0 8px 24px rgba(20,30,50,.12);
   }
   *{box-sizing:border-box;
-    font-family: 'Krungsri-med';    
+    font-family: 'Krungsri-med';
 }
   html,body{margin:0;padding:0;}
   body{background:var(--bg);font-family:'Krungsri-med', sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;}
@@ -60,10 +61,6 @@
   .tab-btn.active{color:#fff;border-bottom-color:var(--accent);}
   .tab-btn.active .num{background:var(--accent);color:var(--primary-dark);}
 
-  /* .layout{flex:1;display:grid;grid-template-columns:280px 1fr;gap:20px;padding:20px 28px 32px;max-width:1360px;width:100%;margin:0 auto;}
-  .layout.single{grid-template-columns:1fr;} */
-  /* @media (max-width:860px){.layout{grid-template-columns:1fr;}} */
-
   .cabinet{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;height:fit-content;}
   .cabinet h2{font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);margin:4px 8px 12px;font-weight:600;}
   .drawer{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:11px 12px;border-radius:8px;border:1px solid transparent;background:transparent;cursor:pointer;margin-bottom:4px;font-family:'Krungsri-med';font-size:14px;color:var(--text);position:relative;transition:transform .12s ease, background .12s ease;}
@@ -81,7 +78,6 @@
   .add-drawer-btn{width:100%;margin-top:8px;padding:11px 12px;border-radius:8px;border:1.5px dashed #C7CEDA;background:transparent;color:var(--text-secondary);font-family:'Krungsri-med';font-size:13.5px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:.12s;}
   .add-drawer-btn:hover{border-color:var(--primary);color:var(--primary);background:var(--surface-alt);}
 
-  /* .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-direction:column;min-height:520px;} */
   .panel-head{padding:20px 24px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;}
   .panel-title-row{display:flex;align-items:center;gap:10px;}
   .panel-head h2{margin:0;font-size:19px;font-weight:700;}
@@ -269,30 +265,26 @@
     letter-spacing: .02em;
     background: #6f5f5e;
     padding: 13px 18px;
-    /* border-bottom: 1px solid var(--border); */
     border : 1px solid #dedede;
   }
   table.data-table tbody td{
     padding: 14px 18px;
-    /* border-bottom: 1px solid var(--border); */
     border : 1px solid #dedede;
     vertical-align: middle;
     color: var(--text);
   }
-  /* table.data-table tbody tr:last-child td{ border-bottom: none; } */
   table.data-table tbody tr:hover{ background: var(--brown-lighter); }
 
   /* program name list ในตาราง version */
   .program-list{display:flex;flex-direction:column;gap:2px;}
   .program-list span{line-height:1.7;}
 
-
   /* กล่องครอบ */
 .dropdown-container {
     position: relative;
     display: inline-block;
   }
-  
+
   /* ปุ่ม 3 จุด */
   .btn-dots {
     background: none;
@@ -303,15 +295,15 @@
     color: #6b7280; /* สีเทา */
     transition: color 0.2s;
   }
-  
+
   .btn-dots:hover {
     color: #000000; /* เปลี่ยนสีเมื่อเอาเมาส์วาง */
   }
-  
+
 .dropdown-menu {
     display: none;
     position: absolute;
-    top: 100%; 
+    top: 100%;
     right: 0;
     width: max-content;
     min-width: 100px;
@@ -334,14 +326,14 @@
         color: #1f2937;
         white-space: nowrap;
     }
-    
+
     button:hover {
         background-color: #F3F4F6;
         border-radius: 4px;
         color: #000000;
     }
 }
-  
+
   .dropdown-menu.show {
     display: block;
   }
@@ -362,68 +354,10 @@
 <script>
 const { createApp, ref, reactive, computed, onMounted } = Vue;
 
-/* =========================================================
-   FIELD DICTIONARY ของ base key
-   dataType : 0 = Text, 'number' = Number
-   values   : ค่าตัวอย่างที่ให้เลือก (ว่าง = พิมพ์เอง)
-   key ของ object = CODE ของ PARAMETER ใน master data
-   ========================================================= */
-const TXT = 0, NUM = 'number';
-const S = s => s.split(',').map(v=>v.trim()).filter(Boolean);
-const RANGE = (a,b) => { const r=[]; for(let i=a;i<=b;i++) r.push(String(i)); return r; };
-
-const FIELD_DICT = {
-  /* ---- Demographic ---- */
-  company_code:      { dataType:TXT, values:S('GECAL') },
-  product_id:        { dataType:TXT, values:S('HP,AL') },
-  branch_code:       { dataType:NUM, values:S('16,42,23,51,33,11,44,45,25,34,14,47,31,85,17,18,75,56,43,27,41,55,32,28,53,62,49,84,76,54,39,37,13,21,24,52,83,35,22,19') },
-  model_type_group:  { dataType:TXT, values:S('PAL,PU,PUPA,PAM,PAS,SUV') },
-  model_group:       { dataType:TXT, values:S('MG EP,VIGO_2DR,D-MAX_2DR,REVO_2DR,REVO_4DR,ALTIS,VIOS,MAZDA2,YARIS,ZS,CAMRY,YARIS ATIV,GS,VIGO_4DR,TRITON_2DR,XPANDER,HILUX_2DR,RANGER_2DR,PAJERO,ATTRAGE,D-MAX_4DR,MIRAGE,DOLPHIN,CIVIC,JAZZ,CITY,TRITON_4DR,HR-V,MAZDA3,ALMERA,MARCH,SWIFT,MG5,NAVARA_2DR,HILANDER_2DR,3 SERIES,MG3 HATCHBACK') },
-  model:             { dataType:TXT, values:S('MG EP PLUS,HILUX VIGO 3.0,D-MAX_2DR,REVO_2DR,DMAX ISU41,HILUX REVO 4DR,ALTIS,D-MAX,VIOS,MAZDA2,YARIS,MG ZS 20C,CAMRY,YARIS ATIV 20B,MG GS 15X,HILUX VIGO 4DR,TRITON,XPANDER 20D,YARIS ATIV Y222,HILUX,DMAX M20 SPB,RANGER,PAJERO SPORT,ATTRAGE 19D,D-MAX 4DR,REVO B21 A3 03,HILUX_2DR,MIRAGE 20C,VIGO,DOLPHIN 2302,CIVIC Y18 F,CIVIC,XPANDER C20A,JAZZ,RANGER_2DR,CITY HAT 20F,DMAX,TRITON4DR,HRV 18H,MG ZS 22 03,DMAX Y20 H2D,HILUX VIGO,MAZDA 3,ALMERA,MAZDA2 Y21 5C1,CITY,MIRAGE 20D,CITY HAT 20D,YARIS Y23 12,MARCH,SWIFT,TRITON DC CNG W,MG5 22B,NAVARA,MG ZS 20B,HILANDER CAB,MAZDA2 Y18 5M,DMAX CAB,XPANDER 19C,JAZZ MINOR 16D,320I,MG3 18D') },
-  car_cc:            { dataType:NUM, values:S('0,2494,2499,2393,1898,1794,1497,1499,1197,1998,1490,1496,2477,2442,1193,2999,1393,1799,2198,988,1798,1498,2755,1598,1198,1299,1242,2488,2982,1995,2500') },
-  region:            { dataType:TXT, values:S('BKK,UPC') },
-  product_base:      { dataType:TXT, values:S('New,Refin Non Topup,Used,Refin Topup,AL') },
-  age:               { dataType:NUM, values:[] },
-  nationality:       { dataType:TXT, values:S('TH') },
-  customer_type:     { dataType:TXT, values:S('individual,corperate') },
-  specialty_flag:    { dataType:TXT, values:S('N,Y') },
-  car_brand:         { dataType:TXT, values:S('MG,TOY,ISU,MAZ,MIT,FOR,BYD,HON,NIS,SUZ,BMW') },
-  car_age:           { dataType:NUM, values:[] },
-  engine_type_group: { dataType:TXT, values:S('HEV,BEV,PHEV,ICE,NULL') },
-
-  /* ---- Retention ---- */
-  account_type:          { dataType:TXT, values:S('ACTIVE,CLOSED') },
-  receipt_term:          { dataType:NUM, values:[] },
-  total_income:          { dataType:NUM, values:[] },
-  occupations:           { dataType:TXT, values:S('พนักงานเอกชน (ประจำ),ราชการ/พนักงานรัฐวิสาหกิจ,เจ้าของกิจการ-ไม่มีทะเบียนการค้า') },
-  remaining_term:        { dataType:NUM, values:RANGE(0,84) },
-  paid_term:             { dataType:NUM, values:[] },
-  no_month_after_closed: { dataType:TXT, values:RANGE(1,21) },
-
-  /* ---- Risk ---- */
-  max_dq:                     { dataType:TXT, values:S('NULL,CURRENT,30 DAYS,60 DAYS,90 DAYS,120 DAYS,150 DAYS,180 DAYS,365+ DAYS,X DAYS') },
-  delinquency_status:         { dataType:TXT, values:S('NULL,CURRENT,30 DAYS,60 DAYS,90 DAYS,120 DAYS,150 DAYS,180 DAYS,365+ DAYS,X DAYS') },
-  gbi_account:                { dataType:TXT, values:S('G,B,I') },
-  gbi_customer:               { dataType:TXT, values:S('G,B,I') },
-  b_score_customer:           { dataType:TXT, values:S('A,B,C,D,E') },
-  b_score_m_customer:         { dataType:TXT, values:S('NULL,NA,1_VL,2_L,3_M,4_H,5_VH') },
-  b_score_account:            { dataType:TXT, values:S('A,B,C,D,E') },
-  b_score_marketing_account:  { dataType:TXT, values:S('NULL,NA,1_VL,2_L,3_M,4_H,5_VH') },
-  collection_code:            { dataType:TXT, values:S('21700,21205,21105,23205,22105,21100,30000,22115,21210,22210,30025,32700,28315,21305,21905,23115,24805,22505,22120,22705,24110,21720,25710,21405,25101,23505,21715,28400,24210,30703,24100,25205,22205,24905,24310,23405,24201,22301,24910,21915,28305,21320,24120,24415,21515,21625,22101,24610,21120,24315,26105,22201,25115,24605,30704,21610,21910,21125,30056,24305,25310,25301,22501,21425,23810,24010,24115,22410,25601,28415,26501,21225,21600,21615,25605,24215,21925,21620,22401,22701,23201,26510,21601,21815,25215,26305,26415,26710,26605,21801,24701,25125,23720,21500,26215,22601,25615,30715,23815,23101') },
-  consignment_flag:           { dataType:TXT, values:S('Y,N') },
-  account_status:             { dataType:TXT, values:S('NORMAL,CLOSED,CANCEL,TRANSFER,STOP VAT,NULL') },
-  write_off_criteria:         { dataType:TXT, values:S('Y,N') },
-  blacklist_customer:         { dataType:TXT, values:S('Y,N') },
-  reject_from_product:        { dataType:NUM, values:[] },
-  recently_apply:             { dataType:NUM, values:[] },
-  debt_re_status:             { dataType:TXT, values:S('RCL,BR,RE,RC,NULL') },
-
-  /* ---- base key อื่นที่ใช้ในหน้านี้แต่ยังไม่มีชุดค่า ---- */
-  cash_offer: { dataType:NUM, values:[] },
-  iir:        { dataType:NUM, values:[] },
-  auto_group: { dataType:TXT, values:[] },
-  pay_slip:   { dataType:TXT, values:[] },
-};
+/* Base-key dictionary (dataType / example values) is shared with Lead
+   Eligible Config via store.js so a parameter added here is usable there too. */
+const FIELD_DICT = MCRM.FIELD_META;
+const TXT = MCRM.TXT, NUM = MCRM.NUM;
 
 const OPS_ALL    = ['N/A','=','!=','>','>=','<','<=','IN','NOT IN'];
 const OPS_NUMBER = ['N/A','=','!=','>','>=','<','<=','IN','NOT IN'];
@@ -432,10 +366,10 @@ const OPS_TEXT   = ['N/A','=','!=','IN','NOT IN'];
 function toggleDropdown(event, button) {
     // กันไม่ให้ Event ลามไปยัง Element อื่น
     event.stopPropagation();
-    
+
     // หาเมนูที่อยู่ข้าง ๆ ปุ่มที่คลิก
     const currentMenu = button.nextElementSibling;
-    
+
     // ปิด Dropdown ตัวอื่น ๆ ที่อาจจะเปิดค้างอยู่บนหน้าจอ
     document.querySelectorAll('.dropdown-menu').forEach(menu => {
         if (menu !== currentMenu) {
@@ -456,123 +390,20 @@ function toggleDropdown(event, button) {
 
 createApp({
   setup(){
-    const now = () => { const d = new Date(); return d.toLocaleDateString('en-US') + ' ' + d.toTimeString().slice(0,5); };
+    const now = MCRM.nowStr;
 
-    const rows = reactive([
-      { TYPE:'SYS_TYPE', CODE:'ENTITY',    NAME:'Entity',    DESCRIPTION:'ประเภทข้อมูลองค์กร / นิติบุคคล',            ORDER:'1', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'12/25/2023 10:07', UPDATE_BY:'SYSTEM', UPDATE_DATE:'12/25/2023 10:07' },
-      { TYPE:'SYS_TYPE', CODE:'LEAD_TYPE', NAME:'Lead Type', DESCRIPTION:'ประเภทของลีด / ช่องทางแคมเปญ',              ORDER:'2', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'12/25/2023 10:07', UPDATE_BY:'SYSTEM', UPDATE_DATE:'12/25/2023 10:07' },
-      { TYPE:'SYS_TYPE', CODE:'PROGRAM',   NAME:'Program',   DESCRIPTION:'แคตตาล็อกชื่อโปรแกรมทั้งหมดในระบบ',       ORDER:'3', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'SYS_TYPE', CODE:'PARAMETER', NAME:'Parameter', DESCRIPTION:'พจนานุกรม Base Key ที่ใช้ประกอบเงื่อนไข', ORDER:'4', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-
-      { TYPE:'ENTITY', CODE:'KA', NAME:'KA', DESCRIPTION:'KA entity', ORDER:'1', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'12/25/2023 10:07', UPDATE_BY:'SYSTEM', UPDATE_DATE:'12/25/2023 10:07' },
-      { TYPE:'ENTITY', CODE:'AY', NAME:'AY', DESCRIPTION:'AYCAL entity', ORDER:'2', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'12/25/2023 10:07', UPDATE_BY:'SYSTEM', UPDATE_DATE:'12/25/2023 10:07' },
-      
-      { TYPE:'LEAD_TYPE', CODE:'CRM_X_SELL_POOL',  NAME:'CRM_X_SELL_POOL',  DESCRIPTION:'',       ORDER:'1', ACTIVE:'Y', DEPEND_ON:'',    CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'LEAD_TYPE', CODE:'INS_PPI', NAME:'INS_PPI', DESCRIPTION:'',      ORDER:'2', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'LEAD_TYPE', CODE:'EV_NETA', NAME:'EV_NETA', DESCRIPTION:'',       ORDER:'3', ACTIVE:'Y', DEPEND_ON:'',    CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'LEAD_TYPE', CODE:'RETENTION', NAME:'RETENTION', DESCRIPTION:'',    ORDER:'4', ACTIVE:'N', DEPEND_ON:'',    CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-
-      { TYPE:'PROGRAM', CODE:'TOPUP',          NAME:'Topup',             DESCRIPTION:'สินเชื่อเพิ่มวงเงิน',        ORDER:'1', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PROGRAM', CODE:'REVOLVING_LOAN', NAME:'Revolving Loan',    DESCRIPTION:'สินเชื่อหมุนเวียน',          ORDER:'2', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PROGRAM', CODE:'PRE_APPROVE_R',  NAME:'Pre-Approve (R)',   DESCRIPTION:'อนุมัติล่วงหน้า - Renew',    ORDER:'3', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PROGRAM', CODE:'PRE_APPROVE_NU', NAME:'Pre-Approve (N/U)', DESCRIPTION:'อนุมัติล่วงหน้า - New/Used', ORDER:'4', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PROGRAM', CODE:'PRE_APPROVE_MC', NAME:'Pre-Approve (MC)',  DESCRIPTION:'อนุมัติล่วงหน้า - MC',       ORDER:'5', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      // { TYPE:'PROGRAM', CODE:'PRIVILEGE_NUR',  NAME:'Privilege (N/U/R)', DESCRIPTION:'สิทธิพิเศษ - N/U/R',          ORDER:'6', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      // { TYPE:'PROGRAM', CODE:'PRIVILEGE_MC',   NAME:'Privilege (MC)',    DESCRIPTION:'สิทธิพิเศษ - MC',             ORDER:'7', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      // { TYPE:'PROGRAM', CODE:'PPI_PA_LIFE',    NAME:'PPI_PA and LIFE',   DESCRIPTION:'ประกัน PA และ LIFE',          ORDER:'8', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      // { TYPE:'PROGRAM', CODE:'PPI_PA',         NAME:'PPI_PA',            DESCRIPTION:'ประกัน PA',                   ORDER:'9', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-
-      { TYPE:'PARAMETER', CODE:'account_type',      NAME:'account_type',          DESCRIPTION:'ประเภทบัญชี',                  ORDER:'1',  ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'auto_group',         NAME:'auto_group',            DESCRIPTION:'กลุ่มรถยนต์',                  ORDER:'2',  ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'b_score_account',    NAME:'b_score_account',       DESCRIPTION:'B-Score ระดับบัญชี',           ORDER:'3',  ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'b_score_customer',   NAME:'b_score_customer',      DESCRIPTION:'B-Score ระดับลูกค้า',          ORDER:'4',  ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'b_score_m_customer', NAME:'B-Score band_MKT_Cust', DESCRIPTION:'B-Score ระดับลูกค้าฝั่งการตลาด', ORDER:'5', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'car_age',            NAME:'car_age',               DESCRIPTION:'อายุรถ',                       ORDER:'6',  ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'cash_offer',         NAME:'cash_offer',            DESCRIPTION:'วงเงินที่เสนอ',                ORDER:'7',  ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'iir',                NAME:'iir',                   DESCRIPTION:'Internal Interest Rate',       ORDER:'8',  ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'model_type_group',   NAME:'model_type_group',      DESCRIPTION:'กลุ่มรุ่นรถ',                  ORDER:'9',  ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'pay_slip',           NAME:'pay_slip',              DESCRIPTION:'สลิปเงินเดือน',                ORDER:'10', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'product_base',       NAME:'product_base',          DESCRIPTION:'ผลิตภัณฑ์หลัก',                ORDER:'11', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'receipt_term',       NAME:'receipt_term',          DESCRIPTION:'งวดการรับเอกสาร',              ORDER:'12', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'region',             NAME:'region',                DESCRIPTION:'ภูมิภาค',                      ORDER:'13', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { TYPE:'PARAMETER', CODE:'remaining_term',     NAME:'remaining_term',        DESCRIPTION:'งวดคงเหลือ',                  ORDER:'14', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-    ]);
-
-    const drawers = computed(() => rows.filter(r => r.TYPE === 'SYS_TYPE').sort((a,b) => Number(a.ORDER) - Number(b.ORDER)));
-    const memberCount = (typeCode) => rows.filter(r => r.TYPE === typeCode).length;
-    const activeCount  = (typeCode) => rows.filter(r => r.TYPE === typeCode && r.ACTIVE==='Y').length;
+    /* ---- shared master data catalog (Entity / Lead Type / Program / Parameter) ----
+       Lives in store.js so Master Data Manager, Program Setup and this page all
+       read/write the exact same records. */
+    const rows = MCRM.db.rows;
 
     const entityMaster = computed(() => rows.filter(r=>r.TYPE==='ENTITY' && r.ACTIVE==='Y').sort((a,b)=>Number(a.ORDER)-Number(b.ORDER)));
     const leadTypeMaster = computed(() => rows.filter(r=>r.TYPE==='LEAD_TYPE' && r.ACTIVE==='Y').sort((a,b)=>Number(a.ORDER)-Number(b.ORDER)));
     const programMaster = computed(() => rows.filter(r=>r.TYPE==='PROGRAM' && r.ACTIVE==='Y').sort((a,b)=>Number(a.ORDER)-Number(b.ORDER)));
     const paramMaster = computed(() => rows.filter(r=>r.TYPE==='PARAMETER' && r.ACTIVE==='Y').sort((a,b)=>Number(a.ORDER)-Number(b.ORDER)));
-    const nameOf = (list, code) => (list.find(x=>x.CODE===code)?.NAME) || code;
+    const nameOf = MCRM.nameOf;
 
-    const selectedTypeCode = ref('ENTITY');
-    const selectedDrawer = computed(() => drawers.value.find(d => d.CODE === selectedTypeCode.value));
-    const search = ref('');
-    const records = computed(() => {
-      let list = rows.filter(r => r.TYPE === selectedTypeCode.value);
-      if (search.value.trim()){
-        const q = search.value.trim().toLowerCase();
-        list = list.filter(r => r.CODE.toLowerCase().includes(q) || r.NAME.toLowerCase().includes(q) || r.DESCRIPTION.toLowerCase().includes(q));
-      }
-      return list.sort((a,b) => Number(a.ORDER) - Number(b.ORDER));
-    });
-    const dependOptions = computed(() => rows.filter(r => r.TYPE === selectedTypeCode.value && r.CODE !== formModel.CODE));
-
-    const showForm = ref(false);
-    const isEditing = ref(false);
-    const formModel = reactive({ CODE:'', NAME:'', DESCRIPTION:'', ORDER:'1', DEPEND_ON:'', ACTIVE:'Y', CREATE_BY:'', CREATE_DATE:'', UPDATE_BY:'', UPDATE_DATE:'' });
-
-    function openAddRecord(){
-      isEditing.value = false;
-      Object.assign(formModel, { CODE:'', NAME:'', DESCRIPTION:'', ORDER:String((records.value.length+1)), DEPEND_ON:'', ACTIVE:'Y', CREATE_BY:'', CREATE_DATE:'', UPDATE_BY:'', UPDATE_DATE:'' });
-      showForm.value = true;
-    }
-    function openEditRecord(row){ isEditing.value = true; Object.assign(formModel, row); showForm.value = true; }
-    function closeForm(){ showForm.value = false; }
-    function saveRecord(){
-      if (!formModel.CODE.trim() || !formModel.NAME.trim()){ showToast('กรุณากรอกรหัสและชื่อรายการให้ครบ', false); return; }
-      if (isEditing.value){
-        const idx = rows.findIndex(r => r.TYPE===selectedTypeCode.value && r.CODE===formModel.CODE);
-        rows[idx] = { ...rows[idx], ...formModel, UPDATE_BY:'ADMIN', UPDATE_DATE: now() };
-        showToast(`บันทึกการแก้ไข "${formModel.NAME}" เรียบร้อย`);
-      } else {
-        if (rows.some(r => r.TYPE===selectedTypeCode.value && r.CODE===formModel.CODE)){ showToast('รหัสนี้มีอยู่แล้วในหมวดหมู่นี้', false); return; }
-        rows.push({ TYPE:selectedTypeCode.value, ...formModel, CREATE_BY:'ADMIN', CREATE_DATE: now(), UPDATE_BY:'ADMIN', UPDATE_DATE: now() });
-        showToast(`เพิ่ม "${formModel.NAME}" เรียบร้อย`);
-      }
-      showForm.value = false;
-    }
-    function toggleActive(row){
-      row.ACTIVE = row.ACTIVE === 'Y' ? 'N' : 'Y'; row.UPDATE_BY='ADMIN'; row.UPDATE_DATE=now();
-      showToast(row.ACTIVE==='Y' ? `เปิดใช้งาน "${row.NAME}" แล้ว` : `ปิดใช้งาน "${row.NAME}" แล้ว`);
-    }
-
-    const confirmDeleteRow = ref(null);
-    function askDeleteRecord(row){ confirmDeleteRow.value = row; }
-    function cancelDelete(){ confirmDeleteRow.value = null; }
-    const blockingDependents = computed(() => !confirmDeleteRow.value ? [] : rows.filter(r => r.TYPE===selectedTypeCode.value && r.DEPEND_ON === confirmDeleteRow.value.CODE));
-    function confirmDelete(){
-      const row = confirmDeleteRow.value;
-      rows.splice(rows.findIndex(r => r===row), 1);
-      showToast(`ลบ "${row.NAME}" ออกจากระบบแล้ว`);
-      confirmDeleteRow.value = null;
-    }
-
-    const showAddType = ref(false);
-    const typeForm = reactive({ CODE:'', NAME:'', DESCRIPTION:'' });
-    function openAddType(){ Object.assign(typeForm, { CODE:'', NAME:'', DESCRIPTION:'' }); showAddType.value = true; }
-    function saveType(){
-      let code = typeForm.CODE.trim().toUpperCase().replace(/\s+/g,'_');
-      if (!code || !typeForm.NAME.trim()){ showToast('กรุณากรอกรหัสและชื่อหมวดหมู่', false); return; }
-      if (rows.some(r => r.TYPE==='SYS_TYPE' && r.CODE===code)){ showToast('มีหมวดหมู่นี้อยู่แล้ว', false); return; }
-      rows.push({ TYPE:'SYS_TYPE', CODE:code, NAME:typeForm.NAME.trim(), DESCRIPTION:typeForm.DESCRIPTION.trim(), ORDER:String((drawers.value.length+1)), ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
-      selectedTypeCode.value = code; showAddType.value = false;
-      showToast(`สร้างหมวดหมู่ "${typeForm.NAME}" เรียบร้อย`);
-    }
-
+    /* ---- quick-add a new Program / Parameter into the shared catalog without leaving this form ---- */
     const quickAdd = reactive({ show:false, type:'', typeLabel:'', CODE:'', NAME:'' });
     function openQuickAdd(type, label){ Object.assign(quickAdd, { show:true, type, typeLabel:label, CODE:'', NAME:'' }); }
     function saveQuickAdd(){
@@ -585,82 +416,10 @@ createApp({
       quickAdd.show = false;
     }
 
-    const assignments = reactive([
-      { ENTITY:'KA', LEAD_TYPE:'CRM_X_SELL_POOL', PROGRAM_CODE:'TOPUP',          ORDER:'1', STATUS:'Y', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { ENTITY:'KA', LEAD_TYPE:'CRM_X_SELL_POOL', PROGRAM_CODE:'REVOLVING_LOAN', ORDER:'2', STATUS:'Y', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { ENTITY:'KA', LEAD_TYPE:'CRM_X_SELL_POOL', PROGRAM_CODE:'PRE_APPROVE_R',  ORDER:'3', STATUS:'Y', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { ENTITY:'KA', LEAD_TYPE:'CRM_X_SELL_POOL', PROGRAM_CODE:'PRE_APPROVE_NU', ORDER:'4', STATUS:'Y', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { ENTITY:'KA', LEAD_TYPE:'CRM_X_SELL_POOL', PROGRAM_CODE:'PRIVILEGE_NUR',  ORDER:'5', STATUS:'Y', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { ENTITY:'AY', LEAD_TYPE:'CRM_X_SELL_POOL', PROGRAM_CODE:'TOPUP',          ORDER:'1', STATUS:'Y', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { ENTITY:'AY', LEAD_TYPE:'CRM_X_SELL_POOL', PROGRAM_CODE:'PRE_APPROVE_R',  ORDER:'2', STATUS:'Y', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { ENTITY:'AY', LEAD_TYPE:'CRM_X_SELL_POOL', PROGRAM_CODE:'PRE_APPROVE_MC', ORDER:'3', STATUS:'Y', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { ENTITY:'AY', LEAD_TYPE:'CRM_X_SELL_POOL', PROGRAM_CODE:'PRIVILEGE_MC',   ORDER:'4', STATUS:'Y', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { ENTITY:'KA', LEAD_TYPE:'INS_PPI',         PROGRAM_CODE:'PPI_PA_LIFE',    ORDER:'1', STATUS:'Y', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { ENTITY:'AY', LEAD_TYPE:'INS_PPI',         PROGRAM_CODE:'PPI_PA',         ORDER:'1', STATUS:'Y', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-    ]);
-
-    const assignEntity = ref('KA');
-    const assignLeadType = ref('CRM_X_SELL_POOL');
-    const assignRecords = computed(() => assignments.filter(a=>a.ENTITY===assignEntity.value && a.LEAD_TYPE===assignLeadType.value).sort((a,b)=>Number(a.ORDER)-Number(b.ORDER)));
-
-    const showAssignForm = ref(false);
-    const isEditingAssign = ref(false);
-    const assignFormModel = reactive({ PROGRAM_CODE:'', ORDER:'1', STATUS:'Y', CREATE_BY:'', CREATE_DATE:'', UPDATE_BY:'', UPDATE_DATE:'' });
-    const assignableProgramOptions = computed(() => programMaster.value.filter(p => isEditingAssign.value ? true : !assignRecords.value.some(a=>a.PROGRAM_CODE===p.CODE)));
-
-    function openAddAssign(){
-      isEditingAssign.value = false;
-      Object.assign(assignFormModel, { PROGRAM_CODE:'', ORDER:String((assignRecords.value.length+1)), STATUS:'Y' });
-      showAssignForm.value = true;
-    }
-    function openEditAssign(row){ isEditingAssign.value = true; Object.assign(assignFormModel, row); showAssignForm.value = true; }
-    function closeAssignForm(){ showAssignForm.value = false; }
-    function saveAssign(){
-      if (!assignFormModel.PROGRAM_CODE){ showToast('กรุณาเลือกโปรแกรม', false); return; }
-      if (isEditingAssign.value){
-        const idx = assignments.findIndex(a=>a.ENTITY===assignEntity.value && a.LEAD_TYPE===assignLeadType.value && a.PROGRAM_CODE===assignFormModel.PROGRAM_CODE);
-        assignments[idx] = { ...assignments[idx], ...assignFormModel, UPDATE_BY:'ADMIN', UPDATE_DATE:now() };
-      } else {
-        assignments.push({ ENTITY:assignEntity.value, LEAD_TYPE:assignLeadType.value, ...assignFormModel, CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
-      }
-      showToast('บันทึกการกำหนดโปรแกรมเรียบร้อย');
-      showAssignForm.value = false;
-    }
-    function toggleAssignStatus(row){ row.STATUS = row.STATUS==='Y'?'N':'Y'; row.UPDATE_BY='ADMIN'; row.UPDATE_DATE=now(); showToast(row.STATUS==='Y'?'เปิดใช้งานโปรแกรมแล้ว':'ปิดใช้งานโปรแกรมแล้ว'); }
-    const confirmDeleteAssign = ref(null);
-    function askDeleteAssign(row){ confirmDeleteAssign.value = row; }
-    function confirmDeleteAssignRow(){
-      assignments.splice(assignments.findIndex(a=>a===confirmDeleteAssign.value),1);
-      showToast('ลบการกำหนดโปรแกรมแล้ว');
-      confirmDeleteAssign.value = null;
-    }
-
-    const paramConfigs = reactive([
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'TOPUP_OPTION',       PARAMETER_NAME:'Topup Option',      ORDER:'1',  ACTIVE:'Y', KEY_BASE:['b_score_m_customer','cash_offer','iir','product_base'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'MAX_LTV',            PARAMETER_NAME:'Max LTV',           ORDER:'2',  ACTIVE:'Y', KEY_BASE:['b_score_m_customer','product_base'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'RECEIPT_TERM',       PARAMETER_NAME:'Receipt Term',      ORDER:'3',  ACTIVE:'Y', KEY_BASE:['b_score_m_customer','product_base'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'X_INSTALLMENT_OPT1', PARAMETER_NAME:'X Installment OPT1',ORDER:'4',  ACTIVE:'Y', KEY_BASE:['b_score_m_customer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'X_INSTALLMENT_OPT2', PARAMETER_NAME:'X Installment OPT2',ORDER:'5',  ACTIVE:'Y', KEY_BASE:['b_score_m_customer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'X_INSTALLMENT_OPT3', PARAMETER_NAME:'X Installment OPT3',ORDER:'6',  ACTIVE:'Y', KEY_BASE:['b_score_m_customer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'X_INSTALLMENT_OPT4', PARAMETER_NAME:'X Installment OPT4',ORDER:'7',  ACTIVE:'Y', KEY_BASE:['b_score_m_customer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'FLAT_RATE_OPT1',     PARAMETER_NAME:'Flat rate OPTT1',   ORDER:'8',  ACTIVE:'Y', KEY_BASE:['b_score_account','product_base','auto_group','region'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'FLAT_RATE_OPT2',     PARAMETER_NAME:'Flat rate OPTT2',   ORDER:'9',  ACTIVE:'Y', KEY_BASE:['b_score_account','product_base','auto_group','region'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'FLAT_RATE_OPT3',     PARAMETER_NAME:'Flat rate OPTT3',   ORDER:'10', ACTIVE:'Y', KEY_BASE:['b_score_account','product_base','auto_group','region'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'FLAT_RATE_OPT4',     PARAMETER_NAME:'Flat rate OPTT4',   ORDER:'11', ACTIVE:'Y', KEY_BASE:['b_score_account','product_base','auto_group','region'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'NCB',                PARAMETER_NAME:'NCB',               ORDER:'12', ACTIVE:'Y', KEY_BASE:['b_score_m_customer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-
-      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'TOPUP_OPTION',       PARAMETER_NAME:'Topup Option',      ORDER:'1', ACTIVE:'Y', KEY_BASE:['b_score_customer','auto_group','cash_offer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'MAX_LTV',            PARAMETER_NAME:'Max LTV',           ORDER:'2', ACTIVE:'Y', KEY_BASE:['b_score_customer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'X_INSTALLMENT_OPT1', PARAMETER_NAME:'X Installment OPT1',ORDER:'3', ACTIVE:'Y', KEY_BASE:['b_score_customer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'X_INSTALLMENT_OPT2', PARAMETER_NAME:'X Installment OPT2',ORDER:'4', ACTIVE:'Y', KEY_BASE:['b_score_customer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'X_INSTALLMENT_OPT3', PARAMETER_NAME:'X Installment OPT3',ORDER:'5', ACTIVE:'Y', KEY_BASE:['b_score_customer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'X_INSTALLMENT_OPT4', PARAMETER_NAME:'X Installment OPT4',ORDER:'6', ACTIVE:'Y', KEY_BASE:['b_score_customer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'FLAT_RATE_OPT1',     PARAMETER_NAME:'Flat rate OPTT1',   ORDER:'7', ACTIVE:'Y', KEY_BASE:['b_score_customer','model_type_group'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'FLAT_RATE_OPT2',     PARAMETER_NAME:'Flat rate OPTT2',   ORDER:'8', ACTIVE:'Y', KEY_BASE:['b_score_customer','model_type_group'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'FLAT_RATE_OPT3',     PARAMETER_NAME:'Flat rate OPTT3',   ORDER:'9', ACTIVE:'Y', KEY_BASE:['b_score_customer','model_type_group'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'FLAT_RATE_OPT4',     PARAMETER_NAME:'Flat rate OPTT4',   ORDER:'10',ACTIVE:'Y', KEY_BASE:['b_score_customer','model_type_group'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'NCB',                PARAMETER_NAME:'NCB',               ORDER:'11',ACTIVE:'Y', KEY_BASE:['b_score_customer'], CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-    ]);
+    /* =========================================================
+       Parameter Master Setup
+       ========================================================= */
+    const paramConfigs = MCRM.db.paramConfigs;
 
     const cfgProgram = ref('TOPUP');
     const cfgEntity = ref('KA');
@@ -672,18 +431,7 @@ createApp({
        ========================================================= */
     const cfgView = ref('list');   // 'list' = ตาราง version, 'setup' = หน้า Parameter Master Setup
     const cfgVersionId = ref('');
-    const cfgVersions = reactive([
-      {
-        VERSION_ID:'V0001',
-        PROGRAMS:[
-          'Topup',
-          'Revolving Loan',
-          'Pre-Approve (R)',
-          'Pre-Approve (N/U)',
-          'Pre-Approve (MC)',
-        ]
-      }
-    ]);
+    const cfgVersions = MCRM.db.cfgVersions;
     function openCfgSetup(v){
       cfgVersionId.value = v.VERSION_ID;
       cfgLeadType.value = leadTypeMaster.value[0]?.CODE || '';
@@ -787,34 +535,7 @@ createApp({
     };
     onMounted(() => document.addEventListener('click', closePicker));
 
-    const criteriaRows = reactive([
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'TOPUP_OPTION', VALUE:'TP_Option 1', ORDER:'1', ACTIVE:'Y',
-        KEY_VALUES:{
-          b_score_m_customer:{ op:'IN', value:'1_VL,2_L,3_M,4_H,5_VH' },
-          cash_offer:{ op:'>=', value:'50000' },
-          iir:{ op:'N/A', value:'' },
-          product_base:{ op:'N/A', value:'' } },
-        CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'TOPUP_OPTION', VALUE:'TP_Option 2', ORDER:'2', ACTIVE:'Y',
-        KEY_VALUES:{
-          b_score_m_customer:{ op:'IN', value:'1_VL,2_L' },
-          cash_offer:{ op:'N/A', value:'' },
-          iir:{ op:'N/A', value:'' },
-          product_base:{ op:'IN', value:'New,Refin Topup' } },
-        CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'TOPUP_OPTION', VALUE:'TP_Option 3', ORDER:'3', ACTIVE:'Y',
-        KEY_VALUES:{
-          b_score_m_customer:{ op:'IN', value:'1_VL,2_L' },
-          cash_offer:{ op:'>=', value:'50000' },
-          iir:{ op:'>=', value:'2.40' },
-          product_base:{ op:'=', value:'Used' } },
-        CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'MAX_LTV', VALUE:'LTV150', ORDER:'1', ACTIVE:'Y',
-        KEY_VALUES:{
-          b_score_m_customer:{ op:'IN', value:'1_VL,2_L' },
-          product_base:{ op:'N/A', value:'' } },
-        CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
-    ]);
+    const criteriaRows = MCRM.db.criteriaRows;
 
     const valueCount = (row) => criteriaRows.filter(r => r.PROGRAM_CODE===cfgProgram.value && r.ENTITY===cfgEntity.value && r.PARAMETER_CODE===row.PARAMETER_CODE).length;
 
@@ -893,24 +614,9 @@ createApp({
     let toastTimer = null;
     function showToast(msg, ok=true){ toast.msg=msg; toast.ok=ok; toast.show=true; clearTimeout(toastTimer); toastTimer=setTimeout(()=>toast.show=false,2600); }
 
-    function selectDrawer(code){ selectedTypeCode.value = code; search.value=''; }
-
-
-
-
-    const activeTab = ref('cfg');
-
     return {
-      activeTab,
-      drawers, selectedTypeCode, selectedDrawer, selectDrawer, memberCount, activeCount,
-      search, records, dependOptions,
-      showForm, isEditing, formModel, openAddRecord, openEditRecord, closeForm, saveRecord, toggleActive,
-      confirmDeleteRow, askDeleteRecord, cancelDelete, confirmDelete, blockingDependents,
-      showAddType, typeForm, openAddType, saveType,
-      quickAdd, openQuickAdd, saveQuickAdd,
       entityMaster, leadTypeMaster, programMaster, paramMaster, nameOf,
-      assignEntity, assignLeadType, assignRecords, showAssignForm, isEditingAssign, assignFormModel, assignableProgramOptions,
-      openAddAssign, openEditAssign, closeAssignForm, saveAssign, toggleAssignStatus, confirmDeleteAssign, askDeleteAssign, confirmDeleteAssignRow,
+      quickAdd, openQuickAdd, saveQuickAdd,
       cfgProgram, cfgEntity, cfgLeadType, cfgRecords, showCfgForm, isEditingCfg, cfgFormModel,
       openAddCfg, openEditCfg, closeCfgForm, toggleCfgKey, removeCfgKeyAt, saveCfg, toggleCfgActive,
       confirmDeleteCfg, askDeleteCfg, confirmDeleteCfgRow, cfgPreview,
@@ -928,107 +634,8 @@ createApp({
   template: `
   <div id="app">
 
-    <div class="layout" v-if="activeTab==='master'">
-      <aside class="cabinet">
-        <h2>หมวดหมู่ข้อมูล</h2>
-        <button v-for="d in drawers" :key="d.CODE" class="drawer" :class="{active: d.CODE===selectedTypeCode}" @click="selectDrawer(d.CODE)">
-          <span class="drawer-icon"></span>
-          <span class="drawer-label">
-            <span class="drawer-name">{{ d.NAME }}</span>
-            <span class="drawer-code">{{ d.CODE }}<span v-if="d.ACTIVE!=='Y'" class="drawer-inactive-tag">ปิดใช้งาน</span></span>
-          </span>
-          <span class="drawer-count">{{ memberCount(d.CODE) }}</span>
-        </button>
-        <button class="add-drawer-btn" @click="openAddType">+ เพิ่มหมวดหมู่ใหม่</button>
-      </aside>
-
-      <section class="panel">
-        <div class="panel-head">
-          <div>
-            <div class="panel-title-row"><h2>{{ selectedDrawer?.NAME }}</h2><span class="type-badge">{{ selectedTypeCode }}</span></div>
-            <p class="desc">{{ selectedDrawer?.DESCRIPTION }} · ทั้งหมด {{ memberCount(selectedTypeCode) }} รายการ · ใช้งานอยู่ {{ activeCount(selectedTypeCode) }} รายการ</p>
-          </div>
-          <button class="btn btn-primary" @click="openAddRecord">+ เพิ่มรายการ</button>
-        </div>
-        <div class="toolbar">
-          <div class="search-box"><span>🔍</span><input type="text" v-model="search" placeholder="ค้นหาด้วยรหัส, ชื่อ หรือคำอธิบาย..."></div>
-        </div>
-        <div class="table-wrap">
-          <table v-if="records.length">
-            <thead><tr><th style="width:60px">ลำดับ</th><th style="width:110px">รหัส</th><th>ชื่อ / คำอธิบาย</th><th style="width:130px">ขึ้นอยู่กับ</th><th style="width:90px">ใช้งาน</th><th style="width:90px">จัดการ</th></tr></thead>
-            <tbody>
-              <tr v-for="row in records" :key="row.CODE">
-                <td><span class="order-pill">{{ row.ORDER }}</span></td>
-                <td><span class="code-pill">{{ row.CODE }}</span></td>
-                <td class="name-cell"><strong>{{ row.NAME }}</strong><span>{{ row.DESCRIPTION }}</span></td>
-                <td><span v-if="row.DEPEND_ON" class="depend-tag">{{ row.DEPEND_ON }}</span><span v-else style="color:var(--text-secondary);font-size:12px;">—</span></td>
-                <td><label class="switch"><input type="checkbox" :checked="row.ACTIVE==='Y'" @change="toggleActive(row)"><span class="slider"></span></label></td>
-                <td><div class="row-actions"><button class="icon-btn" title="แก้ไข" @click="openEditRecord(row)">✎</button><button class="icon-btn danger" title="ลบ" @click="askDeleteRecord(row)">🗑</button></div></td>
-              </tr>
-            </tbody>
-          </table>
-          <div v-else class="empty-state">
-            <div class="glyph"></div>
-            <h3 v-if="search">ไม่พบรายการที่ค้นหา</h3><h3 v-else>ยังไม่มีข้อมูลในหมวดหมู่นี้</h3>
-            <p>เริ่มเพิ่มรายการแรกของ "{{ selectedDrawer?.NAME }}" ได้เลย</p>
-            <button class="btn btn-primary" style="margin-top:12px" @click="openAddRecord">+ เพิ่มรายการ</button>
-          </div>
-        </div>
-      </section>
-    </div>
-
-    <div class="layout single" v-if="activeTab==='assign'">
-      <section class="panel">
-        <div class="panel-head">
-          <div>
-            <div class="panel-title-row"><h2>Program Setup</h2></div>
-          </div>
-          <button class="btn btn-primary" @click="openAddAssign">+ Add</button>
-        </div>
-        <div class="filter-row">
-          <div class="filter-field">
-            <label>Entity</label>
-            <select v-model="assignEntity"><option v-for="e in entityMaster" :key="e.CODE" :value="e.CODE">{{ e.NAME }} ({{ e.CODE }})</option></select>
-          </div>
-          <div class="filter-field">
-            <label>Lead Type</label>
-            <select v-model="assignLeadType"><option v-for="l in leadTypeMaster" :key="l.CODE" :value="l.CODE">{{ l.NAME }} ({{ l.CODE }})</option></select>
-          </div>
-        </div>
-        
-        <div class="table-wrap">
-          <table class="data-table" v-if="assignRecords.length">
-            <thead><tr><th style="width:60px">No.</th><th>Program</th><th style="width:100px">Status</th><th style="width:90px"></th></tr></thead>
-            <tbody>
-              <tr v-for="row in assignRecords" :key="row.PROGRAM_CODE">
-                <td><span class="order-pill">{{ row.ORDER }}</span></td>
-                <td class="name-cell"><strong>{{ nameOf(programMaster, row.PROGRAM_CODE) }}</strong><span class="mono">{{ row.PROGRAM_CODE }}</span></td>
-                <td><label class="switch">
-                {{row.STATUS}}</span></label></td>
-                <td>
-                    <div class="dropdown-container">
-                        <button class="btn-dots" onclick="toggleDropdown(event, this)">⋮</button>
-                        
-                        <div class="dropdown-menu">
-                            <button class="icon-btn" title="" @click="openEditAssign(row)">Edit</button><button class="icon-btn danger" title="" @click="askDeleteAssign(row)">Delete</button>
-                    </div>
-                    </div>
-                    </td>
-              </tr>
-            </tbody>
-          </table>
-          <div v-else class="empty-state">
-            <div class="glyph"></div>
-            <h3>ยังไม่มีโปรแกรมสำหรับ {{ assignEntity }} / {{ assignLeadType }}</h3>
-            <p>เพิ่มโปรแกรมแรกให้กลุ่มนี้ได้เลย</p>
-            <button class="btn btn-primary" style="margin-top:12px" @click="openAddAssign">+ เพิ่มโปรแกรม</button>
-          </div>
-        </div>
-      </section>
-    </div>
-
     <!-- ============ ตาราง Version ก่อนเข้าหน้า Parameter Master Setup ============ -->
-    <div class="layout single" v-if="activeTab==='cfg' && cfgView==='list'">
+    <div class="layout single" v-if="cfgView==='list'">
       <section class="panel">
         <div class="panel-head">
           <div>
@@ -1066,7 +673,7 @@ createApp({
     </div>
 
     <!-- ============ หน้า Parameter Master Setup (เข้าจาก Version) ============ -->
-    <div class="layout single" v-if="activeTab==='cfg' && cfgView==='setup'">
+    <div class="layout single" v-if="cfgView==='setup'">
       <section class="panel">
         <div class="panel-head">
           <div>
@@ -1113,7 +720,7 @@ createApp({
                 <td>
                     <div class="dropdown-container">
                         <button class="btn-dots" onclick="toggleDropdown(event, this)">⋮</button>
-                        
+
                         <div class="dropdown-menu">
                             <button class="icon-btn" title="" @click="openEditCfg(row)">Edit</button><button class="icon-btn" title="" @click="openSetValue(row)">Set value<span v-if="valueCount(row)" style="color:var(--text-secondary);font-size:12px;"> ({{ valueCount(row) }})</span></button><button class="icon-btn danger" title="" @click="askDeleteCfg(row)">Delete</button>
                     </div>
@@ -1132,35 +739,6 @@ createApp({
       </section>
     </div>
 
-    <div class="overlay" v-if="showForm" @click.self="closeForm">
-      <div class="side-drawer">
-        <div class="side-drawer-head"><h3>{{ isEditing ? 'แก้ไขรายการ' : 'เพิ่มรายการใหม่' }} · {{ selectedDrawer?.NAME }}</h3><button class="close-x" @click="closeForm">✕</button></div>
-        <div class="side-drawer-body">
-          <div class="field"><label>รหัส (CODE)</label><input type="text" v-model="formModel.CODE" :disabled="isEditing" placeholder="เช่น HOT, KA"><p class="hint" v-if="isEditing">ไม่สามารถแก้ไขรหัสของรายการเดิมได้</p></div>
-          <div class="field"><label>ชื่อรายการ (NAME)</label><input type="text" v-model="formModel.NAME"></div>
-          <div class="field"><label>คำอธิบาย (DESCRIPTION)</label><textarea v-model="formModel.DESCRIPTION"></textarea></div>
-          <div class="field"><label>ลำดับการแสดงผล (ORDER)</label><input type="number" v-model="formModel.ORDER" readonly></div>
-          <div class="field"><label>ขึ้นอยู่กับรายการ (DEPEND_ON)</label>
-            <select v-model="formModel.DEPEND_ON"><option value="">— ไม่มี —</option><option v-for="opt in dependOptions" :key="opt.CODE" :value="opt.CODE">{{ opt.NAME }} ({{ opt.CODE }})</option></select>
-          </div>
-          <div class="field"><div class="active-toggle-row"><div class="lab"><strong>เปิดใช้งานรายการนี้</strong><span>รายการที่ปิดใช้งานจะไม่แสดงในระบบหน้าบ้าน</span></div><label class="switch"><input type="checkbox" v-model="formModel.ACTIVE" true-value="Y" false-value="N"><span class="slider"></span></label></div></div>
-          <div class="meta-box" v-if="isEditing">สร้างโดย {{ formModel.CREATE_BY }} เมื่อ {{ formModel.CREATE_DATE }}<br>แก้ไขล่าสุดโดย {{ formModel.UPDATE_BY }} เมื่อ {{ formModel.UPDATE_DATE }}</div>
-        </div>
-        <div class="side-drawer-foot"><button class="btn btn-ghost" @click="closeForm">ยกเลิก</button><button class="btn btn-primary" @click="saveRecord">บันทึกข้อมูล</button></div>
-      </div>
-    </div>
-
-    <div class="modal-overlay" v-if="showAddType" @click.self="showAddType=false">
-      <div class="modal-box">
-        <h3>เพิ่มหมวดหมู่ใหม่</h3>
-        <p>หมวดหมู่ใหม่จะกลายเป็น "ลิ้นชัก" ใหม่ในตู้ข้อมูล และสามารถเพิ่มรายการย่อยภายในได้ทันที</p>
-        <div class="field"><label>รหัสหมวดหมู่ (TYPE)</label><input type="text" v-model="typeForm.CODE" placeholder="เช่น LEAD_TYPE"></div>
-        <div class="field"><label>ชื่อที่แสดงผล</label><input type="text" v-model="typeForm.NAME"></div>
-        <div class="field"><label>คำอธิบาย</label><textarea v-model="typeForm.DESCRIPTION"></textarea></div>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="showAddType=false">ยกเลิก</button><button class="btn btn-primary" @click="saveType">สร้างหมวดหมู่</button></div>
-      </div>
-    </div>
-
     <div class="modal-overlay" v-if="quickAdd.show" @click.self="quickAdd.show=false">
       <div class="modal-box">
         <h3>เพิ่ม{{ quickAdd.typeLabel }}ใหม่</h3>
@@ -1168,46 +746,6 @@ createApp({
         <div class="field"><label>รหัส</label><input type="text" v-model="quickAdd.CODE" placeholder="เช่น TOPUP"></div>
         <div class="field"><label>ชื่อที่แสดงผล</label><input type="text" v-model="quickAdd.NAME"></div>
         <div class="modal-actions"><button class="btn btn-ghost" @click="quickAdd.show=false">ยกเลิก</button><button class="btn btn-primary" @click="saveQuickAdd">เพิ่มรายการ</button></div>
-      </div>
-    </div>
-
-    <div class="modal-overlay" v-if="confirmDeleteRow" @click.self="cancelDelete">
-      <div class="modal-box">
-        <h3>ลบรายการนี้ใช่หรือไม่?</h3>
-        <p>คุณกำลังจะลบ <strong>{{ confirmDeleteRow.NAME }}</strong> ({{ confirmDeleteRow.CODE }}) การลบไม่สามารถย้อนกลับได้</p>
-        <div class="warn-box" v-if="blockingDependents.length">⚠ มี {{ blockingDependents.length }} รายการที่อ้างอิงถึงรายการนี้อยู่ ({{ blockingDependents.map(r=>r.NAME).join(', ') }})</div>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="cancelDelete">ยกเลิก</button><button class="btn btn-danger" @click="confirmDelete">ยืนยันลบ</button></div>
-      </div>
-    </div>
-
-    <div class="overlay" v-if="showAssignForm" @click.self="closeAssignForm">
-      <div class="side-drawer">
-        <div class="side-drawer-head"><h3>{{ isEditingAssign ? 'แก้ไขโปรแกรม' : 'เพิ่มโปรแกรม' }} · {{ assignEntity }} / {{ assignLeadType }}</h3><button class="close-x" @click="closeAssignForm">✕</button></div>
-        <div class="side-drawer-body">
-          <div class="field">
-            <div class="field-inline">
-              <div class="field">
-                <label>โปรแกรม</label>
-                <select v-model="assignFormModel.PROGRAM_CODE" :disabled="isEditingAssign">
-                  <option value="" disabled>— เลือกโปรแกรม —</option>
-                  <option v-for="p in assignableProgramOptions" :key="p.CODE" :value="p.CODE">{{ p.NAME }} ({{ p.CODE }})</option>
-                </select>
-              </div>
-              <button class="btn-icon-sm" title="เพิ่มโปรแกรมใหม่ในแคตตาล็อก" @click="openQuickAdd('PROGRAM','โปรแกรม (Program)')">+</button>
-            </div>
-          </div>
-          <div class="field"><label>ลำดับการแสดงผล (ORDER)</label><input type="number" v-model="assignFormModel.ORDER"></div>
-          <div class="field"><div class="active-toggle-row"><div class="lab"><strong>เปิดใช้งานโปรแกรมนี้</strong><span>โปรแกรมที่ปิดใช้งานจะไม่แสดงให้ลูกค้ากลุ่มนี้</span></div><label class="switch"><input type="checkbox" v-model="assignFormModel.STATUS" true-value="Y" false-value="N"><span class="slider"></span></label></div></div>
-        </div>
-        <div class="side-drawer-foot"><button class="btn btn-ghost" @click="closeAssignForm">ยกเลิก</button><button class="btn btn-primary" @click="saveAssign">บันทึกข้อมูล</button></div>
-      </div>
-    </div>
-
-    <div class="modal-overlay" v-if="confirmDeleteAssign" @click.self="confirmDeleteAssign=null">
-      <div class="modal-box">
-        <h3>ลบโปรแกรมนี้ใช่หรือไม่?</h3>
-        <p>คุณกำลังจะลบ <strong>{{ nameOf(programMaster, confirmDeleteAssign.PROGRAM_CODE) }}</strong> ออกจาก {{ assignEntity }} / {{ assignLeadType }}</p>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmDeleteAssign=null">ยกเลิก</button><button class="btn btn-danger" @click="confirmDeleteAssignRow">ยืนยันลบ</button></div>
       </div>
     </div>
 
