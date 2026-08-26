@@ -282,6 +282,11 @@ createApp({
       };
     }
 
+    function nextFlowId(){
+      const nums = flows.map(f => parseInt(String(f.flow_id).replace(/\D/g,''), 10)).filter(n => !isNaN(n));
+      const next = (nums.length ? Math.max(...nums) : 0) + 1;
+      return 'F' + String(next).padStart(5,'0');
+    }
     function chooseFlow(flow_id){
       const flow = flows.find(f => f.flow_id === flow_id);
       if (flow){
@@ -291,7 +296,7 @@ createApp({
         currentFlow.schedule = flow.schedule || (currentFlow.run_type==='AUTO' ? DEFAULT_CRON : '');
         currentFlow.steps = flow.steps.map(normalizeStep);
       } else {
-        currentFlow.flow_id = '';
+        currentFlow.flow_id = nextFlowId();
         currentFlow.flow_name = '';
         currentFlow.run_type = 'MANUAL';
         currentFlow.schedule = '';

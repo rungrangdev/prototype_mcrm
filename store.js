@@ -38,7 +38,7 @@
   /* ---- parameter (base key) metadata: dataType + example values -------- */
   const FIELD_META = {
     company_code:      { label:'company_code',      dataType:TXT, values:S('GECAL') },
-    product_id:        { label:'product_id',         dataType:TXT, values:S('HP,AL') },
+    product_id:        { label:'product_base',       dataType:TXT, values:S('HP,AL') },
     branch_code:       { label:'branch_code',        dataType:NUM, values:S('16,42,23,51,33,11,44,45,25,34,14,47,31,85,17,18,75,56,43,27,41,55,32,28,53,62,49,84,76,54,39,37,13,21,24,52,83,35,22,19') },
     model_type_group:  { label:'model_type_group',   dataType:TXT, values:S('PAL,PU,PUPA,PAM,PAS,SUV') },
     model_group:       { label:'model_group',        dataType:TXT, values:S('MG EP,VIGO_2DR,D-MAX_2DR,REVO_2DR,REVO_4DR,ALTIS,VIOS,MAZDA2,YARIS,ZS,CAMRY,YARIS ATIV,GS,VIGO_4DR,TRITON_2DR,XPANDER,HILUX_2DR,RANGER_2DR,PAJERO,ATTRAGE,D-MAX_4DR,MIRAGE,DOLPHIN,CIVIC,JAZZ,CITY,TRITON_4DR,HR-V,MAZDA3,ALMERA,MARCH,SWIFT,MG5,NAVARA_2DR,HILANDER_2DR,3 SERIES,MG3 HATCHBACK') },

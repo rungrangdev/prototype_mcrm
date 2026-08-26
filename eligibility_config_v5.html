@@ -378,7 +378,12 @@ createApp({
        selectable condition field here. ---- */
     const rows = MCRM.db.rows;
     const activeParamCodes = computed(() => rows.filter(r => r.TYPE === 'PARAMETER' && r.ACTIVE === 'Y').map(r => r.CODE));
-    function fieldLabel(id){ const r = rows.find(x => x.TYPE === 'PARAMETER' && x.CODE === id); if (r) return r.NAME; const meta = MCRM.FIELD_META[id]; return meta ? meta.label : id; }
+    function fieldLabel(id){
+      const meta = MCRM.FIELD_META[id];
+      if (meta && meta.label) return meta.label;
+      const r = rows.find(x => x.TYPE === 'PARAMETER' && x.CODE === id);
+      return r ? r.NAME : id;
+    }
     /* Every field known to the shared FIELD_META dictionary is available here (matches the
        original page's full condition list). A PARAMETER also added to the Parameter Master
        Setup catalog just picks up its display NAME from there; new parameters added elsewhere
@@ -404,10 +409,9 @@ createApp({
       for (const g of FIELD_GROUPS.value){ const f = g.fields.find(x => x.id === id); if (f) return f; }
       return null;
     }
-    function fieldsForGroup(g){
-      const grp = FIELD_GROUPS.value.find(x => x.group === g.label);
-      return grp ? grp.fields : FIELD_GROUPS.value.flatMap(x => x.fields);
-    }
+    /* Every condition row's field picker shows the full list regardless of which
+       top-level group (Demographic/Retention/Risk) it lives in. */
+    const allFields = computed(() => FIELD_GROUPS.value.flatMap(g => g.fields));
 
     function baseGroups(){
       return [
@@ -678,7 +682,7 @@ createApp({
       addEligible, openEditor, backToList, setStatus, saveProfile,
       confirmDeleteRec, askDeleteEligible, confirmDeleteEligible,
       eligibleNames, eligibleProfiles, showAddOption, openAddOption, saveAddOption,
-      FIELD_GROUPS, fieldsForGroup, findField,
+      FIELD_GROUPS, allFields, findField,
       toggleGroupCollapse, addCond, addNestedGroup, deleteItem, addCondToNestedGroup, deleteNestedCond, setNestedConn,
       toggleTopConnector, topConnectorFor,
       onFieldChange, onOpChange, condField, condOpts,
@@ -834,7 +838,7 @@ createApp({
                             </label>
                             <select class="cond-field-sel" style="min-width:150px" :value="c.fieldId" @change="onFieldChange(g,c,$event.target.value)">
                               <option value="" disabled :selected="!c.fieldId">Select condition</option>
-                              <option v-for="f in fieldsForGroup(g)" :key="f.id" :value="f.id" :title="f.note||''">{{ f.label }}</option>
+                              <option v-for="f in allFields" :key="f.id" :value="f.id" :title="f.note||''">{{ f.label }}</option>
                             </select>
                             <span class="type-chip" :class="c.dataType===NUM ? 'tc-num':'tc-txt'" :title="c.dataType===NUM?'dataType: number':'dataType: 0 (text)'">{{ c.dataType===NUM ? '123' : 'ABC' }}</span>
                             <select class="cond-op-sel" :value="c.op" @change="onOpChange(c,$event.target.value)">
@@ -894,7 +898,7 @@ createApp({
                     <label class="sw"><input type="checkbox" v-model="item.enabled"><div class="sw-track"></div><div class="sw-knob"></div></label>
                     <select class="cond-field-sel" style="min-width:170px" :value="item.fieldId" @change="onFieldChange(g,item,$event.target.value)">
                       <option value="" disabled :selected="!item.fieldId">Select condition</option>
-                      <option v-for="f in fieldsForGroup(g)" :key="f.id" :value="f.id" :title="f.note||''">{{ f.label }}</option>
+                      <option v-for="f in allFields" :key="f.id" :value="f.id" :title="f.note||''">{{ f.label }}</option>
                     </select>
                     <span class="type-chip" :class="item.dataType===NUM ? 'tc-num':'tc-txt'" :title="item.dataType===NUM?'dataType: number':'dataType: 0 (text)'">{{ item.dataType===NUM ? '123' : 'ABC' }}</span>
                     <select class="cond-op-sel" :value="item.op" @change="onOpChange(item,$event.target.value)">
