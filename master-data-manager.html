@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>จัดการข้อมูลหลัก (Master Data)</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Bootstrap 5 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+<link rel="stylesheet" href="modal.css">
+<script src="modal.js"></script>
+
+<style>
+
+@font-face {
+    font-family: "Krungsri-med";
+    font-style: normal;
+    font-weight: normal;
+    src: url("./font/krungsri_con-webfont.ttf") format("truetype");
+}
+
+  :root{
+    --brown: #6f5f5e;
+    --brown-dark: #594c4b;
+    --brown-darker: #473b3a;
+    --brown-light: #f2ecea;
+    --brown-lighter: #f9f6f5;
+    --white: #ffffff;
+    --border: #e7e0de;
+    --text: #3c3332;
+    --text-muted: #8f8180;
+    --success: #22a559;
+    --danger: #d1544b;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html, body{
+    height: 100%;
+    background: #fff;
+    font-family: 'Krungsri-med', 'Inter', sans-serif;
+    color: var(--text);
+  }
+
+  button {
+    border:none;
+  }
+
+  .app-shell{
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    min-height: 100vh;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    background: var(--white);
+    border-right: 1px solid var(--border);
+    padding: 24px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .sidebar-title{
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: .02em;
+    padding: 0 4px;
+  }
+
+  .category-list{
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .category-item{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-left: 3px solid transparent;
+    transition: background .15s ease, border-color .15s ease;
+    background: var(--white);
+  }
+  .category-item:hover{
+    background: var(--brown-lighter);
+  }
+  .category-item.active{
+    background: var(--brown-light);
+    border-left-color: var(--brown);
+  }
+
+  .category-checkbox{
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    border: 1.5px solid #cfc4c2;
+    background: var(--white);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .category-item.active .category-checkbox{
+    background: var(--brown);
+    border-color: var(--brown);
+    color: #fff;
+  }
+  .category-checkbox svg{ width: 11px; height: 11px; display: none; }
+  .category-item.active .category-checkbox svg{ display: block; }
+
+  .category-text{ flex: 1; min-width: 0; }
+  .category-label{
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.25;
+  }
+  .category-code{
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: .03em;
+  }
+
+  .category-count{
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--brown);
+    background: var(--brown-light);
+    border-radius: 999px;
+    padding: 2px 9px;
+    min-width: 24px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .category-item.active .category-count{
+    background: var(--brown);
+    color: #fff;
+  }
+
+  .add-category-btn{
+    margin-top: 4px;
+    border: 1.5px dashed #d9cecc;
+    background: transparent;
+    color: var(--brown);
+    font-weight: 600;
+    font-size: 13.5px;
+    border-radius: 10px;
+    padding: 10px 12px;
+    text-align: center;
+    transition: background .15s ease, border-color .15s ease;
+    width: 100%;
+  }
+  .add-category-btn:hover{
+    background: var(--brown-lighter);
+    border-color: var(--brown);
+  }
+
+  /* ---------- Main content ---------- */
+  .main{
+    padding: 28px 32px;
+  }
+
+  .main-header{
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+
+  .main-title{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 21px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .main-title .badge-code{
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    color: var(--brown);
+    background: var(--brown-light);
+    border-radius: 999px;
+    padding: 3px 10px;
+  }
+
+  .main-subtitle{
+    font-size: 13.5px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .btn-brown{
+    background: var(--brown);
+    border-color: var(--brown);
+    color: #fff;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 9px 18px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+  .btn-brown:hover{
+    background: var(--brown-dark);
+    border-color: var(--brown-dark);
+    color: #fff;
+  }
+
+  .search-wrap{
+    position: relative;
+    margin-bottom: 18px;
+  }
+  .search-wrap svg{
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    width: 16px; height: 16px;
+  }
+  .search-input{
+    width: 100%;
+    padding: 11px 14px 11px 40px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .search-input:focus{
+    border-color: var(--brown);
+    box-shadow: 0 0 0 3px rgba(111,95,94,.12);
+  }
+  .search-input::placeholder{ color: #b8adab; }
+
+  table.data-table{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin-bottom: 0;
+  }
+  table.data-table thead th{
+    text-align: left;
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #FFF;
+    letter-spacing: .02em;
+    background: #6f5f5e;
+    padding: 13px 18px;
+    /* border-bottom: 1px solid var(--border); */
+    border : 1px solid #dedede;
+  }
+  table.data-table tbody td{
+    padding: 14px 18px;
+    /* border-bottom: 1px solid var(--border); */
+    border : 1px solid #dedede;
+    vertical-align: middle;
+    color: var(--text);
+  }
+  /* table.data-table tbody tr:last-child td{ border-bottom: none; } */
+  table.data-table tbody tr:hover{ background: var(--brown-lighter); }
+
+  .code-pill{
+    display: inline-block;
+    /* font-family: 'Inter', monospace; */
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--brown);
+    background: var(--brown-light);
+    border-radius: 7px;
+    padding: 4px 9px;
+    letter-spacing: .01em;
+  }
+
+  .item-name{ font-weight: 600; color: var(--text); }
+  .item-desc{ font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+
+  .depend-empty{ color: #c2b8b6; }
+
+  .row-actions{ display: flex; gap: 6px; }
+  .icon-btn{
+    width: 32px; height: 32px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    color: var(--text-muted);
+    transition: all .15s ease;
+  }
+  .icon-btn:hover{ background: var(--brown-lighter); color: var(--brown); border-color: var(--brown); }
+  .icon-btn.danger:hover{ background: #fdf1f0; color: var(--danger); border-color: var(--danger); }
+  .icon-btn svg{ width: 14px; height: 14px; }
+
+  .empty-state{
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--text-muted);
+  }
+
+  /* Bootstrap switch recoloring */
+  .form-check-input:checked{
+    background-color: var(--success);
+    border-color: var(--success);
+  }
+  .form-check-input{ cursor: pointer; }
+  .form-check-input:focus{ box-shadow: 0 0 0 3px rgba(34,165,89,.15); }
+
+  /* ---------- Offcanvas / side panel ---------- */
+  #itemOffcanvas{ width: 420px; }
+  .offcanvas-header{
+    border-bottom: 1px solid var(--border);
+    padding: 18px 22px;
+  }
+  .offcanvas-title-text{
+    font-size: 16.5px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .offcanvas-body{ padding: 22px; }
+
+  .offcanvas{
+    top:70px;
+    bottom:70px;
+    left: 33%;
+  }
+
+  .field-group{ margin-bottom: 18px; }
+  .field-label{
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 7px;
+  }
+  .form-control, .form-select{
+    border-radius: 9px;
+    border: 1px solid var(--border);
+    padding: 9px 12px;
+    font-size: 14px;
+    color: var(--text);
+  }
+  .form-control:focus, .form-select:focus{
+    border-color: var(--brown);
+    box-shadow: 0 0 0 3px rgba(111,95,94,.12);
+  }
+
+  .toggle-row{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--brown-lighter);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .toggle-row .t-title{ font-size: 13.5px; font-weight: 600; color: var(--text); }
+  .toggle-row .t-sub{ font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+
+  .panel-head{padding:20px 24px;display:flex;border-bottom:1px solid #e7e0de;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;}
+  .panel-title-row{display:flex;align-items:center;gap:10px;}
+  .panel-head h2{margin:0;font-size:19px;font-weight:700;color:#000}
+
+  .panel-footer{
+    border-top: 1px solid var(--border);
+    padding: 16px 22px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+  .btn-ghost{
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-weight: 600;
+    font-size: 14px;
+    padding: 9px 18px;
+    border-radius: 10px;
+  }
+  .btn-ghost:hover{ background: var(--brown-lighter); }
+
+  ::selection{ background: var(--brown-light); }
+
+  .status_active{
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--success);
+    background: rgba(34,165,89,.1);
+    border-radius: 999px;
+    padding: 4px 10px;
+    text-align: center;
+  }
+
+  .status_inactive{
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--danger);
+    background: rgba(209,84,75,.1);
+    border-radius: 999px;
+    padding: 4px 10px;
+    text-align: center;
+  }
+
+
+/* กล่องครอบ */
+.dropdown-container {
+    position: relative;
+    display: inline-block;
+  }
+  
+  /* ปุ่ม 3 จุด */
+  .btn-dots {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 8px;
+    color: #6b7280; /* สีเทา */
+    transition: color 0.2s;
+  }
+  
+  .btn-dots:hover {
+    color: #000000; /* เปลี่ยนสีเมื่อเอาเมาส์วาง */
+  }
+  
+  /* กล่องแม่ (Dropdown Menu) */
+.dropdown-menu {
+    display: none; /* หรือเปลี่ยนเป็น block ตอนเปิด */
+    position: absolute;
+    
+    /*--- จัดตำแหน่งให้อยู่ใต้ปุ่ม 3 จุดและชิดขวาพอดี ---*/
+    top: 100%; 
+    right: 0; /* เปลี่ยนจาก right: -70px เป็น 0 เพื่อให้ขอบขวาตรงกับปุ่ม 3 จุดพอดี */
+    
+    /* ลบคำสั่ง transform: translateX(-50%) ออก เพื่อไม่ให้พิกัดเพี้ยน */
+    
+    /*--- ความกว้างและพื้นที่ภายใน ---*/
+    width: max-content; /* ปล่อยให้กล่องกว้างพอดีคำที่ยาวที่สุด (Delete) อัตโนมัติ */
+    min-width: 100px;   /* กำหนดขั้นต่ำไว้เล็กน้อยเพื่อความสวยงาม */
+    padding: 6px;       /* ปรับพื้นที่รอบๆ ปรับจาก 8px ลงมาหน่อยให้ดูกระชับ */
+    
+    /*--- หน้าตาและมิติ ---*/
+    background-color: #ffffff;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1); /* เพิ่มความฟุ้งของเงาให้ดูโมเดิร์นลอยขึ้น */
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    z-index: 10;
+
+    button {
+        display: block;   /* บังคับให้ปุ่มแยกแถวกันชัดเจน */
+        width: 100%;      /* ให้ปุ่มขยายกว้างเต็มพื้นที่กล่องแม่ */
+        font-size: 16px;  /* แนะนำให้ใช้ px (ประมาณ 10-11pt) จะคุมขนาดบนหน้าเว็บได้นิ่งกว่า pt */
+        padding: 6px 12px; /* เพิ่ม padding ซ้าย-ขวา ให้มีช่องไฟหายใจ ไม่ติดขอบกล่อง */
+        border: none;
+        background-color: transparent;
+        cursor: pointer;
+        text-align: left; /* ชิดซ้ายตามสไตล์เมนูทั่วไป */
+        color: #1f2937;   /* สีตัวอักษรเทาเข้มเกือบดำ ดูพรีเมียมกว่าสีดำสนิท */
+        white-space: nowrap; /* ล็อกไว้ไม่ให้ตัวหนังสือตกบรรทัด */
+    }
+    
+    button:hover {
+        background-color: #F3F4F6; /* สีเทาอ่อนเวลาชี้แบบในรูปของคุณ */
+        border-radius: 4px;
+        color: #000000;
+    }
+}
+  
+  /* คลาสที่จะถูกเปิดด้วย JavaScript เมื่อคลิก */
+  .dropdown-menu.show {
+    display: block;
+  }
+
+  .modal-overlay{
+    z-index:99999;
+  }
+
+  input[readonly]{
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+  }
+</style>
+</head>
+<body>
+
+  <!-- ============ MODAL ============ -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-card">
+ 
+    <div class="modal-icon success" id="modalIcon" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+    </div>
+ 
+    <div class="modal-message" id="modalMessage">
+      <!-- Are you sure you want to transfer lead file to AS400 system? -->
+    </div>
+ 
+    <div class="modal-actions" id="modalActions">
+      <button class="modal-btn btn-cancel" id="modalCancelBtn">Cancel</button>
+      <button class="modal-btn btn-confirm" id="modalConfirmBtn">Confirm</button>
+    </div>
+ 
+  </div>
+</div>
+
+
+<div class="panel-head">
+  <div>
+    <div class="panel-title-row"><h2>Master Data Manager</h2></div>
+  </div>
+  <button type="button" class="btn-brown" id="addItemBtn">+ Add</button>
+</div>
+<div class="app-shell">
+
+  
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-title">Master Category</div>
+    <div class="category-list" id="categoryList"></div>
+    <button type="button" class="add-category-btn" id="addCategoryBtn" style="display:none;">+ Add New Category</button>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="main-header">
+      <div>
+        <div class="main-title">
+          <span id="mainTitleLabel"></span>
+          <span class="badge-code" id="mainTitleCode" style="display:none;"></span>
+        </div>
+        <div class="main-subtitle" id="mainSubtitle"></div>
+      </div>
+      
+      
+    </div>
+
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="7"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input type="text" class="search-input" id="searchInput" placeholder="Search by code, name, or description...">
+    </div>
+
+    <div class="data-card">
+      <table class="data-table" id="dataTable">
+        <thead>
+          <tr>
+            <th style="width:70px;">Sequence</th>
+            <th style="width:170px;">Code</th>
+            <th>Name / Description</th>
+            <th style="width:130px;">Depend on</th>
+            <th style="width:90px;">Status</th>
+            <th style="width:20px;"></th>
+          </tr>
+        </thead>
+        <tbody id="dataTableBody"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState" style="display:none;">No results found</div>
+    </div>
+  </main>
+</div>
+
+<!-- Offcanvas: Add / Edit item -->
+<div class="offcanvas" tabindex="-1" id="itemOffcanvas">
+  <div class="offcanvas-header">
+    <div class="offcanvas-title-text" id="offcanvasTitle">New · Lead Type</div>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+
+  <div class="offcanvas-body">
+    <div class="field-group">
+      <label class="field-label">Code <span style="color:red">*</span></label>
+      <input type="text" class="form-control" id="fieldCode" placeholder="">
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Name <span style="color:red">*</span></label>
+      <input type="text" class="form-control" id="fieldName">
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Description</label>
+      <textarea class="form-control" rows="3" id="fieldDescription"></textarea>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Order</label>
+      <input type="number" class="form-control" id="fieldOrder" value="1">
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Depend on (Optional)</label>
+      <select class="form-select" id="fieldDependOn">
+        <option value="">— Select —</option>
+      </select>
+    </div>
+
+    <div class="toggle-row">
+      <div>
+        <div class="t-title">Active</div>
+        <div class="t-sub">Inactive items will not be available for selection across all other pages.</div>
+      </div>
+      <div class="form-check form-switch m-0">
+        <input class="form-check-input" type="checkbox" role="switch" id="fieldActive" checked>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-footer">
+    <button type="button" class="btn-ghost" data-bs-dismiss="offcanvas">Cancel</button>
+    <button type="button" class="btn-brown" id="saveItemBtn">Save</button>
+  </div>
+</div>
+
+<!-- Bootstrap 5 JS bundle (includes Popper, needed for Offcanvas) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+/* =========================================================
+   MOCK DATA
+   ========================================================= */
+let uid = 100;
+
+const categories = [
+  { key: 'entity',    label: 'Entity',    code: 'ENTITY' },
+  { key: 'lead_type', label: 'Lead Type', code: 'LEAD_TYPE' },
+  { key: 'program',   label: 'Program',   code: 'PROGRAM' },
+  { key: 'parameter', label: 'Parameter', code: 'PARAMETER' },
+];
+
+
+
+// const dataStore = {
+//   entity: [
+//     { id: uid++, code: 'KA', name: 'KA', description: 'Entity KA', dependOn: '', active: true },
+//     { id: uid++, code: 'AY', name: 'AY', description: 'Entity AY', dependOn: '', active: true },
+//   ],
+//   lead_type: [
+//     { id: uid++, code: 'CRM_X_SELL_POOL', name: 'CRM X SELL POOL', description: 'Lead type X SELL POOL', dependOn: '', active: true },
+//     { id: uid++, code: 'INS_PPI',         name: 'INS PPI',         description: 'Lead type INS PPI', dependOn: '', active: true },
+//     { id: uid++, code: 'EV_NETA',         name: 'EV NETA',         description: 'Lead type EV Neta', dependOn: '', active: true },
+//     { id: uid++, code: 'RETENTION',       name: 'RETENTION',       description: 'Lead type Retention', dependOn: '', active: false },
+//   ],
+//   program: [
+//     { id: uid++, code: 'PROG_SAVING', name: 'PROG_SAVING', description: 'โปรแกรมออมทรัพย์',    dependOn: '', active: true },
+//     { id: uid++, code: 'PROG_LOAN',   name: 'PROG_LOAN',   description: 'โปรแกรมสินเชื่อ',      dependOn: '', active: true },
+//     { id: uid++, code: 'PROG_INSURE', name: 'PROG_INSURE', description: 'โปรแกรมประกัน',        dependOn: '', active: true },
+//     { id: uid++, code: 'PROG_INVEST', name: 'PROG_INVEST', description: 'โปรแกรมลงทุน',         dependOn: '', active: true },
+//     { id: uid++, code: 'PROG_CARD',   name: 'PROG_CARD',   description: 'โปรแกรมบัตรเครดิต',    dependOn: '', active: true },
+//   ],
+//   parameter: [
+//     { id: uid++, code: 'MIN_AGE',    name: 'MIN_AGE',    description: 'อายุขั้นต่ำของผู้สมัคร',    dependOn: '', active: true },
+//     { id: uid++, code: 'MAX_AGE',    name: 'MAX_AGE',    description: 'อายุสูงสุดของผู้สมัคร',     dependOn: '', active: true },
+//     { id: uid++, code: 'MIN_INCOME', name: 'MIN_INCOME', description: 'รายได้ขั้นต่ำต่อเดือน',      dependOn: '', active: true },
+//   ],
+// };
+
+const dataStore = {
+  entity: [
+    { id: uid++, code: 'KA', name: 'KA', description: 'KA entity', dependOn: '', active: true },
+    { id: uid++, code: 'AY', name: 'AY', description: 'AYCAL entity', dependOn: '', active: true },
+  ],
+  lead_type: [
+    { id: uid++, code: 'CRM_X_SELL_POOL', name: 'CRM_X_SELL_POOL', description: '', dependOn: '', active: true },
+    { id: uid++, code: 'INS_PPI',          name: 'INS_PPI',          description: '', dependOn: '', active: true },
+    { id: uid++, code: 'EV_NETA',          name: 'EV_NETA',          description: '', dependOn: '', active: true },
+    { id: uid++, code: 'RETENTION',        name: 'RETENTION',        description: '', dependOn: '', active: false },
+  ],
+  program: [
+    { id: uid++, code: 'TOPUP',          name: 'Topup',             description: 'สินเชื่อเพิ่มวงเงิน',        dependOn: '', active: true },
+    { id: uid++, code: 'REVOLVING_LOAN', name: 'Revolving Loan',    description: 'สินเชื่อหมุนเวียน',          dependOn: '', active: true },
+    { id: uid++, code: 'PRE_APPROVE_R',  name: 'Pre-Approve (R)',   description: 'อนุมัติล่วงหน้า - Renew',    dependOn: '', active: true },
+    { id: uid++, code: 'PRE_APPROVE_NU', name: 'Pre-Approve (N/U)', description: 'อนุมัติล่วงหน้า - New/Used', dependOn: '', active: true },
+    { id: uid++, code: 'PRE_APPROVE_MC', name: 'Pre-Approve (MC)',  description: 'อนุมัติล่วงหน้า - MC',       dependOn: '', active: true },
+    { id: uid++, code: 'PRIVILEGE_NUR',  name: 'Privilege (N/U/R)', description: 'สิทธิพิเศษ - N/U/R',          dependOn: '', active: true },
+    { id: uid++, code: 'PRIVILEGE_MC',   name: 'Privilege (MC)',    description: 'สิทธิพิเศษ - MC',             dependOn: '', active: true },
+    { id: uid++, code: 'PPI_PA_LIFE',    name: 'PPI_PA and LIFE',   description: 'ประกัน PA และ LIFE',          dependOn: '', active: true },
+    { id: uid++, code: 'PPI_PA',         name: 'PPI_PA',            description: 'ประกัน PA',                   dependOn: '', active: true },
+  ],
+  parameter: [
+    { id: uid++, code: 'account_type',      name: 'account_type',          description: 'ประเภทบัญชี',                  dependOn: '', active: true },
+    { id: uid++, code: 'auto_group',         name: 'auto_group',            description: 'กลุ่มรถยนต์',                  dependOn: '', active: true },
+    { id: uid++, code: 'b_score_account',    name: 'b_score_account',       description: 'B-Score ระดับบัญชี',           dependOn: '', active: true },
+    { id: uid++, code: 'b_score_customer',   name: 'b_score_customer',      description: 'B-Score ระดับลูกค้า',          dependOn: '', active: true },
+    { id: uid++, code: 'b_score_m_customer', name: 'B-Score band_MKT_Cust', description: 'B-Score ระดับลูกค้าฝั่งการตลาด', dependOn: '', active: true },
+    { id: uid++, code: 'car_age',            name: 'car_age',               description: 'อายุรถ',                       dependOn: '', active: true },
+    { id: uid++, code: 'cash_offer',         name: 'cash_offer',            description: 'วงเงินที่เสนอ',                dependOn: '', active: true },
+    { id: uid++, code: 'iir',                name: 'iir',                   description: 'Internal Interest Rate',       dependOn: '', active: true },
+    { id: uid++, code: 'model_type_group',   name: 'model_type_group',      description: 'กลุ่มรุ่นรถ',                  dependOn: '', active: true },
+    { id: uid++, code: 'pay_slip',           name: 'pay_slip',              description: 'สลิปเงินเดือน',                dependOn: '', active: true },
+    { id: uid++, code: 'product_base',       name: 'product_base',          description: 'ผลิตภัณฑ์หลัก',                dependOn: '', active: true },
+    { id: uid++, code: 'receipt_term',       name: 'receipt_term',          description: 'งวดการรับเอกสาร',              dependOn: '', active: true },
+    { id: uid++, code: 'region',             name: 'region',                description: 'ภูมิภาค',                      dependOn: '', active: true },
+    { id: uid++, code: 'remaining_term',     name: 'remaining_term',        description: 'งวดคงเหลือ',                  dependOn: '', active: true },
+  ],
+};
+
+/* =========================================================
+   STATE
+   ========================================================= */
+let activeKey = 'lead_type';
+let searchQuery = '';
+let editingId = null;
+
+/* =========================================================
+   ELEMENTS
+   ========================================================= */
+const categoryListEl   = document.getElementById('categoryList');
+const mainTitleLabelEl = document.getElementById('mainTitleLabel');
+const mainTitleCodeEl  = document.getElementById('mainTitleCode');
+const mainSubtitleEl   = document.getElementById('mainSubtitle');
+const dataTableBodyEl  = document.getElementById('dataTableBody');
+const dataTableEl      = document.getElementById('dataTable');
+const emptyStateEl     = document.getElementById('emptyState');
+const searchInputEl    = document.getElementById('searchInput');
+
+const offcanvasEl      = document.getElementById('itemOffcanvas');
+const offcanvasTitleEl = document.getElementById('offcanvasTitle');
+const offcanvas        = new bootstrap.Offcanvas(offcanvasEl);
+
+const fieldCode        = document.getElementById('fieldCode');
+const fieldName        = document.getElementById('fieldName');
+const fieldDescription = document.getElementById('fieldDescription');
+const fieldOrder       = document.getElementById('fieldOrder');
+const fieldDependOn    = document.getElementById('fieldDependOn');
+const fieldActive      = document.getElementById('fieldActive');
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
+function getActiveCategory() {
+  return categories.find(c => c.key === activeKey) || categories[0];
+}
+function getItems(key) {
+  return dataStore[key] || [];
+}
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str ?? '';
+  return div.innerHTML;
+}
+
+/* =========================================================
+   RENDER: sidebar
+   ========================================================= */
+function renderSidebar() {
+  categoryListEl.innerHTML = categories.map(cat => `
+    <div class="category-item ${cat.key === activeKey ? 'active' : ''}" data-key="${cat.key}">
+      <span class="category-checkbox">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </span>
+      <span class="category-text">
+        <div class="category-label">${escapeHtml(cat.label)}</div>
+        <div class="category-code">${escapeHtml(cat.code)}</div>
+      </span>
+      <span class="category-count">${getItems(cat.key).length}</span>
+    </div>
+  `).join('');
+
+  categoryListEl.querySelectorAll('.category-item').forEach(el => {
+    el.addEventListener('click', () => {
+      activeKey = el.dataset.key;
+      searchQuery = '';
+      searchInputEl.value = '';
+      renderAll();
+    });
+  });
+}
+
+/* =========================================================
+   RENDER: header + table
+   ========================================================= */
+function renderHeader() {
+  const cat = getActiveCategory();
+  const items = getItems(activeKey);
+  const activeCount = items.filter(i => i.active).length;
+
+  mainTitleLabelEl.textContent = cat.label;
+  mainTitleCodeEl.textContent = cat.code;
+  mainSubtitleEl.textContent = `Total ${items.length} items · Active : ${activeCount}`;
+}
+
+function getFilteredItems() {
+  const items = getItems(activeKey);
+  const q = searchQuery.trim().toLowerCase();
+  if (!q) return items;
+  return items.filter(i =>
+    i.code.toLowerCase().includes(q) ||
+    i.name.toLowerCase().includes(q) ||
+    (i.description || '').toLowerCase().includes(q)
+  );
+}
+
+function renderTable() {
+  const items = getFilteredItems();
+
+  if (!items.length) {
+    dataTableEl.style.display = 'none';
+    emptyStateEl.style.display = 'block';
+    dataTableBodyEl.innerHTML = '';
+    return;
+  }
+
+  dataTableEl.style.display = 'table';
+  emptyStateEl.style.display = 'none';
+
+  dataTableBodyEl.innerHTML = items.map((item, idx) => `
+    <tr>
+      <td>${idx + 1}</td>
+      <td><span class="code-pill">${escapeHtml(item.code)}</span></td>
+      <td>
+        <div class="item-name">${escapeHtml(item.name)}</div>
+        ${item.description ? `<div class="item-desc">${escapeHtml(item.description)}</div>` : ''}
+      </td>
+      <td>
+        ${item.dependOn ? escapeHtml(item.dependOn) : '<span class="depend-empty">—</span>'}
+      </td>
+      <td>
+        <div class="status_${item.active ? 'active' : 'inactive'}">
+          ${item.active ? 'Active' : 'Inactive'}
+        </div>
+      </td>
+      <td>
+        <div class="dropdown-container">
+              <button class="btn-dots" onclick="toggleDropdown(event, this)">⋮</button>
+              
+              <div class="dropdown-menu">
+                <button type="button" class="edit-btn" data-id="${item.id}" title="">
+                Edit
+                </button>
+                <button type="button" class="delete-btn" onclick="showConfirm('Are you sure you want to delete this record?','Master Data deleted successfully.')" data-id="${item.id}" title="">
+                Delete
+                </button>
+              </div>
+            </div>
+      </td>
+    </tr>
+  `).join('');
+
+  dataTableBodyEl.querySelectorAll('.toggle-active').forEach(el => {
+    el.addEventListener('change', () => {
+      const id = Number(el.dataset.id);
+      const item = getItems(activeKey).find(i => i.id === id);
+      if (item) item.active = el.checked;
+      renderHeader();
+      renderSidebar();
+    });
+  });
+
+  dataTableBodyEl.querySelectorAll('.edit-btn').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = Number(el.dataset.id);
+      const item = getItems(activeKey).find(i => i.id === id);
+      if (item) openEditPanel(item);
+    });
+  });
+
+  // dataTableBodyEl.querySelectorAll('.delete-btn').forEach(el => {
+  //   el.addEventListener('click', () => {
+  //     const id = Number(el.dataset.id);
+  //     const item = getItems(activeKey).find(i => i.id === id);
+  //     if (item) deleteItem(item);
+  //   });
+  // });
+}
+
+function renderAll() {
+  renderSidebar();
+  renderHeader();
+  renderTable();
+}
+
+/* =========================================================
+   OFFCANVAS: add / edit
+   ========================================================= */
+function populateDependOptions(excludeId) {
+  const items = getItems(activeKey).filter(i => i.id !== excludeId);
+  fieldDependOn.innerHTML = '<option value="">— Select —</option>' +
+    items.map(i => `<option value="${escapeHtml(i.code)}">${escapeHtml(i.code)}</option>`).join('');
+}
+
+function resetForm() {
+  fieldCode.value = '';
+  fieldCode.readOnly = false;
+  fieldName.value = '';
+  fieldDescription.value = '';
+  fieldOrder.value = getItems(activeKey).length + 1;
+  fieldActive.checked = true;
+  editingId = null;
+}
+
+function openAddPanel() {
+  resetForm();
+  populateDependOptions(null);
+  fieldDependOn.value = '';
+  offcanvasTitleEl.textContent = `New · ${getActiveCategory().label}`;
+  offcanvas.show();
+}
+
+function openEditPanel(item) {
+  editingId = item.id;
+  // readonly code
+  fieldCode.readOnly = true;
+  fieldCode.value = item.code;
+  fieldName.value = item.name;
+  fieldDescription.value = item.description;
+  fieldOrder.value = item.order || 1;
+  populateDependOptions(item.id);
+  fieldDependOn.value = item.dependOn || '';
+  fieldActive.checked = item.active;
+  offcanvasTitleEl.textContent = `Edit · ${getActiveCategory().label}`;
+  offcanvas.show();
+}
+
+function saveItem() {
+  const code = fieldCode.value.trim();
+  const name = fieldName.value.trim();
+  
+
+  if (!code) {
+    openPopup({
+      type: 'error',
+      message: 'Please enter Code.',
+      onConfirm: () => {
+        fieldCode.focus();
+      }
+    });
+    return;
+  }
+
+  if (!name) {
+    openPopup({
+      type: 'error',
+      message: 'Please enter Name.',
+      onConfirm: () => {
+        fieldName.focus();
+      }
+    });
+    return;
+  }
+
+  if (editingId) {
+    const item = getItems(activeKey).find(i => i.id === editingId);
+    if (item) {
+      item.code = code;
+      item.name = name;
+      item.description = fieldDescription.value.trim();
+      item.dependOn = fieldDependOn.value;
+      item.active = fieldActive.checked;
+    }
+  } else {
+
+    // Code already exists.
+    const items = getItems(activeKey);
+    if (items.some(i => i.code.toLowerCase() === code.toLowerCase())) {
+      openPopup({
+        type: 'error',
+        message: `Code already exists.`,
+        onConfirm: () => {
+          fieldCode.focus();
+        }
+      });
+      return;
+    }
+    
+    getItems(activeKey).push({
+      id: uid++,
+      code,
+      name,
+      description: fieldDescription.value.trim(),
+      dependOn: fieldDependOn.value,
+      active: fieldActive.checked,
+    });
+  }
+
+  offcanvas.hide();
+  renderAll();
+}
+
+function deleteItem(item) {
+  if (!confirm(`ต้องการลบรายการ "${item.name}" ใช่หรือไม่?`)) return;
+  const arr = getItems(activeKey);
+  const idx = arr.findIndex(i => i.id === item.id);
+  if (idx !== -1) arr.splice(idx, 1);
+  renderAll();
+}
+
+function addCategory() {
+  const label = prompt('ชื่อหมวดหมู่ใหม่:');
+  if (!label) return;
+  const trimmed = label.trim();
+  if (!trimmed) return;
+  const code = trimmed.toUpperCase().replace(/\s+/g, '_');
+  const key = code.toLowerCase();
+  if (dataStore[key]) { alert('มีหมวดหมู่นี้อยู่แล้ว'); return; }
+  categories.push({ key, label: trimmed, code });
+  dataStore[key] = [];
+  activeKey = key;
+  searchQuery = '';
+  searchInputEl.value = '';
+  renderAll();
+}
+
+
+function toggleDropdown(event, button) {
+  // กันไม่ให้ Event ลามไปยัง Element อื่น
+  event.stopPropagation();
+  
+  // หาเมนูที่อยู่ข้าง ๆ ปุ่มที่คลิก
+  const currentMenu = button.nextElementSibling;
+  
+  // ปิด Dropdown ตัวอื่น ๆ ที่อาจจะเปิดค้างอยู่บนหน้าจอ
+  document.querySelectorAll('.dropdown-menu').forEach(menu => {
+    if (menu !== currentMenu) {
+      menu.classList.remove('show');
+    }
+  });
+
+  // สลับการเปิด/ปิด (Toggle) เมนูปัจจุบัน
+  currentMenu.classList.toggle('show');
+}
+
+// ถ้าคลิกพื้นที่อื่นภายนอกปุ่ม ให้ปิดเมนูทันที
+document.addEventListener('click', function() {
+  document.querySelectorAll('.dropdown-menu').forEach(menu => {
+    menu.classList.remove('show');
+  });
+});
+
+/* =========================================================
+   EVENTS
+   ========================================================= */
+document.getElementById('addItemBtn').addEventListener('click', openAddPanel);
+document.getElementById('saveItemBtn').addEventListener('click', saveItem);
+document.getElementById('addCategoryBtn').addEventListener('click', addCategory);
+
+searchInputEl.addEventListener('input', (e) => {
+  searchQuery = e.target.value;
+  renderTable();
+});
+
+
+
+/* =========================================================
+   POPUP MODAL — Confirm / Success / Error
+   Usage:
+     openPopup({
+       type: 'confirm' | 'success' | 'error',
+       message: 'ข้อความที่ต้องการแสดง',
+       onConfirm: () => { ... },   // เรียกเมื่อกด Confirm / OK
+       onCancel:  () => { ... },   // เรียกเมื่อกด Cancel (เฉพาะ confirm)
+     });
+   ========================================================= */
+ 
+   const overlayEl    = document.getElementById('modalOverlay');
+const iconEl       = document.getElementById('modalIcon');
+const messageEl    = document.getElementById('modalMessage');
+const actionsEl    = document.getElementById('modalActions');
+const cancelBtnEl  = document.getElementById('modalCancelBtn');
+const confirmBtnEl = document.getElementById('modalConfirmBtn');
+ 
+const successIconSvg = `
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="20 6 9 17 4 12"></polyline>
+  </svg>`;
+ 
+const errorIconSvg = `
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18"></line>
+    <line x1="6" y1="6" x2="18" y2="18"></line>
+  </svg>`;
+ 
+function openPopup(opts) {
+  const { type = 'confirm', message = '', onConfirm, onCancel } = opts;
+ 
+  messageEl.innerHTML = message;
+ 
+  // icon
+  if (type === 'success' || type === 'error') {
+    iconEl.style.display = 'flex';
+    iconEl.className = 'modal-icon ' + type;
+    iconEl.innerHTML = type === 'success' ? successIconSvg : errorIconSvg;
+  } else {
+    iconEl.style.display = 'none';
+  }
+ 
+  // actions
+  if (type === 'confirm') {
+    actionsEl.classList.remove('single');
+    cancelBtnEl.style.display = 'inline-block';
+    confirmBtnEl.textContent = 'Confirm';
+    confirmBtnEl.className = 'modal-btn btn-confirm';
+  } else {
+    actionsEl.classList.add('single');
+    cancelBtnEl.style.display = 'none';
+    confirmBtnEl.textContent = 'OK';
+    confirmBtnEl.className = 'modal-btn btn-ok';
+  }
+ 
+  cancelBtnEl.onclick = () => {
+    closePopup();
+    if (onCancel) onCancel();
+  };
+ 
+  confirmBtnEl.onclick = () => {
+    closePopup();
+    if (onConfirm) onConfirm();
+  };
+ 
+  overlayEl.classList.add('show');
+}
+ 
+function closePopup() {
+  overlayEl.classList.remove('show');
+}
+ 
+// close when clicking the dark backdrop
+overlayEl.addEventListener('click', (e) => {
+  if (e.target === overlayEl) closePopup();
+});
+ 
+/* =========================================================
+   DEMO TRIGGERS
+   ========================================================= */
+function showConfirm(message,messageSuccess) {
+  openPopup({
+    type: 'confirm',
+    message: message,
+    onConfirm: () => openPopup({ type: 'success', message: messageSuccess }),
+    // onCancel: () => console.log('cancelled'),
+    onCancel: () => openPopup({ type: 'error', message: 'Master Data cannot be deleted due to currently used by existing transactions.</br>Please disable this record instead of deleting it.' }),
+  });
+}
+ 
+function showSuccess() {
+  openPopup({
+    type: 'success',
+    message: 'บันทึกข้อมูลเรียบร้อยแล้ว',
+  });
+}
+ 
+function showError() {
+  openPopup({
+    type: 'error',
+    message: 'เกิดข้อผิดพลาด ไม่สามารถบันทึกข้อมูลได้',
+  });
+}
+
+
+
+/* =========================================================
+   INIT
+   ========================================================= */
+
+
+
+
+renderAll();
+</script>
+
+</body>
+</html>

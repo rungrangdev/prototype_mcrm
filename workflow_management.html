@@ -1,0 +1,1632 @@
+<link rel="stylesheet" href="main.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+    /* hide border input textarea and select , overflow new line*/
+
+
+@font-face {
+    font-family: "Krungsri-med";
+    font-style: normal;
+    font-weight: normal;
+    src: url("./font/krungsri_con-webfont.ttf") format("truetype");
+}
+
+
+    input, textarea, select {
+        border: none !important;
+    }
+
+    /* ============ Workflow canvas & node styles ============ */
+    .canvas{
+      padding: 75px 28px 28px 28px;
+      overflow:auto;
+      background-image:radial-gradient(circle,#DCDFE9 1px,transparent 1px);
+      background-size:11px 11px;
+    }
+    .flow-svg{display:block;}
+
+    .step-box{
+      box-sizing:border-box;height:100%;
+      background:#FFFFFF;border:1px solid #E4E7EF;border-radius:11px;
+      box-shadow:0 1px 3px rgba(20,30,60,.07);
+      padding:12px 14px 11px 16px;position:relative;
+      display:flex;flex-direction:column;gap:6px;
+      font-family:'Krungsri-med',-apple-system,BlinkMacSystemFont,Roboto,sans-serif;
+      transition:box-shadow .15s;
+    }
+    .step-box:hover{box-shadow:0 4px 12px rgba(20,30,60,.12);}
+    .step-box::before{content:'';position:absolute;left:0;top:10px;bottom:10px;width:3.5px;
+      border-radius:0 3px 3px 0;background:#94A3B8;}
+    .st-wait::before{background:#94A3B8;}
+    .st-inprogress::before{background:#F59E0B;}
+    .st-completed::before{background:#10B981;}
+    .st-incomplete::before{background:#EF4444;}
+    .st-inprogress{border-color:#FBD38D;
+      box-shadow:0 0 0 3px rgba(245,158,11,.12),0 2px 8px rgba(20,30,60,.08);}
+
+    /* ===== Category styles (ให้สอดคล้องกับหน้า Workflow Config) ===== */
+    /* กล่องทุก Category รูปทรงเดียวกัน ต่างแค่สี (โทน น้ำตาล / เหลือง / เทา) */
+    .step-box.cat-eligible{
+      border-top:5px solid #8B5E3C;   /* น้ำตาล */
+      background:#FAF4EC;
+    }
+    .step-box.cat-parameter{
+      border-top:5px solid #D9A404;   /* เหลือง */
+      background:#FDF9E7;
+    }
+    .step-box.cat-profile{
+      border-top:5px solid #6B7280;   /* เทา */
+      background:#F4F5F7;
+    }
+
+    /* ป้ายบอก Category มุมกล่อง */
+    .cat-tag{
+      display:inline-block;font-size:10px;font-weight:bold;
+      padding:2px 8px;border-radius:10px;color:#fff;vertical-align:middle;
+      flex-shrink:0;
+    }
+    .cat-tag.cat-eligible{background:#8B5E3C}
+    .cat-tag.cat-parameter{background:#D9A404}
+    .cat-tag.cat-profile{background:#6B7280}
+
+    /* code / id ของ step (Eligible Code, Parameter ID, Workflow ID) */
+    .code-chip{
+      display:inline-flex;align-items:center;gap:5px;
+      font-size:10.5px;font-weight:700;letter-spacing:.4px;
+      padding:3px 8px;border-radius:5px;white-space:nowrap;
+      background:#FFFFFF;border:1px solid #E4E7EF;color:#374151;
+    }
+    .code-chip .code-lbl{font-weight:600;color:#9AA2B1;font-size:9.5px;text-transform:uppercase;letter-spacing:.6px;}
+    .code-chip.cat-eligible{border-color:#8B5E3C;color:#8B5E3C;}
+    .code-chip.cat-parameter{border-color:#D9A404;color:#A87F03;}
+    .code-chip.cat-profile{border-color:#6B7280;color:#6B7280;}
+
+    .step-head{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+    .step-no{font-size:11px;font-weight:700;color:#6B7280;
+      background:#F0F2F8;border-radius:6px;padding:2px 8px;flex-shrink:0;}
+    .step-badge{display:inline-flex;align-items:center;gap:4px;
+      font-size:10.5px;font-weight:600;margin-left:auto;white-space:nowrap;}
+    .b-wait{color:#64748B;}
+    .b-inprogress{color:#B45309;}
+    .b-completed{color:#0E9F6E;}
+    .b-incomplete{color:#DC2626;}
+    .spinner{width:10px;height:10px;border:2px solid #FDE4BC;border-top-color:#F59E0B;
+      border-radius:50%;display:inline-block;animation:spin .7s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    .step-name{
+      font-family:'Krungsri-med',Consolas,'Courier New',monospace;
+      font-size:12px;font-weight:600;color:#1E2433;line-height:1.4;
+      word-break:break-word;overflow:hidden;
+      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+      flex-shrink:0;
+    }
+    .step-detail{
+      font-size:11.5px;color:#6B7280;line-height:1.6;
+      word-break:break-word;
+      flex:1;min-height:0;
+      overflow-y:auto;overscroll-behavior:contain;
+      padding-right:4px;
+      scrollbar-width:thin;scrollbar-color:#CBD2E0 transparent;
+    }
+    .step-detail::-webkit-scrollbar{width:5px;}
+    .step-detail::-webkit-scrollbar-track{background:transparent;}
+    .step-detail::-webkit-scrollbar-thumb{background:#D5DAE5;border-radius:3px;}
+    .step-detail:hover::-webkit-scrollbar-thumb{background:#B9C0D0;}
+    /* บอกใบ้ว่ายังมีข้อความต่อ : เงาจาง ๆ ที่ขอบล่างของกล่องรายละเอียด */
+    .detail-wrap{position:relative;flex:1;min-height:0;display:flex;}
+    .detail-wrap::after{content:'';position:absolute;left:0;right:5px;bottom:0;height:14px;
+      background:linear-gradient(to bottom,rgba(255,255,255,0),currentColor);
+      opacity:.85;pointer-events:none;}
+    .step-box.cat-eligible .detail-wrap::after{color:#FAF4EC;}
+    .step-box.cat-parameter .detail-wrap::after{color:#FDF9E7;}
+    .step-box.cat-profile .detail-wrap::after{color:#F4F5F7;}
+    .detail-wrap.no-fade::after{display:none;}
+
+    /* ---- แถบข้อมูล Parameter ในกล่อง step ---- */
+    .param-strip{display:flex;align-items:center;flex-wrap:wrap;gap:4px;flex-shrink:0;}
+    .pchip{
+      font-size:9px;font-weight:700;letter-spacing:.3px;line-height:1.6;
+      padding:1.5px 6px;border-radius:999px;white-space:nowrap;
+      background:#FFFFFF;border:1px solid #E4E7EF;color:#6B7280;
+      max-width:100%;overflow:hidden;text-overflow:ellipsis;
+    }
+    .pchip.lead{background:#F4F5F7;border-color:#DDE1EA;color:#4B5563;}
+    .pchip.program{background:#FDF3D3;border-color:#EFD98F;color:#8A6A03;}
+    .pchip.count{background:#FFFFFF;border-color:#EFD98F;color:#A87F03;}
+    .pchip.none{font-weight:600;color:#9AA2B1;font-style:italic;}
+
+    /* ---- modal : รายการ parameter ---- */
+    .pm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+    .pm-card{background:#F7F8FB;border:1px solid #EAEDF4;border-radius:10px;padding:10px 12px;min-width:0;}
+    .pm-lbl{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#9AA2B1;margin-bottom:4px;}
+    .pm-val{font-size:13px;font-weight:600;color:#1E2433;word-break:break-word;}
+    .pm-val.muted{color:#A6ADBB;font-weight:500;}
+    .pm-sec{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#9AA2B1;}
+    .pm-list{display:flex;flex-direction:column;border:1px solid #EAEDF4;border-radius:10px;overflow:hidden;}
+    .pm-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid #F0F2F8;font-size:12.5px;}
+    .pm-row:last-child{border-bottom:none;}
+    .pm-row:nth-child(even){background:#FBFCFE;}
+    .pm-no{font-size:10.5px;color:#9AA2B1;width:18px;flex-shrink:0;text-align:right;}
+    .pm-name{font-family:Consolas,'Courier New',monospace;font-size:12px;font-weight:600;color:#1E2433;word-break:break-all;}
+    .pm-empty{padding:16px 12px;font-size:12.5px;color:#9AA2B1;text-align:center;
+      border:1px dashed #E4E7EF;border-radius:10px;background:#FBFCFE;}
+
+    /* ---- ท้ายกล่อง : บรรทัดบน = code chip + duration, บรรทัดล่าง = ปุ่ม ---- */
+    .step-foot{display:flex;flex-direction:column;gap:7px;margin-top:auto;flex-shrink:0;}
+    .foot-line:empty{display:none;}
+    .foot-line{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;}
+    .foot-line .code-chip{min-width:0;overflow:hidden;}
+    .foot-line .code-chip .code-val{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .duration-txt{font-size:11px;color:#0E9F6E;font-weight:600;white-space:nowrap;flex-shrink:0;
+      display:inline-flex;align-items:center;gap:4px;}
+    .fail-txt{font-size:11px;color:#EF4444;white-space:nowrap;flex-shrink:0;
+      display:inline-flex;align-items:center;gap:4px;}
+
+    /* ปุ่มเต็มความกว้างท้ายกล่อง (View Result / Run step) */
+    .foot-action{
+      width:100%;box-sizing:border-box;
+      display:inline-flex;align-items:center;justify-content:center;gap:5px;
+      padding:5px 10px;border-radius:7px;cursor:pointer;
+      font-family:inherit;font-size:11px;font-weight:600;letter-spacing:.2px;
+      background:#FFFFFF;border:1px solid #E4E7EF;color:#374151;
+      transition:background .15s,border-color .15s;
+    }
+    .foot-action:hover{background:#F0F2F8;border-color:#CBD2E0;color:#1E2433;}
+    .foot-action:focus-visible{outline:2px solid #1E2433;outline-offset:2px;}
+    .foot-action.primary{background:#1E2433;border-color:#1E2433;color:#FFFFFF;}
+    .foot-action.primary:hover{background:#333B4F;border-color:#333B4F;color:#FFFFFF;}
+
+    .step-box .btn-run{padding:4px 12px;font-size:11px;border-radius:6px;}
+
+    /* ---- Start / End terminal nodes ---- */
+    .term-node{
+      box-sizing:border-box;width:100%;height:100%;
+      display:flex;align-items:center;justify-content:center;gap:8px;
+      border-radius:999px;
+      font-family:'Krungsri-med',-apple-system,BlinkMacSystemFont,Roboto,sans-serif;
+      font-size:12.5px;font-weight:700;letter-spacing:1.4px;
+      box-shadow:0 1px 3px rgba(20,30,60,.10);
+    }
+    .term-start{background:#1E2433;color:#FFFFFF;}
+    .term-end{background:#FFFFFF;border:2px solid #CBD2E0;color:#6B7280;}
+    .term-end.done{background:#10B981;border-color:#10B981;color:#FFFFFF;
+      box-shadow:0 0 0 4px rgba(16,185,129,.15);}
+    .term-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0;}
+
+    .flow_area{
+      /* position: relative; */
+    }
+
+    /* ---- summary note bar above canvas ---- */
+    .flow-note{
+      position: absolute;
+      top:60;left:0;right:0;
+      display:flex;align-items:center;flex-wrap:wrap;
+      background:#FFFFFF;
+      border: 1px solid #E5E5E5;
+      box-shadow:0 1px 3px rgba(20,30,60,.06);
+      border-radius: 15px;
+      border-bottom: 1px solid #E5E5E5;
+      margin: 5px 10px;
+      max-width: 700px;
+      padding:11px 6px;
+      font-family:'Krungsri-med',-apple-system,BlinkMacSystemFont,Roboto,sans-serif;
+    }
+    .note-item{display:flex;flex-direction:column;gap:4px;padding:2px 20px;position:relative;}
+    .note-item + .note-item::before{content:'';position:absolute;left:0;top:50%;
+      transform:translateY(-50%);height:28px;width:1px;background:#EAEDF4;}
+    .note-item.grow{flex:1;min-width:150px;}
+    .note-lbl{font-size:10px;font-weight:700;letter-spacing:.8px;color:#9AA2B1;text-transform:uppercase;}
+    .note-val{font-size:13px;font-weight:600;color:#1E2433;white-space:nowrap;}
+    .note-val.muted{color:#A6ADBB;font-weight:500;}
+    .note-val.ellip{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .note-progress{display:flex;align-items:center;gap:9px;}
+    .note-bar{width:96px;height:5px;border-radius:3px;background:#EDEFF5;overflow:hidden;flex-shrink:0;}
+    .note-bar>span{display:block;height:100%;border-radius:3px;background:#10B981;transition:width .35s;}
+    .note-bar.warn>span{background:#EF4444;}
+    .note-pill{display:inline-flex;align-items:center;gap:6px;width:fit-content;
+      font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:999px;}
+    .note-pill::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;}
+    .np-wait{background:#EEF1F6;color:#64748B;}
+    .np-inprogress{background:#FEF4E2;color:#B45309;}
+    .np-completed{background:#E4F7EF;color:#0E9F6E;}
+    .np-incomplete{background:#FDE8E8;color:#DC2626;}
+
+    /* ============ Funnel Result modal ============ */
+    .fmodal-bg{position:fixed;inset:0;background:rgba(30,36,51,.55);display:none;
+      align-items:center;justify-content:center;z-index:2000;}
+    .fmodal-bg.open{display:flex;}
+    .fmodal{background:#fff;border-radius:10px;border:1px solid #E4E7EF;
+      width:720px;max-width:96%;max-height:88%;
+      display:flex;flex-direction:column;overflow:hidden;
+      box-shadow:0 12px 40px rgba(20,30,60,.22);
+      font-family:'Krungsri-med',-apple-system,BlinkMacSystemFont,Roboto,sans-serif;
+      font-size:13px;color:#1E2433;}
+    .fmodal-head{padding:14px 18px;border-bottom:1px solid #EAEDF4;display:flex;
+      align-items:center;justify-content:space-between;flex-shrink:0;}
+    .fmodal-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:7px;}
+    .fmodal-close{border:none;background:none;cursor:pointer;font-size:22px;color:#9AA2B1;
+      padding:0 4px;border-radius:6px;line-height:1;}
+    .fmodal-close:hover{background:#F0F2F8;color:#1E2433;}
+    .fmodal-body{padding:16px 18px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;}
+    .sf-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11.5px;color:#6B7280;}
+
+    .ftbl{width:100%;border-collapse:collapse;font-size:12.5px;}
+    .ftbl th{font-size:11.5px;font-weight:600;color:#fff;background:#6B7280;padding:9px 10px;
+      border-right:1px solid rgba(255,255,255,.14);text-align:right;}
+    .ftbl th:last-child{border-right:none;}
+    .ftbl th:nth-child(1),.ftbl th:nth-child(2){text-align:left;}
+    .ftbl td{padding:9px 10px;border-bottom:1px solid #F0F2F8;text-align:right;color:#1E2433;}
+    .ftbl td:nth-child(1){text-align:center;color:#9AA2B1;font-size:11px;}
+    .ftbl td:nth-child(2){text-align:left;font-weight:600;}
+    .ftbl tr:last-child td{border-bottom:none;}
+    .ftbl tr.skipped td{color:#C6CBD6;}
+    .ftbl tr.skipped td:nth-child(2){text-decoration:line-through;}
+    .neg{color:#EF4444;}
+    .bar-cell{display:flex;align-items:center;gap:5px;justify-content:flex-end;}
+    .mbar{width:50px;height:5px;border-radius:3px;background:#F0F2F8;overflow:hidden;flex-shrink:0;}
+    .mbar-fill{height:100%;border-radius:3px;background:#EF4444;}
+    .sec-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block;}
+    .skip-tag{font-size:9px;padding:1px 6px;border-radius:999px;background:#F0F2F8;
+      border:1px solid #E4E7EF;color:#9AA2B1;margin-left:3px;}
+
+    .cond-field{font-family:Consolas,'Courier New',monospace;}
+
+    .sum-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+    .sum-card{background:#F7F8FB;border-radius:10px;padding:11px 13px;border:1px solid #EAEDF4;}
+    .sum-lbl{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+      color:#9AA2B1;margin-bottom:4px;}
+    .sum-val{font-size:18px;font-weight:700;}
+    .fmodal-foot{padding:11px 18px;border-top:1px solid #EAEDF4;display:flex;align-items:center;
+      justify-content:space-between;flex-shrink:0;}
+    .gen-note{font-size:11.5px;color:#9AA2B1;}
+    .btn-ghost{background:#fff;color:#374151;border:1px solid #E4E7EF;border-radius:7px;
+      padding:6px 14px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;}
+    .btn-ghost:hover{background:#F0F2F8;}
+
+    .dropdown-menu{
+      position:absolute;background:#fff;border:1px solid #E4DED7;border-radius:10px;
+      box-shadow:0 6px 20px rgba(60,50,45,.14);min-width:110px;padding:4px;display:none;z-index:50;right:0;
+    }
+    .dropdown-menu.show{display:block}
+    .dropdown-menu button{
+      display:block;width:100%;text-align:left;border:none;background:none;cursor:pointer;
+      padding:8px 13px;font-size:16px;color:#3D3835;border-radius:7px;font-family:inherit;
+    }
+    .dropdown-menu button:hover{background:#F3EEE9}
+
+
+</style>
+
+<div id="flow_table" class="page_all" style="display:none;padding:20px">
+    <h3>Workflow Execution Log</h3>
+    <div align="right" style="margin-bottom: 10px;">
+      <!-- <button class="btn-run" onclick="create_transaction()">+ Run Flow</button> -->
+    </div>
+    <table id="list_flow_table" width="100%">
+        <thead>
+          <tr>
+            <th>Transaction ID</th>
+            <th>Flow ID</th>
+            <th>Flow Name</th>
+            <th>Steps</th>
+            <th>Status</th>
+            <th>Create Date</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<div id="flow_area" class="page_all" style="display:none;">
+  <div class="topbar">
+    <label>Transaction ID</label>
+    <input id="transId" value="">
+    <label>Flow ID</label>
+    <input id="flowId" value="">
+    <label>Flow Name</label>
+    <input id="flowName" value="" style="width:300px">
+    <!-- <button class="btn-run" onclick="runFlow()" disabled>Run >></button> -->
+  </div>
+
+  <div class="flow-note" id="flowNote"></div>
+
+  <div class="canvas" id="canvas"></div>
+
+  <div class="output-panel" id="outputPanel" style="height: 600px;">
+    <h3>Payload</h3>
+    <pre id="outputPre"></pre>
+    <button class="btn-copy" onclick="copyPayload()">Copy</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     Funnel Result Modal — เปิดจาก step ที่เป็น Eligible + Completed
+     ============================================================ -->
+<div class="fmodal-bg" id="stepFunnel" onclick="if(event.target===this)closeStepFunnel()">
+  <div class="fmodal">
+    <div class="fmodal-head">
+      <span class="fmodal-title">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M1 2h12l-5 6v4l-2-1V8L1 2z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linejoin="round"/>
+        </svg>
+        Funnel Result — <span id="sfName">-</span>
+      </span>
+      <button class="fmodal-close" onclick="closeStepFunnel()">&times;</button>
+    </div>
+    <div class="fmodal-body">
+      <div class="sf-meta" id="sfMeta"></div>
+      <table class="ftbl">
+        <thead>
+          <tr>
+            <th style="width:28px">#</th>
+            <th>Condition</th>
+            <th>Leads Before</th>
+            <th>Leads After</th>
+            <th>Reduction</th>
+            <th>Reduction %</th>
+          </tr>
+        </thead>
+        <tbody id="sfBody"></tbody>
+      </table>
+      <div class="sum-grid">
+        <div class="sum-card"><div class="sum-lbl">Initial Leads</div><div class="sum-val" id="sf-init"></div></div>
+        <div class="sum-card"><div class="sum-lbl">Total Filtered</div><div class="sum-val neg" id="sf-red"></div></div>
+        <div class="sum-card"><div class="sum-lbl">Final Eligible</div><div class="sum-val" style="color:#10B981" id="sf-fin"></div></div>
+        <div class="sum-card"><div class="sum-lbl">% Reduction</div><div class="sum-val neg" id="sf-pct"></div></div>
+      </div>
+    </div>
+    <div class="fmodal-foot">
+      <span class="gen-note" id="sfNote"></span>
+      <div style="display:flex;gap:8px">
+        <button class="btn-ghost" onclick="exportStepFunnel()">Export Results</button>
+        <button class="btn-run" onclick="closeStepFunnel()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     Parameter Detail Modal — เปิดจาก step ประเภท Parameter
+     ============================================================ -->
+<div class="fmodal-bg" id="stepParam" onclick="if(event.target===this)closeStepParams()">
+  <div class="fmodal" style="width:600px">
+    <div class="fmodal-head">
+      <span class="fmodal-title">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M2 4h10M2 7h10M2 10h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        Parameter Detail — <span id="pmName">-</span>
+      </span>
+      <button class="fmodal-close" onclick="closeStepParams()">&times;</button>
+    </div>
+    <div class="fmodal-body">
+      <div class="pm-grid">
+        <div class="pm-card"><div class="pm-lbl">Lead Type</div><div class="pm-val" id="pm-lead"></div></div>
+        <div class="pm-card"><div class="pm-lbl">Entity</div><div class="pm-val" id="pm-entity"></div></div>
+        <div class="pm-card"><div class="pm-lbl">Program</div><div class="pm-val" id="pm-program"></div></div>
+      </div>
+      <div class="pm-sec" id="pm-sec">Parameters</div>
+      <div id="pm-listwrap"></div>
+    </div>
+    <div class="fmodal-foot">
+      <span class="gen-note" id="pmNote"></span>
+      <button class="btn-run" onclick="closeStepParams()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TYPES=['AUTO','MANUAL'];
+const STATUSES=['Wait','Inprogress','Completed','Incomplete'];
+
+/* ===== Config ของแต่ละ Category (ให้ตรงกับหน้า Workflow Config) ===== */
+const CATEGORIES = {
+  ELIGIBLE : { label:'Eligible',  css:'cat-eligible',  codeLabel:'Eligible Code', color:'#8B5E3C' },   // น้ำตาล
+  PARAMETER: { label:'Parameter', css:'cat-parameter', codeLabel:'Parameter ID',  color:'#D9A404' },   // เหลือง
+  PROFILE  : { label:'Profile',   css:'cat-profile',   codeLabel:'Workflow ID',   color:'#6B7280' }    // เทา
+};
+const DEFAULT_CATEGORY='ELIGIBLE';
+
+/* ---- node layout (compact card) ---- */
+let COLS=5;                    // จำนวน Box ต่อแถว (คำนวณใหม่ตามขนาดหน้าจอ)
+const MAX_COLS=5;              // จำนวนคอลัมน์สูงสุด
+const BOX_W=260,BOX_H=238,GAP_X=50,GAP_Y=50,PAD=8;
+const TERM_W=128,TERM_H=46;   // Start / End node size
+const STROKE='#B9C0D0',STROKE_W=1.7;
+
+/* ---- คำนวณจำนวนคอลัมน์จากความกว้างหน้าจอ / canvas ---- */
+function calcCols(){
+  const canvas=document.getElementById('canvas');
+  // ความกว้างที่ใช้งานได้จริง : ถ้า canvas ยังไม่แสดง (clientWidth = 0) ให้ fallback เป็นความกว้างหน้าจอ
+  let avail=canvas&&canvas.clientWidth>0?canvas.clientWidth:window.innerWidth;
+  avail-=56;                                    // หัก padding ซ้าย-ขวาของ .canvas (28+28)
+  // n กล่องใช้พื้นที่ = PAD*2 + n*BOX_W + (n-1)*GAP_X
+  const n=Math.floor((avail-PAD*2+GAP_X)/(BOX_W+GAP_X));
+  return Math.min(MAX_COLS,Math.max(1,n));      // อย่างน้อย 1, ไม่เกิน MAX_COLS
+}
+
+function updateCols(){
+  const newCols=calcCols();
+  if(newCols!==COLS){
+    COLS=newCols;
+    render();
+  }
+}
+
+/* re-render เมื่อ resize (debounce กันเรียกถี่เกิน) */
+let resizeTimer;
+window.addEventListener('resize',function(){
+  clearTimeout(resizeTimer);
+  resizeTimer=setTimeout(updateCols,150);
+});
+
+const listFlows = [
+  {
+    "flow_id":"F00001","flow_name":"Select Base X_Sell_Pool (KA)",
+    "steps":[
+      {"order":1,"type":"AUTO","name":"mcrm_select_base_topup_tele","status":"Wait"},
+      {"order":2,"type":"AUTO","name":"mcrm_select_base_topup_tele_config","status":"Wait"},
+      {"order":3,"type":"AUTO","name":"mcrm_select_base_topup_rh","status":"Wait"},
+      {"order":4,"type":"AUTO","name":"mcrm_select_base_topup_dtu","status":"Wait"},
+      {"order":5,"type":"AUTO","name":"mcrm_select_base_preapprove_refin","status":"Wait"},
+      {"order":6,"type":"AUTO","name":"mcrm_select_base_feedback","status":"Wait"}
+    ]
+  },
+  {
+    "flow_id":"F00002","flow_name":"Select Base X_Sell_Pool (AY)",
+    "steps":[
+      {"order":1,"type":"AUTO","name":"mcrm_select_base_topmc","status":"Wait"},
+      {"order":2,"type":"AUTO","name":"mcrm_select_base_feedback","status":"Wait"}
+    ]
+  },
+  {
+    "flow_id":"F00003","flow_name":"Gen X_SELL_POOL (by program)",
+    "steps":[
+      {"order":1,"type":"AUTO","name":"DWH-program Topup","status":"Wait"},
+      {"order":2,"type":"AUTO","name":"DWH-program Revolving loan","status":"Wait"},
+      {"order":3,"type":"AUTO","name":"DWH-program Pre-Approve (R)","status":"Wait"},
+      {"order":4,"type":"AUTO","name":"DWH-program Pre-Approve (N/U)","status":"Wait"},
+      {"order":5,"type":"AUTO","name":"DWH-program Pre-Approve (MC)","status":"Wait"}
+    ]
+  },
+  {
+    "flow_id":"F00004","flow_name":"Gen X_SELL_POOL (by parameter)",
+    "steps":[
+      {"order":1,"type":"AUTO","name":"DWH-Max LTV","status":"Wait","category":"PARAMETER","code":"P00001"},
+      {"order":2,"type":"AUTO","name":"DWH-Receipt Term","status":"Wait","category":"PARAMETER","code":"P00002"},
+      {"order":3,"type":"AUTO","name":"DWH-FOIR","status":"Wait","category":"PARAMETER","code":"P00003"},
+      {"order":4,"type":"AUTO","name":"DWH-Flat rate,Flat rate TP_RH","status":"Wait","category":"PARAMETER","code":"P00004"},
+      {"order":5,"type":"AUTO","name":"DWH-Flat rate OPTT%","status":"Wait","category":"PARAMETER","code":"P00005"},
+      {"order":6,"type":"AUTO","name":"DWH-X Installment%","status":"Wait","category":"PARAMETER","code":"P00006"},
+      {"order":7,"type":"AUTO","name":"DWH-NCB","status":"Wait","category":"PARAMETER","code":"P00007"},
+      {"order":8,"type":"AUTO","name":"DWH-Minimum down payment","status":"Wait","category":"PARAMETER","code":"P00008"},
+      {"order":9,"type":"AUTO","name":"DWH-Minimum Credit line (Threshold)","status":"Wait","category":"PARAMETER","code":"P00009"}
+    ]
+  },
+  {
+    "flow_id": "F00005",
+    "flow_name": "Gen X_SELL_POOL (Final)",
+    "run_type": "MANUAL",
+    "schedule": null,
+    "steps": [
+        {
+            "order": 1,
+            "type": "AUTO",
+            "name": "Inquiry Data X Sell Pool",
+            "detail": "Retain all condition columns defined in the proposal that filter basic conditions",
+            "category": "ELIGIBLE",
+            "status": "Completed",
+            "code": "E00001"
+        },
+        {
+            "order": 2,
+            "type": "AUTO",
+            "name": "Update data of Topup program per parameter",
+            "detail": "update Loan offer Parameters for Topup, parameter:all(exclude: Flat rate%)",
+            "category": "PARAMETER",
+            "status": "Completed",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "TOPUP",
+            "params": ["TOPUP_OPTION","MAX_LTV","RECEIPT_TERM","X_INSTALLMENT_OPT1","X_INSTALLMENT_OPT2","X_INSTALLMENT_OPT3","X_INSTALLMENT_OPT4","NCB"]
+        },
+        {
+            "order": 3,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-topup-flat-rate1",
+            "detail": "update Loan offer Parameters for Topup, parameter:Flat rate option 1",
+            "category": "PARAMETER",
+            "status": "Inprogress",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "TOPUP",
+            "params": ["FLAT_RATE_OPT1"]
+        },
+        {
+            "order": 4,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-topup-flat-rate2",
+            "detail": "update Loan offer Parameters for Flat rate option 2",
+            "category": "PARAMETER",
+            "status": "Wait",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "TOPUP",
+            "params": ["FLAT_RATE_OPT2"]
+        },
+        {
+            "order": 5,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-topup-flat-rate3",
+            "detail": "update Loan offer Parameters for Flat rate option 3",
+            "category": "PARAMETER",
+            "status": "Wait",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "TOPUP",
+            "params": ["FLAT_RATE_OPT3"]
+        },
+        {
+            "order": 6,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-topup-flat-rate4",
+            "detail": "update Loan offer Parameters for Flat rate option 4",
+            "category": "PARAMETER",
+            "status": "Wait",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "TOPUP",
+            "params": ["FLAT_RATE_OPT4"]
+        },
+        {
+            "order": 7,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-revolving-loan",
+            "detail": "update program Loan offer Parameters for revoling Loan",
+            "category": "PARAMETER",
+            "status": "Wait",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "REVOLVING_LOAN",
+            "params": ["RL_OPTION"]
+        },
+        {
+            "order": 8,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-revolving-loan-flat-rate-tp_rh",
+            "detail": "update Loan offer Parameters for Flat Rate",
+            "category": "PARAMETER",
+            "status": "Wait",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "REVOLVING_LOAN",
+            "params": ["FLAT_RATE_TP_RH"]
+        },
+        {
+            "order": 9,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-pre-approve-r",
+            "detail": "Update Loan offer Parameters for pre-approve r",
+            "category": "PARAMETER",
+            "status": "Wait",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "PRE_APPROVE_R",
+            "params": ["PA_R_OPTION"]
+        },
+        {
+            "order": 10,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-pre-approve-r-flat-rate",
+            "detail": "Update Loan offer Parameters for flat-rate pre-approve r",
+            "category": "PARAMETER",
+            "status": "Wait",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "PRE_APPROVE_R",
+            "params": ["PA_R_FLAT_RATE"]
+        },
+        {
+            "order": 11,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-pre-approve-nu",
+            "detail": "Update Loan offer Parameters for pre-approve N/U",
+            "category": "PARAMETER",
+            "status": "Wait",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "PRE_APPROVE_NU",
+            "params": ["PA_NU_OPTION"]
+        },
+        {
+            "order": 12,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-pre-approve-nu-flat-rate",
+            "detail": "Update Loan offer Parameters for flat-rate pre-approve N/U",
+            "category": "PARAMETER",
+            "status": "Wait",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "PRE_APPROVE_NU",
+            "params": ["PA_NU_FLAT_RATE"]
+        },
+        {
+            "order": 13,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-pre-approve-mc",
+            "detail": "Update Loan offer Parameters for pre-approve MC",
+            "category": "PARAMETER",
+            "status": "Wait",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "PRE_APPROVE_MC",
+            "params": ["PA_MC_OPTION"]
+        },
+        {
+            "order": 14,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-pre-approve-mc-flat-rate",
+            "detail": "Update Loan offer Parameters for pre-approve MC flag rate",
+            "category": "PARAMETER",
+            "status": "Wait",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "PRE_APPROVE_MC",
+            "params": ["PA_MC_FLAT_RATE"]
+        },
+        {
+            "order": 15,
+            "type": "AUTO",
+            "name": "dev-mcrm-cap-max-special-criteria",
+            "detail": "Run special logic of Cap Max Flat Rate and Max LTV for Topup program",
+            "category": "PARAMETER",
+            "status": "Wait",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "",
+            "program": "",
+            "params": []
+        },
+        {
+            "order": 16,
+            "type": "AUTO",
+            "name": "credit line calculations Top up programs (X Sell Pool)",
+            "detail": "calculate credit line and cash offer",
+            "category": "PARAMETER",
+            "status": "Wait",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "",
+            "program": "",
+            "params": []
+        },
+        {
+            "order": 17,
+            "type": "AUTO",
+            "name": "credit line calculations Revolving Loan programs (X Sell Pool)",
+            "detail": "",
+            "category": "PARAMETER",
+            "status": "Wait",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "",
+            "program": "",
+            "params": []
+        },
+        {
+            "order": 18,
+            "type": "AUTO",
+            "name": "credit line calculations Pre-Approve (R) programs (X Sell Pool)",
+            "detail": "",
+            "category": "PARAMETER",
+            "status": "Wait",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "",
+            "program": "",
+            "params": []
+        },
+        {
+            "order": 19,
+            "type": "AUTO",
+            "name": "credit line calculations Pre-Approve (N/U) programs (X Sell Pool)",
+            "detail": "",
+            "category": "PARAMETER",
+            "status": "Wait",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "",
+            "program": "",
+            "params": []
+        },
+        {
+            "order": 20,
+            "type": "AUTO",
+            "name": "Flag Program Top up",
+            "detail": "Flag Program Top up",
+            "category": "PARAMETER",
+            "status": "Wait",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "",
+            "program": "",
+            "params": []
+        },
+        {
+            "order": 21,
+            "type": "AUTO",
+            "name": "Flag Program Revolving Loan",
+            "detail": "Flag Program Revolving Loan",
+            "category": "PARAMETER",
+            "status": "Wait",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "",
+            "program": "",
+            "params": []
+        },
+        {
+            "order": 22,
+            "type": "AUTO",
+            "name": "Flag Program Pre-Approve (R)",
+            "detail": "Flag Program Pre-Approve (R)",
+            "category": "PARAMETER",
+            "status": "Wait",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "",
+            "program": "",
+            "params": []
+        },
+        {
+            "order": 23,
+            "type": "AUTO",
+            "name": "Flag Program Pre-Approve (N/U) ",
+            "detail": "Flag Program Pre-Approve (N/U) ",
+            "category": "PARAMETER",
+            "status": "Wait",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "",
+            "program": "",
+            "params": []
+        }
+    ]
+  },
+  {
+    "flow_id":"F00006","flow_name":"GEN LEAD INS_PPI",
+    "steps":[
+      {"order":1,"type":"AUTO","name":"STEP 0","detail":"BASE LEAD (No Condition)","category":"ELIGIBLE","code":"E00001","status":"Completed"},
+      {"order":2,"type":"AUTO","name":"STEP 1","detail":"SUPPRESS AGE,REMAINING_TERM,DELINQUENCY,TOTAL_INCOME,BLACKLIST","category":"ELIGIBLE","code":"E00002","status":"Completed"},
+      {"order":3,"type":"AUTO","name":"STEP 2","detail":"SUPPRESS BILL CODE","category":"ELIGIBLE","code":"E00003","status":"Completed"},
+      {"order":4,"type":"AUTO","name":"STEP 3","detail":"SUPPRESS DEBT_RE + VR","category":"ELIGIBLE","code":"E00004","status":"Completed"},
+      {"order":5,"type":"AUTO","name":"STEP 4","detail":"SUPPRESS PPI_EFFECTIVE","category":"ELIGIBLE","code":"E00005","status":"Completed"},
+      {"order":6,"type":"AUTO","name":"STEP 5","detail":"SUPPRESS INSURANCE_PPI","category":"ELIGIBLE","code":"E00006","status":"Completed"},
+      {"order":7,"type":"AUTO","name":"STEP 6","detail":"SUPPRESS CONSENT (Customer Level)","category":"ELIGIBLE","code":"E00007","status":"Completed"},
+      {"order":8,"type":"AUTO","name":"STEP 7","detail":"SUPPRESS PPI ACTIVE","category":"ELIGIBLE","code":"E00008","status":"Completed"},
+      {"order":9,"type":"AUTO","name":"STEP 8","detail":"SUPPRESS PPI CANCEL","category":"ELIGIBLE","code":"E00009","status":"Completed"},
+      {"order":10,"type":"AUTO","name":"STEP 9","detail":"SUPPRESS WRITE_OFF_TYPE","category":"ELIGIBLE","code":"E00010","status":"Completed"},
+      {"order":11,"type":"AUTO","name":"STEP 10","detail":"SUPPRESS CUSTOMER_WRITE_OFF_TYPE","category":"ELIGIBLE","code":"E00001","status":"Completed"},
+      {"order":12,"type":"AUTO","name":"STEP 11","detail":"SUPPRESS ADVANCE PERIOD","category":"ELIGIBLE","code":"E00002","status":"Completed"},
+      {"order":13,"type":"AUTO","name":"STEP 12","detail":"PREPARE FOR REGISTER INS PPI","category":"ELIGIBLE","code":"E00003","status":"Completed"}
+    ]
+  },
+  
+];
+
+let steps=[];
+let nextId=steps.length+1,dragSrcId=null;
+
+/* ===== แปลง step ดิบ -> step ที่ใช้ใน canvas (รองรับ field เก่า eligible_code เหมือนหน้า config) ===== */
+function normalizeStep(s,i){
+  let category = s.category || (s.eligible_code ? 'ELIGIBLE' : DEFAULT_CATEGORY);
+  if(!CATEGORIES[category]) category = DEFAULT_CATEGORY;
+  return {
+    id: i + 1,
+    name: s.name || `Step${i + 1}`,
+    type: s.type || 'AUTO',
+    status: s.status || 'Wait',
+    detail: s.detail || '',
+    category: category,
+    code: s.code || s.eligible_code || '',
+    /* ---- ข้อมูลเพิ่มเติมของ step ประเภท PARAMETER ---- */
+    leadType: s.leadType || '',
+    entity: s.entity || '',
+    program: s.program || '',
+    params: Array.isArray(s.params) ? s.params : []
+  };
+}
+
+function addStep(){steps.push({id:nextId++,name:`Step${steps.length+1}`,type:'AUTO',status:'Wait',category:DEFAULT_CATEGORY,code:''});render()}
+function removeStep(id){steps=steps.filter(s=>s.id!==id);render()}
+
+function getPos(idx){
+  const row=Math.floor(idx/COLS),col=idx%COLS;
+  const rev=row%2===1;
+  const c=rev?(COLS-1-col):col;
+  return{x:PAD+c*(BOX_W+GAP_X),y:PAD+row*(BOX_H+GAP_Y),row,c,rev};
+}
+
+/* ---- node list = [Start, ...steps, End] ---- */
+function nodeCount(){return steps.length+2}
+function isTerm(i){return i===0||i===steps.length+1}
+function rectAt(i){
+  const p=getPos(i);
+  if(isTerm(i)){
+    return{x:p.x+(BOX_W-TERM_W)/2,y:p.y+(BOX_H-TERM_H)/2,w:TERM_W,h:TERM_H,rev:p.rev,row:p.row};
+  }
+  return{x:p.x,y:p.y,w:BOX_W,h:BOX_H,rev:p.rev,row:p.row};
+}
+
+function makePath(){
+  const n=nodeCount();
+  if(n<2)return'';
+  const parts=[];
+  for(let i=0;i<n-1;i++){
+    const a=rectAt(i),b=rectAt(i+1);
+    const ax=a.rev?a.x:(a.x+a.w), ay=a.y+a.h/2;
+    const bx=b.rev?(b.x+b.w):b.x, by=b.y+b.h/2;
+    if(a.row===b.row){
+      const mx=(ax+bx)/2;
+      parts.push(`M${ax},${ay} C${mx},${ay} ${mx},${by} ${bx},${by}`);
+    }else{
+      const midX=a.rev?(PAD-GAP_X/2):(PAD+COLS*(BOX_W+GAP_X)-GAP_X/2);
+      const cr=14;
+      const d1=a.rev?-1:1, d2=b.rev?-1:1;
+      parts.push(
+        `M${ax},${ay} `+
+        `L${midX-d1*cr},${ay} Q${midX},${ay} ${midX},${ay+cr} `+
+        `L${midX},${by-cr} Q${midX},${by} ${midX+d2*cr},${by} `+
+        `L${bx},${by}`
+      );
+    }
+  }
+  return parts.join(' ');
+}
+
+function svgW(){return PAD*2+COLS*(BOX_W+GAP_X)-GAP_X+GAP_X+60}
+function svgH(){
+  const rows=Math.ceil(nodeCount()/COLS)||1;
+  return PAD*2+rows*(BOX_H+GAP_Y)-GAP_Y+40;
+}
+
+function statusClass(st){return st==='Wait'?'st-wait':st==='Inprogress'?'st-inprogress':st==='Completed'?'st-completed':st==='Incomplete'?'st-incomplete':''}
+
+function badgeHTML(st){
+  if(st==='Wait') return`<span class="step-badge b-wait"><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.5" fill="none" stroke="#94A3B8" stroke-width="1.5"/></svg>Wait</span>`;
+  if(st==='Inprogress') return`<span class="step-badge b-inprogress"><span class="spinner"></span>In Progress</span>`;
+  if(st==='Completed') return`<span class="step-badge b-completed"><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="5.5" fill="#10B981"/><polyline points="2.8,5.5 4.5,7.5 8.2,3.2" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Completed</span>`;
+  if(st==='Incomplete') return`<span class="step-badge b-incomplete"><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.5" fill="none" stroke="#FCA5A5" stroke-width="1.5"/></svg>Incomplete</span>`;
+  return'';
+}
+
+/* ===== chip แสดง code/id ของ step (Eligible Code / Parameter ID / Workflow ID) ===== */
+function codeChipHTML(s){
+  const cat=CATEGORIES[s.category]||CATEGORIES[DEFAULT_CATEGORY];
+  /* Parameter ที่ไม่มี code : ข้อมูลอ้างอิงอยู่ในแถบ chip ด้านบนแล้ว ไม่ต้องโชว์ช่องว่าง */
+  if(!s.code && s.category==='PARAMETER') return '';
+  const val=s.code||'-';
+  return `<span class="code-chip ${cat.css}" title="${cat.codeLabel} ${val}"><span class="code-lbl">${cat.codeLabel}</span><span class="code-val">${val}</span></span>`;
+}
+
+function randomMin(){return Math.floor(Math.random()*15)+4}
+
+/* ===== แถบสรุปข้อมูล Parameter ในกล่อง (แสดงเฉพาะ category = PARAMETER) ===== */
+function paramStripHTML(s){
+  if(s.category!=='PARAMETER') return '';
+  const chips=[];
+  if(s.leadType) chips.push(`<span class="pchip lead" title="Lead Type : ${s.leadType}">${s.leadType}</span>`);
+  if(s.entity)   chips.push(`<span class="pchip" title="Entity : ${s.entity}">${s.entity}</span>`);
+  if(s.program)  chips.push(`<span class="pchip program" title="Program : ${s.program}">${s.program}</span>`);
+  const n=s.params.length;
+  chips.push(n
+    ? `<span class="pchip count" title="${n} parameter${n>1?'s':''} : ${s.params.join(', ')}">${n} param${n>1?'s':''}</span>`
+    : `<span class="pchip none" title="ขั้นตอนนี้ไม่ผูกกับ parameter">no param</span>`);
+  return `<div class="param-strip">${chips.join('')}</div>`;
+}
+
+/* ===== modal : รายละเอียด parameter ของ step ===== */
+function openStepParams(idx){
+  const s=steps[idx];
+  if(!s) return;
+  const dash='<span class="pm-val muted">—</span>';
+
+  document.getElementById('pmName').textContent      = s.name;
+  document.getElementById('pm-lead').innerHTML       = s.leadType || dash;
+  document.getElementById('pm-entity').innerHTML     = s.entity   || dash;
+  document.getElementById('pm-program').innerHTML    = s.program  || dash;
+  document.getElementById('pm-sec').textContent      = s.params.length
+    ? `Parameters (${s.params.length})` : 'Parameters';
+
+  document.getElementById('pm-listwrap').innerHTML = s.params.length
+    ? `<div class="pm-list">${s.params.map((p,k)=>
+        `<div class="pm-row"><span class="pm-no">${k+1}</span><span class="pm-name">${p}</span></div>`).join('')}</div>`
+    : `<div class="pm-empty">ขั้นตอนนี้ไม่ผูกกับ parameter — ทำงานด้วย logic ของตัวเอง</div>`;
+
+  document.getElementById('pmNote').textContent = `Step #${idx+1} · ${s.type} · ${s.status}`;
+  document.getElementById('stepParam').classList.add('open');
+}
+
+function closeStepParams(){
+  document.getElementById('stepParam').classList.remove('open');
+}
+
+/* ===== ท้ายกล่อง step =====
+   บรรทัดบน : code chip (ซ้าย) + duration / สถานะ (ขวา)
+   บรรทัดล่าง: ปุ่มเต็มความกว้าง — View Result (Eligible + Completed) หรือ Run step (Manual ที่ถึงคิว)
+*/
+function footHTML(s,i,status_box_before){
+  let meta='', action='';
+
+  if(s.status==='Completed'){
+    const startDate=new Date();
+    const startDate_minus=startDate.setMinutes(startDate.getMinutes()-randomMin());
+    const endDate=new Date();
+    const min_duration=((endDate-startDate_minus)/1000/60).toFixed(2);
+    meta=`<span class="duration-txt" title="Duration ${min_duration} min">
+        <svg width="10" height="10" viewBox="0 0 11 11" fill="none"><circle cx="5.5" cy="5.5" r="4.4" stroke="currentColor" stroke-width="1.2"/><path d="M5.5 3.2v2.5l1.7 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        ${min_duration} min</span>`;
+
+    if(s.category==='ELIGIBLE'){
+      action=`<button class="foot-action" onclick="openStepFunnel(${i})">
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M1 2h10l-4 5v3l-2-1V7L1 2z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linejoin="round"/></svg>
+          View Result</button>`;
+    }
+
+  }else if(s.status==='Incomplete'){
+    meta=`<span class="fail-txt" title="Something went wrong">
+        <svg width="10" height="10" viewBox="0 0 11 11" fill="none"><circle cx="5.5" cy="5.5" r="4.4" stroke="currentColor" stroke-width="1.2"/><path d="M5.5 3v3M5.5 7.8v.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Failed</span>`;
+
+  }else if(s.status==='Wait' && s.type==='MANUAL' && (status_box_before==='Completed'||status_box_before===null)){
+    action=`<button class="foot-action primary" onclick="runFlow('${i}')">
+        <svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M2 1.5l6 3.5-6 3.5V1.5z" fill="currentColor"/></svg>
+        Run step</button>`;
+  }
+
+  /* step ประเภท Parameter : ถ้ายังไม่มีปุ่มอื่น ให้เปิดดูรายละเอียด parameter ได้ทุกสถานะ */
+  if(!action && s.category==='PARAMETER'){
+    action=`<button class="foot-action" onclick="openStepParams(${i})">
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M1.5 3.5h9M1.5 6h9M1.5 8.5h5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        View Parameters</button>`;
+  }
+
+  return `<div class="foot-line">${codeChipHTML(s)}${meta}</div>${action}`;
+}
+
+function termNodeHTML(kind){
+  if(kind==='start'){
+    return `<div class="term-node term-start"><span class="term-dot"></span>START</div>`;
+  }
+  const allDone = steps.length>0 && steps.every(s=>s.status==='Completed');
+  const check = allDone
+    ? `<svg width="13" height="13" viewBox="0 0 11 11"><polyline points="2,5.6 4.4,8 9,2.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+    : `<span class="term-dot"></span>`;
+  return `<div class="term-node term-end ${allDone?'done':''}">${check}END</div>`;
+}
+
+function showList(){
+  const tbody = document.querySelector('#list_flow_table tbody');
+  const step_mock = listFlows.filter(f => f.flow_id === 'F00005' || f.flow_id === 'F00006');
+  for(var i=0;i<2;i++){
+      let flow = step_mock[i];
+      const tr = document.createElement('tr');
+      let new_trans_id = 'T0000'+(i+1);
+      tr.innerHTML = `
+          <td align="center" class="trans_id">${new_trans_id}</td>
+          <td align="center">${flow.flow_id}</td>
+          <td>${flow.flow_name}</td>
+          <td align="center">${flow.steps.length}</td>
+          <td align="center">${flow.steps[flow.steps.length-1].status}</td>
+          <td align="center">${new Date().toLocaleString()}</td>
+          <td align="center">${new Date().toLocaleString()}</td>
+          <td align="center">${new Date().toLocaleString()}</td>
+          <td align="center">
+          <div class="dropdown-container">
+            <button class="btn-dots" onclick="toggleDropdown(event, this)">⋮</button>
+            <div class="dropdown-menu">
+              <button class="" onclick="chooseFlow_func('${new_trans_id}','${flow.flow_id}')">View</button>
+              <button class="" onclick="registerLead('${new_trans_id}')">Register</button>
+            </div>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+  }
+}
+
+function chooseFlow(flow_id){
+  $("#flowId").val("");
+  $("#flowName").val("");
+
+  var flow = listFlows.find(f => f.flow_id === flow_id);
+  if (flow) {
+    document.getElementById('flowId').value = flow.flow_id;
+    document.getElementById('flowName').value = flow.flow_name;
+    steps = flow.steps.map(normalizeStep);
+    nextId = steps.length + 1;
+    render();
+  } else {
+    console.error(`Flow with ID ${flow_id} not found.`);
+  }
+}
+
+function chooseFlow_func(new_trans_id,flow_id){
+  $('#flow_table').hide();
+  $('#flow_area').show();
+  $("#transId").val(new_trans_id);
+  const tranStart = new Date();
+  tranStart.setMinutes(tranStart.getMinutes() - 30);
+  currentTrans={id:new_trans_id,start:tranStart,end:null};
+  COLS = calcCols();   // คำนวณจำนวนคอลัมน์หลังจาก show #flow_area แล้ว (clientWidth ถึงจะไม่เป็น 0)
+  chooseFlow(flow_id);
+}
+
+function numberWithCommas(x) {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+/* ============================================================
+   FUNNEL RESULT — สำหรับ step ประเภท ELIGIBLE ที่ status = Completed
+   เงื่อนไขที่แสดงมาจากชุด Criteria (Demographic / Retention / Risk)
+   ============================================================ */
+const SF_INITIAL = 15847;
+
+/* ---- helper สร้างเงื่อนไข : C(field, operator, values, enabled) ---- */
+let _fnUid = 0;
+const uid = () => 'c' + (++_fnUid);
+function C(field, op, values, enabled = true){
+  return { type:'cond', uid:uid(), field, op, values, enabled };
+}
+/* เงื่อนไขที่อยู่ในกลุ่มซ้อน (โครงเดียวกับ C แยกไว้ให้อ่านง่าย) */
+function NC(field, op, values, enabled = true){
+  return C(field, op, values, enabled);
+}
+
+const FUNNEL_CRITERIA = [
+  {
+    id:'demo', label:'Demographic Criteria', badge:'gb-d', dot:'#8A6F5C', accent:'accent-d', cardAcc:'acc-d',
+    items:[
+      C('product_base',    'in',      ['HP','AL']),
+      C('sub_product_base','in',      ['New','Refin Topup']),
+      C('age',             'between', ['20','64']),
+      C('nationality',     '=',       ['TH']),
+      C('area',            'in',      ['BKK']),
+      C('branch_code',     'not in',  ['16','42']),
+      C('customer_type',   '=',       ['individual']),
+      C('car_age',         '<=',      ['12']),
+      C('vip',             '!=',      ['Y'], false),
+    ]
+  },
+  {
+    id:'ret', label:'Retention Criteria', badge:'gb-r', dot:'#2F9E5F', accent:'accent-r', cardAcc:'acc-r',
+    items:[
+      {
+        type:'group', uid:uid(), label:'Occupation & Income Group', connector:'AND', enabled:true,
+        conds:[
+          NC('occupations',   'not in', ['เจ้าของกิจการ-ไม่มีทะเบียนการค้า']),
+          NC('total_income',  '>=',     ['15000']),
+        ]
+      },
+      C('account_type',   '=',  ['ACTIVE']),
+      C('remaining_term', '>=', ['6']),
+      C('paid_term',      '>=', ['6']),
+    ]
+  },
+  {
+    id:'risk', label:'Risk Criteria', badge:'gb-k', dot:'#D64C4C', accent:'accent-k', cardAcc:'acc-k',
+    items:[
+      C('delinquency_status',  '=',      ['CURRENT']),
+      C('max_delinquency',     'not in', ['90 DAYS','120 DAYS','150 DAYS','180 DAYS','365+ DAYS']),
+      C('gbi_customer',        '=',      ['G']),
+      C('b_score_customer',    'in',     ['A','B','C']),
+      C('collection_code',     'not in', ['21700','21205']),
+      C('consignment_flag',    '!=',     ['Y']),
+      C('account_status',      '=',      ['NORMAL']),
+      C('write_off_criteria',  '=',      ['N']),
+      C('blacklist_customer',  '=',      ['N']),
+      C('debt_re_status',      'not in', ['RE','RCL'], false),
+      C('reject_from_product', '>=',     ['195']),
+      C('recently_apply',      '>=',     ['105']),
+    ]
+  }
+];
+
+/* % การกรองของแต่ละเงื่อนไข (mock — ของจริงให้ backend ส่งมาพร้อมผลรัน) */
+const SF_PCT = {
+  product_base:0,        sub_product_base:6.4,  age:21.4,             nationality:3.2,
+  area:1.2,              branch_code:1.4,       customer_type:0.6,    car_age:4.8,
+  vip:2.1,               occupations:9.8,       total_income:16.2,    account_type:2.5,
+  remaining_term:7.6,    paid_term:4.1,         delinquency_status:17.7, max_delinquency:11.3,
+  gbi_customer:6.2,      b_score_customer:8.4,  collection_code:17.6, consignment_flag:9.5,
+  account_status:7.9,    write_off_criteria:10, blacklist_customer:7.4, debt_re_status:9.1,
+  reject_from_product:5, recently_apply:5.4
+};
+function sfPctOf(field){
+  if(SF_PCT[field]!==undefined) return SF_PCT[field];
+  let h=0; for(const ch of String(field)) h=(h*31+ch.charCodeAt(0))%10000;
+  return +((h%180)/10 + 1).toFixed(1);   // fallback : 1.0–19.0 % แบบคงที่ต่อชื่อฟิลด์
+}
+
+/* ---- แสดงเฉพาะ id (ชื่อฟิลด์) ของเงื่อนไข ---- */
+function sfCondText(c){ return c.field; }
+function sfCondHTML(c){ return `<span class="cond-field">${c.field}</span>`; }
+
+/* ---- แผ่ criteria เป็นรายการเงื่อนไข (ไม่แยกกลุ่ม/ประเภท) ---- */
+function sfFlatten(groups){
+  const rows=[];
+  groups.forEach(g=>{
+    g.items.forEach(it=>{
+      if(it.type==='group'){
+        it.conds.forEach(c=>rows.push({
+          cond:c, enabled:(c.enabled!==false && it.enabled!==false)
+        }));
+      }else{
+        rows.push({cond:it, enabled:it.enabled!==false});
+      }
+    });
+  });
+  return rows;
+}
+
+let sfLast = {name:'', code:'', rows:[]};
+
+function openStepFunnel(idx){
+  const s = steps[idx];
+  if(!s) return;
+
+  let running = SF_INITIAL;
+  let no = 0, active = 0, skipped = 0;
+  const out = [];
+
+  document.getElementById('sfBody').innerHTML = sfFlatten(FUNNEL_CRITERIA).map(r => {
+    const c = r.cond;
+    no++;
+
+    /* ---- เงื่อนไขที่ปิดใช้งาน : ไม่นำมาคำนวณ ---- */
+    if(!r.enabled){
+      skipped++;
+      return `<tr class="skipped">
+        <td>${no}</td>
+        <td>${sfCondHTML(c)}<span class="skip-tag">skipped</span></td>
+        <td>—</td><td>—</td><td>—</td><td>—</td></tr>`;
+    }
+
+    active++;
+    const pct    = sfPctOf(c.field);
+    const before = running;
+    const after  = Math.max(0, Math.round(before * (1 - pct / 100)));
+    const red    = after - before;
+    running = after;
+    out.push({no:no, name:sfCondText(c), before:before, after:after, red:red, pct:pct});
+
+    const bar = pct
+      ? `<div class="bar-cell"><div class="mbar"><div class="mbar-fill" style="width:${Math.min(100, Math.round(pct / 30 * 100))}%"></div></div><span class="neg">-${pct}%</span></div>`
+      : '—';
+
+    return `<tr>
+      <td>${no}</td>
+      <td>${sfCondHTML(c)}</td>
+      <td>${before.toLocaleString()}</td>
+      <td>${after.toLocaleString()}</td>
+      <td>${red ? `<span class="neg">${red.toLocaleString()}</span>` : '—'}</td>
+      <td>${bar}</td></tr>`;
+  }).join('');
+
+  const totalRed = running - SF_INITIAL;
+  const cat = CATEGORIES[s.category] || CATEGORIES[DEFAULT_CATEGORY];
+
+  document.getElementById('sfName').textContent = s.name;
+  document.getElementById('sfMeta').innerHTML =
+    `<span class="code-chip ${cat.css}"><span class="code-lbl">${cat.codeLabel}</span>${s.code || '-'}</span>
+     <span>Step #${idx + 1}</span><span>•</span>
+     <span>${active} conditions${skipped?` · ${skipped} skipped`:''}</span>
+     <span>•</span><span>${s.detail || '-'}</span>`;
+  document.getElementById('sf-init').textContent = SF_INITIAL.toLocaleString();
+  document.getElementById('sf-red').textContent  = totalRed.toLocaleString();
+  document.getElementById('sf-fin').textContent  = running.toLocaleString();
+  document.getElementById('sf-pct').textContent  = (totalRed / SF_INITIAL * 100).toFixed(1) + '%';
+  document.getElementById('sfNote').textContent  = 'Generated ' + new Date().toLocaleString();
+
+  sfLast = {name:s.name, code:s.code || '', rows:out};
+  document.getElementById('stepFunnel').classList.add('open');
+}
+
+function closeStepFunnel(){
+  document.getElementById('stepFunnel').classList.remove('open');
+}
+
+document.addEventListener('keydown', function(e){
+  if(e.key !== 'Escape') return;
+  closeStepFunnel();
+  closeStepParams();
+});
+
+function exportStepFunnel(){
+  if(!sfLast.rows.length) return;
+  const csv = ['#,Condition,Leads Before,Leads After,Reduction,Reduction %']
+    .concat(sfLast.rows.map(r => `${r.no},"${r.name}",${r.before},${r.after},${r.red},${r.pct}%`))
+    .join('\n');
+  const url = URL.createObjectURL(new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'}));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `funnel_${sfLast.code || 'result'}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ================= summary note bar ================= */
+let currentTrans={id:'',start:null,end:null};
+
+function flowStatus(){
+  if(steps.length===0)return'Wait';
+  if(steps.some(s=>s.status==='Incomplete'))return'Incomplete';
+  if(steps.every(s=>s.status==='Completed'))return'Completed';
+  if(steps.some(s=>s.status==='Inprogress'||s.status==='Completed'))return'Inprogress';
+  return'Wait';
+}
+
+function fmtDT(d){return d?d.toLocaleString():'-'}
+
+function renderNote(){
+  const el=document.getElementById('flowNote');
+  if(!el)return;
+  if(steps.length===0){el.style.display='none';return}
+  el.style.display='flex';
+
+  const st=flowStatus();
+  const total=steps.length;
+  const done=steps.filter(s=>s.status==='Completed').length;
+  const pct=total?Math.round(done/total*100):0;
+
+  // end datetime = when the flow reaches a final state
+  if(st==='Completed'||st==='Incomplete'){ if(!currentTrans.end)currentTrans.end=new Date(); }
+  else currentTrans.end=null;
+
+  const label={Wait:'Wait',Inprogress:'In Progress',Completed:'Completed',Incomplete:'Failed'}[st];
+
+  // which step are we on
+  let curIdx=steps.findIndex(s=>s.status==='Inprogress');
+  if(curIdx<0)curIdx=steps.findIndex(s=>s.status==='Incomplete');
+  if(curIdx<0&&st==='Completed')curIdx=total-1;
+  const curTxt=curIdx>=0?`#${curIdx+1} ${steps[curIdx].name}`:'-';
+
+  el.innerHTML=`
+    <div class="note-item">
+      <span class="note-lbl">Status</span>
+      <span class="note-pill np-${st.toLowerCase()}">${label}</span>
+    </div>
+    <div class="note-item">
+      <span class="note-lbl">Start</span>
+      <span class="note-val">${fmtDT(currentTrans.start)}</span>
+    </div>
+    <div class="note-item">
+      <span class="note-lbl">End</span>
+      <span class="note-val ${currentTrans.end?'':'muted'}">${fmtDT(currentTrans.end)}</span>
+    </div>`;
+}
+
+function render(){
+  renderNote();
+  const canvas=document.getElementById('canvas');
+  canvas.innerHTML='';
+  if(steps.length===0)return;
+  const W=svgW(),H=svgH();
+  const ns='http://www.w3.org/2000/svg';
+  const svg=document.createElementNS(ns,'svg');
+  svg.setAttribute('width',W);svg.setAttribute('height',H);
+  svg.classList.add('flow-svg');
+
+  const defs=document.createElementNS(ns,'defs');
+  const marker=document.createElementNS(ns,'marker');
+  marker.setAttribute('id','arr');marker.setAttribute('markerWidth','9');
+  marker.setAttribute('markerHeight','9');marker.setAttribute('refX','7');
+  marker.setAttribute('refY','3.5');marker.setAttribute('orient','auto');
+  const mp=document.createElementNS(ns,'path');
+  mp.setAttribute('d','M1,1 L7,3.5 L1,6');mp.setAttribute('fill','none');
+  mp.setAttribute('stroke',STROKE);mp.setAttribute('stroke-width','1.5');
+  mp.setAttribute('stroke-linecap','round');mp.setAttribute('stroke-linejoin','round');
+  marker.appendChild(mp);defs.appendChild(marker);svg.appendChild(defs);
+
+  {
+    const pe=document.createElementNS(ns,'path');
+    pe.setAttribute('d',makePath());
+    pe.setAttribute('fill','none');pe.setAttribute('stroke',STROKE);
+    pe.setAttribute('stroke-width',STROKE_W);pe.setAttribute('stroke-linecap','round');
+    pe.setAttribute('stroke-linejoin','round');pe.setAttribute('marker-end','url(#arr)');
+    svg.appendChild(pe);
+  }
+
+  for(let n=0;n<nodeCount();n++){
+    const r=rectAt(n);
+    const fo=document.createElementNS(ns,'foreignObject');
+    fo.setAttribute('x',r.x);fo.setAttribute('y',r.y);
+    fo.setAttribute('width',r.w);fo.setAttribute('height',r.h);
+
+    const holder=document.createElement('div');
+    holder.style.cssText='width:100%;height:100%';
+
+    if(n===0){
+      holder.innerHTML=termNodeHTML('start');
+    }else if(n===steps.length+1){
+      holder.innerHTML=termNodeHTML('end');
+    }else{
+      const i=n-1, s=steps[i];
+      const status_box_before=steps[i-1]?steps[i-1].status:null;
+      if(s.detail===undefined)s.detail='';
+      if(s.code===undefined)s.code='';
+      if(!CATEGORIES[s.category])s.category=DEFAULT_CATEGORY;
+      const cat=CATEGORIES[s.category];
+      const box=document.createElement('div');
+      // ใส่ class ตาม status + category (สีต่างกันตามประเภท เหมือนหน้า config)
+      box.className=`step-box ${statusClass(s.status)} ${cat.css}`;
+      box.dataset.id=s.id;
+      box.innerHTML=`
+        <div class="step-head">
+          <span class="step-no">#${i+1}</span>
+          <span class="cat-tag ${cat.css}">${cat.label}</span>
+          ${badgeHTML(s.status)}
+        </div>
+        <div class="step-name" title="${s.name}">${s.name}</div>
+        <div class="detail-wrap"><div class="step-detail" title="${s.detail}">${s.detail}</div></div>
+        ${paramStripHTML(s)}
+        <div class="step-foot">${footHTML(s,i,status_box_before)}</div>`;
+      holder.appendChild(box);
+    }
+
+    fo.appendChild(holder);svg.appendChild(fo);
+  }
+
+  canvas.appendChild(svg);
+  syncDetailFades();
+}
+
+/* ซ่อนเงาขอบล่างเมื่อข้อความไม่ล้น หรือเลื่อนถึงบรรทัดสุดท้ายแล้ว */
+function syncDetailFades(){
+  document.querySelectorAll('.detail-wrap').forEach(wrap => {
+    const d = wrap.querySelector('.step-detail');
+    if(!d) return;
+    const update = () => {
+      const more = d.scrollHeight - d.clientHeight - d.scrollTop > 2;
+      wrap.classList.toggle('no-fade', !more);
+    };
+    if(!d.dataset.bound){ d.addEventListener('scroll', update); d.dataset.bound='1'; }
+    update();
+  });
+}
+
+function submitFlow(){
+  const payload={
+    flow_id:document.getElementById('flowId').value,
+    flow_name:document.getElementById('flowName').value,
+    steps:steps.map((s,i)=>({order:i+1,type:s.type,name:s.name,detail:s.detail,category:s.category,code:s.code,status:s.status}))
+  };
+  document.getElementById('outputPre').textContent=JSON.stringify(payload,null,4);
+  return payload;
+}
+function copyPayload(){
+  navigator.clipboard.writeText(document.getElementById('outputPre').textContent).then(()=>{
+    const b=document.querySelector('.btn-copy');b.textContent='Copied!';setTimeout(()=>b.textContent='Copy',1500);
+  });
+}
+
+function runFlow(i){
+  const payload=submitFlow();
+  console.log('Running flow with payload:',JSON.stringify(payload));
+  processRunFlow(payload,i);
+}
+
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function processRunFlow(allFlow,indexFlow) {
+  if (indexFlow == undefined) indexFlow=-1;
+  let index = 0;
+  for (const step of allFlow.steps) {
+    if (index < indexFlow) { index++; continue; }
+    console.log(`Executing Step ${index + 1}: ${step.name} (Type: ${step.type}, Status: ${step.status})`);
+    if(steps[index].type === "MANUAL" && indexFlow != index ){
+      return Swal.fire({
+        title: 'Manual Step Detected',
+        text: `Step ${index + 1}: ${step.name} is a manual step. Please complete it manually before proceeding.`,
+        icon: 'warning',
+        confirmButtonText: 'OK'
+      });
+    }
+    steps[index].status = "Inprogress";
+    render();
+    await delay(2000);
+    steps[index].status = "Completed";
+    render();
+    index++;
+  }
+  console.log("All flows processed!");
+}
+
+function clearFlow(){ steps = []; render(); }
+
+function replaceFlow(){
+  Swal.fire({
+    title: 'Replace Flow',
+    input: 'textarea',
+    inputLabel: 'Paste your flow JSON here',
+    inputPlaceholder: 'Paste your flow JSON here...',
+    inputAttributes: {'aria-label': 'Paste your flow JSON here'},
+    showCancelButton: true
+  }).then((result) => {
+    if (result.isConfirmed) {
+      try {
+        const newFlow = JSON.parse(result.value);
+        if (newFlow.steps && Array.isArray(newFlow.steps)) {
+          steps = newFlow.steps.map(normalizeStep);
+          nextId = steps.length + 1;
+          render();
+          Swal.fire('Success', 'Flow replaced successfully!', 'success');
+        } else {
+          throw new Error('Invalid flow structure');
+        }
+      } catch (e) {
+        Swal.fire('Error', 'Invalid JSON format. Please check your input.', 'error');
+      }
+    }
+  });
+}
+
+function create_transaction(create_flow_id) {
+  listFlows.sort((a, b) => b.flow_id.localeCompare(a.flow_id));
+  if(create_flow_id){
+
+      const last_trans_id = document.getElementsByClassName("trans_id").length;
+      const tbody = document.querySelector('#list_flow_table tbody');
+      const tr = document.createElement('tr');
+      const flow = listFlows.find(f => f.flow_id === create_flow_id);
+      let new_trans_id = 'T0000'+(last_trans_id+1);
+      tr.innerHTML = `
+          <td align="center" class="trans_id">${new_trans_id}</td>
+          <td align="center">${flow.flow_id}</td>
+          <td>${flow.flow_name}</td>
+          <td align="center">${flow.steps.length}</td>
+          <td align="center">${flow.steps[flow.steps.length-1].status}</td>
+          <td align="center">${new Date().toLocaleString()}</td>
+          <td align="center">${new Date().toLocaleString()}</td>
+          <td align="center">${new Date().toLocaleString()}</td>
+          <td align="center">
+            <div class="dropdown-container">
+            <button class="btn-dots" onclick="toggleDropdown(event, this)">⋮</button>
+            <div class="dropdown-menu">
+              <button class="" onclick="chooseFlow_func('${flow.flow_id}','${flow.flow_id}')">View</button>
+            </div>
+          </div>
+          </td>
+      `;
+      tbody.appendChild(tr);
+
+  }else{
+  Swal.fire({
+    title: 'Create Transaction',
+    html: `
+      <label for="flowSelect">Select Flow:</label>
+      <select id="flowSelect" class="">
+        ${listFlows.map(f => `<option value="${f.flow_id}">${f.flow_id} - ${f.flow_name}</option>`).join('')}
+      </select>
+    `,
+    showCancelButton: true,
+    confirmButtonText: 'Create',
+    preConfirm: () => {
+      const selectedFlowId = document.getElementById('flowSelect').value;
+      return selectedFlowId;
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      const selectedFlowId = result.value;
+      const last_trans_id = document.getElementsByClassName("trans_id").length;
+
+      const tbody = document.querySelector('#list_flow_table tbody');
+      const tr = document.createElement('tr');
+      const flow = listFlows.find(f => f.flow_id === selectedFlowId);
+      let new_trans_id = 'T0000'+(last_trans_id+1);
+      tr.innerHTML = `
+          <td align="center" class="trans_id">${new_trans_id}</td>
+          <td align="center">${flow.flow_id}</td>
+          <td>${flow.flow_name}</td>
+          <td align="center">${flow.steps.length}</td>
+          <td align="center">${flow.steps[flow.steps.length-1].status}</td>
+          <td align="center">${new Date().toLocaleString()}</td>
+          <td align="center">${new Date().toLocaleString()}</td>
+          <td align="center">${new Date().toLocaleString()}</td>
+          <td align="center">
+            <div class="dropdown-container">
+            <button class="btn-dots" onclick="toggleDropdown(event, this)">⋮</button>
+            <div class="dropdown-menu">
+              <button class="" onclick="chooseFlow_func('${flow.flow_id}','${flow.flow_id}')">View</button><br>
+              <button class="" onclick="registerLead('${flow.flow_id}','${flow.flow_id}')">Register Lead</button>
+            </div>
+          </div>
+          </td>
+      `;
+      tbody.appendChild(tr);
+    }
+  });
+}
+}
+
+
+
+function registerLead(flow_id){
+  
+  let data = {
+      lead_id:      'L2026000002',
+      lead_name:    'X Sell Pool',
+      lead_sub:     'X Sell Pool',
+      lead_type:    'CRM_X_SELL_POOL',
+      entity:       'KA',
+      suppression:  '',
+      submit_date:  '',
+      complete_date:'',
+      status:       'LEAD_OPENED'
+    }
+
+  if(flow_id=="T00001"){
+    data["lead_name"] = "X Sell Pool";
+    data["lead_sub"] = "X Sell Pool";
+    data["lead_type"] = "CRM_X_SELL_POOL";
+    data["flow_id"] = "F00005";
+    data["tran_id"] = "T00001";
+    data["flow_name"] = "Gen X_SELL_POOL (Final)";
+  }else if(flow_id=="T00002"){
+    data["lead_name"] = "INS PPI";
+    data["lead_sub"] = "INS PPI";
+    data["lead_type"] = "INS_PPI";
+    data["flow_id"] = "F00006";
+    data["tran_id"] = "T00002";
+    data["flow_name"] = "GEN LEAD INS_PPI";
+  }
+
+  //  window self to worklist.html with query parameter
+  const url = `worklist.html?lead_id=${data.lead_id}&lead_name=${encodeURIComponent(data.lead_name)}&lead_sub=${encodeURIComponent(data.lead_sub)}&lead_type=${data.lead_type}&entity=${data.entity}&suppression=${data.suppression}&submit_date=${data.submit_date}&complete_date=${data.complete_date}&status=${data.status}&flow_id=${data.flow_id}&tran_id=${data.tran_id}&flow_name=${encodeURIComponent(data.flow_name)}`;
+  Swal.fire({
+        title: 'Register Lead',
+        text: `Are you sure you want to register lead ?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes',
+        cancelButtonText: 'Cancel'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.href = url;
+        }
+      });
+
+
+}
+
+function toggleDropdown(event, button) {
+  event.stopPropagation();
+  const currentMenu = button.nextElementSibling;
+  document.querySelectorAll('.dropdown-menu').forEach(menu => {
+    if (menu !== currentMenu) {
+      menu.classList.remove('show');
+    }
+  });
+  currentMenu.classList.toggle('show');
+}
+
+document.addEventListener('click', function() {
+  document.querySelectorAll('.dropdown-menu').forEach(menu => {
+    menu.classList.remove('show');
+  });
+});
+
+//ready
+COLS = calcCols();
+render();
+document.getElementById('flow_table').style.display='block';
+showList();
+
+// ready
+$(document).ready(function() {
+  // get create_flow_id from URL query parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const create_flow_id = urlParams.get('create_flow_id');
+  if(create_flow_id) {
+    create_transaction(create_flow_id);
+  }
+});
+
+</script>

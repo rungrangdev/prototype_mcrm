@@ -1,0 +1,239 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- main.css -->
+    <link rel="stylesheet" href="main.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- cdn sweet alert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+      #pathmenu{
+        /* v aglin middle */
+        display: flex;
+        align-items: center;
+
+      }
+
+      /* ---- แก้เมนูออกจากระบบซ้อนกับเมนูอื่น ----
+         เดิมใช้ position:absolute; bottom:20px ทำให้ลอยทับเมนูเวลาเมนูยาวหรือจอเตี้ย
+         เปลี่ยนเป็น flex ให้ sidebar เป็นคอลัมน์ แล้วใช้ margin-top:auto
+         ดันเมนูออกจากระบบลงล่างสุดแบบอยู่ใน flow ปกติ (ไม่ทับอะไร) */
+      .sidebar{
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .sidebar-menu{
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;   /* เมนูยาวเกินจอ ให้ scroll แทนการซ้อน */
+        min-height: 0;
+        margin-bottom: 0;
+      }
+      .has-submenu-logout{
+        position: static;          /* ยกเลิก absolute เดิม */
+        margin-top: auto;          /* ดันลงล่างสุดของ sidebar */
+        padding: 14px 20px;
+        display: flex;
+        align-items: center;
+        font-size: 10pt;
+        cursor: pointer;
+        border-top: 1px solid rgba(0,0,0,.08);
+        flex-shrink: 0;
+      }
+      .has-submenu-logout:hover{
+        opacity: .75;
+      }
+
+      /* ---- ปุ่ม Chat AI (มุมขวาของ header ข้างชื่อ user) ---- */
+      #header_right{
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .btn-chat-ai{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border: none;
+        border-radius: 50%;
+        background: #7b615c;          /* น้ำตาลแบบ brand-icon */
+        color: #f1c40f;               /* เหลืองแบบโลโก้ */
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(60,50,45,.25);
+        transition: background .15s, transform .15s;
+        position: relative;
+      }
+      .btn-chat-ai:hover{
+        background: #5B4F4B;
+        transform: scale(1.06);
+      }
+      /* จุดเขียวบอกว่า AI พร้อมใช้งาน */
+      .btn-chat-ai::after{
+        content:'';
+        position:absolute;
+        top:1px;right:1px;
+        width:9px;height:9px;
+        border-radius:50%;
+        background:#10B981;
+        border:2px solid #fff;
+      }
+    </style>
+</head>
+
+<body>
+  <div class="app-container">
+    
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-box">
+          <div class="brand-icon">
+            <img src="./Menu-Logo-10268ef8.svg" width="25px">
+          </div> <span class="sidebar-brand">&emsp;Modernized CRM</span>
+        </div>
+        <!-- <button class="btn-toggle-sidebar">←</button> -->
+      </div>
+    
+      <div class="menu-section-title">General</div>
+    
+      <ul class="sidebar-menu">
+        <li class="has-submenu open">
+          <a href="javascript:void(0)" class="menu-toggle">
+            <span class="menu-icon"><img src="./img/icon_list.png" width="20px"></span> Lead Management <span class="arrow">></span>
+          </a>
+          <ul class="submenu">
+            <li class="" onclick="openpage('Lead Management / Worklist','worklist');"><a href="#worklist"><span class="dot-gray">●</span> Worklist</a></li>
+            <li class="new_menu" onclick="openpage('Lead Management / Workflow Execution Log','workflow_management');"><a href="#workflow_management"><span class="dot-gray">●</span> Workflow Execution Log</a></li>
+          </ul>
+        </li>
+    
+        <li class="has-submenu open"> <a href="javascript:void(0)" class="menu-toggle">
+            <span class="menu-icon"><img src="./img/icon_db.png" width="20px"></span> Data Configuration <span class="arrow">></span>
+          </a>
+          <ul class="submenu">
+            <li onclick="openpage('Data Configuration / Suppression','');"><a href="#suppression"><span class="dot-gray">●</span> Suppression</a></li>
+            <li onclick="openpage('Data Configuration / Upload File','');"><a href="#upload-file"><span class="dot-gray">●</span> Upload File</a></li>
+            <li class="new_menu" onclick="openpage('Data Configuration / Master Data Manager','master-data-manager');"><a href="#master"><span class="dot-gray">●</span> Master Data Manager</a></li>
+            <li class="new_menu" onclick="openpage('Data Configuration / Lead Eligible Config','eligibility_config_v5');"><a href="#lead_eligible"><span class="dot-gray">●</span> Lead Eligible Config</a></li>
+            <!-- <li class="new_menu" onclick="openpage('Data Configuration / Workflow Config','workflow_config');"><a href="#workflow_config"><span class="dot-gray">●</span> Workflow Config</a></li> -->
+            <li class="new_menu" onclick="openpage('Data Configuration / Workflow Config','workflow_config_new');"><a href="#workflow_config_new"><span class="dot-gray">●</span> Workflow Config</a></li>
+          </ul>
+        </li>
+    
+        <li class="has-submenu">
+          <a href="javascript:void(0)" class="menu-toggle">
+            <span class="menu-icon"><img src="./img/icon_sound.png" width="20px"></span> Campaign Management <span class="arrow">></span>
+          </a>
+          <ul class="submenu">
+            <li class="new_menu" onclick="openpage('Campaign Management / Program Setup','master-program');"><a href="#campaign-list"><span class="dot-gray">●</span> Program Setup</a></li>
+            <li class="new_menu" onclick="openpage('Campaign Management / Parameter Master Setup','master-parameter');"><a href="#campaign-list"><span class="dot-gray">●</span> Parameter Master Setup</a></li>
+            <!-- <li class="new_menu" onclick="openpage('Campaign Management / Campaign Criteria','master-criteria');"><a href="#campaign-list"><span class="dot-gray">●</span> Campaign Criteria</a></li> -->
+            <li onclick="openpage('Campaign Management / Campaign List','');"><a href="#campaign-list"><span class="dot-gray">●</span> Campaign List</a></li>
+          </ul>
+        </li>
+    
+        <li class="has-submenu">
+          <a href="javascript:void(0)" class="menu-toggle">
+            <span class="menu-icon"><img src="./img/icon_sys.png" width="20px"></span> Other Feature <span class="arrow">></span>
+          </a>
+          <ul class="submenu">
+            <li onclick="openpage('Other Feature / Pricing Model Worklist','');"><a href="#pricing-model"><span class="dot-gray">●</span> Pricing Model Worklist</a></li>
+            <li onclick="openpage('Other Feature / Print House Worklist','');"><a href="#print-house"><span class="dot-gray">●</span> Print House Worklist</a></li>
+            <li onclick="openpage('Other Feature / Premium Reward Worklist','');"><a href="#premium-reward"><span class="dot-gray">●</span> Premium Reward Worklist</a></li>
+          </ul>
+        </li>
+
+
+        <li class="has-submenu-logout">
+          <span class="menu-icon"><img src="./img/icon_out.png" width="20px"></span>ออกจากระบบ
+        </li>
+      </ul>
+    </div>
+
+    <div class="main-content">
+
+      <div id="main_header">
+          <!-- page path -->
+           <div style="font-size:13px;color:#000;" id="pathmenu"></div>
+
+           <div id="header_right">
+              <!-- ปุ่ม Chat AI : กดแล้วเปิดหน้า llm.html แท็บเดิม -->
+              <button class="btn-chat-ai" title="AI Chat Assistant" onclick="window.open('llm.html','_self')" style="display: none;">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                  <path d="M10 2.5c-4.28 0-7.5 2.9-7.5 6.5 0 1.9.9 3.6 2.36 4.78-.1.83-.44 1.9-1.3 2.72 1.6-.08 2.86-.72 3.7-1.36.86.24 1.78.36 2.74.36 4.28 0 7.5-2.9 7.5-6.5s-3.22-6.5-7.5-6.5z"
+                    fill="currentColor"/>
+                  <circle cx="6.8" cy="9" r="1" fill="#7b615c"/>
+                  <circle cx="10" cy="9" r="1" fill="#7b615c"/>
+                  <circle cx="13.2" cy="9" r="1" fill="#7b615c"/>
+                </svg>
+              </button>
+              <div style="font-size:13px;color:#000;" id="person">Prasert Limprapathsorn</div>
+           </div>
+      </div>
+
+      <iframe id="screen" width="100%" height="100%" frameborder="0" src="default.html">
+
+      </iframe>
+      
+
+    </div>
+  </div>
+</body>
+
+</html>
+  
+  <script>
+  
+  document.querySelectorAll('.menu-toggle').forEach(item => {
+  item.addEventListener('click', event => {
+    // หาตัว <li> ที่เป็นตัวพ่อของเมนูที่ถูกคลิก
+    const parentLi = item.parentElement;
+    
+    // สลับคลาส 'open' (ถ้ามีอยู่จะลบ ถ้าไม่มีจะใส่เพิ่ม) เพื่อสั่งกาง/หุบ CSS
+    parentLi.classList.toggle('open');
+  });
+});
+
+function openpage(pathmenu,page_name){
+  // load file to screen
+  const filePath = page_name ? page_name + '.html' : 'default.html'; // ถ้า page_name เป็นค่าว่าง ให้โหลด default.html
+
+  const screen = document.getElementById('screen');
+
+  screen.src = filePath;
+
+
+  // pathmenu
+  document.getElementById('pathmenu').innerHTML = '<img src="./img/icon_bb.png" width="40px">&nbsp;'+"  "+pathmenu;
+
+}
+
+// ---- เปลี่ยน dot เป็นเหลืองเมื่อกดเมนูนั้นๆ ----
+document.querySelectorAll('.submenu li').forEach(li => {
+  li.addEventListener('click', () => {
+    // รีเซ็ตทุก dot กลับเป็นเทา
+    document.querySelectorAll('.submenu li span[class^="dot-"]').forEach(d => {
+      d.classList.remove('dot-yellow');
+      d.classList.add('dot-gray');
+    });
+    // เปลี่ยน dot ของเมนูที่ถูกกดเป็นเหลือง
+    const dot = li.querySelector('span[class^="dot-"]');
+    if (dot) {
+      dot.classList.remove('dot-gray');
+      dot.classList.add('dot-yellow');
+    }
+  });
+});
+
+  //ready
+  // render();
+
+  //หน้าแรก
+  // openpage('Data Configuration / Workflow Config','flow_table'); //หน้าแรก
+  // openpage('Lead Management / Workflow Management','master-data-manager');
+  // showList();
+  //
+  </script>

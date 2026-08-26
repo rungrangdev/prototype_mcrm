@@ -1,0 +1,771 @@
+/* font face */
+
+@font-face {
+    font-family: "Krungsri-med";
+    font-style: normal;
+    font-weight: normal;
+    src: url("./font/krungsri_con_med-webfont.ttf") format("truetype");
+}
+
+@font-face {
+    font-family: "Krungsri";
+    font-style: normal;
+    font-weight: normal;
+    src: url("./font/krungsri_con-webfont.ttf") format("truetype");
+}
+
+
+* {
+    font-family: 'Krungsri-med';
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0
+}
+
+body {
+    font-family: 'Krungsri-med';
+    background: #FFF;
+    color: #1a1a1a
+}
+
+.topbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    background: #ffffff;
+    border-bottom: 1px solid #E5E5E5
+}
+
+.topbar label {
+    font-size: 11px;
+    color: #999;
+    letter-spacing: .5px;
+    text-transform: uppercase
+}
+
+.topbar input {
+    border: 1px solid #E0E0E0;
+    border-radius: 6px;
+    padding: 5px 9px;
+    font-size: 12px;
+    font-family: 'Krungsri-med';
+    background: #F8F8F8;
+    color: #1a1a1a;
+    transition: border-color .15s
+}
+
+.topbar input:focus {
+    outline: none;
+    border-color: #BBBBBB
+}
+
+#flowName {
+    width: 180px
+}
+
+#flowId {
+    width: 80px
+}
+
+.btn-submit {
+    margin-left: auto;
+    padding: 6px 16px;
+    background: #1a1a1a;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'Krungsri-med';
+}
+
+.btn-submit:hover {
+    background: #333
+}
+
+/* green and arrow */
+/* .btn-run {
+    margin-left: 8px;
+    padding: 6px 16px;
+    background: #10B981;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'Krungsri-med';
+    display: flex;
+    align-items: center;
+    gap: 4px
+}
+
+.btn-run:hover {
+    background: #059669
+} */
+.btn-run{
+    background:#5B4F4B;color:#FFFFFF;border:none;border-radius:7px;
+    padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;
+    font-family:inherit;box-shadow:0 1px 3px rgba(60,50,45,.18);
+  }
+  .btn-run:hover{background:#6F5F5E}
+
+
+.btn-clear {
+    margin-left: 8px;
+    padding: 6px 16px;
+    background: #EF4444;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'Krungsri-med';
+    display: flex;
+    align-items: center;
+    gap: 4px
+}
+
+.btn-clear:hover {
+    background: #DC2626
+}
+
+.btn-replace {
+    margin-left: 8px;
+    padding: 6px 16px;
+    background: #3B82F6;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'Krungsri-med';
+    display: flex;
+    align-items: center;
+    gap: 4px
+}
+
+.btn-replace:hover {
+    background: #2563EB
+}
+
+.btn-allflow {
+    margin-left: 8px;
+    padding: 6px 16px;
+    background: #FBBF24;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'Krungsri-med';
+    display: flex;
+    align-items: center;
+    gap: 4px
+}
+
+.btn-allflow:hover {
+    background: #F59E0B
+}
+
+.canvas {
+    padding: 36px 32px;
+    overflow: auto;
+    min-height: 300px;
+    background: #F5F5F3
+}
+
+svg.flow-svg {
+    overflow: visible;
+    display: block
+}
+
+.step-box {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 13px 14px;
+    cursor: grab;
+    transition: box-shadow .15s;
+    border: 1.5px solid #E0E0E0
+}
+
+.step-box:hover {
+    box-shadow: 0 3px 12px rgba(0, 0, 0, .09)
+}
+
+.step-box.dragging {
+    opacity: .35;
+    cursor: grabbing
+}
+
+.step-box.drag-over {
+    box-shadow: 0 0 0 3px #C4B5FC
+}
+
+.step-box.st-wait {
+    border-color: #93C5FD;
+    background: #EFF6FF
+}
+
+.step-box.st-inprogress {
+    border-color: #FCA44A;
+    background: #FFF7ED
+}
+
+.step-box.st-completed {
+    border-color: #6EE7B7;
+    background: #ECFDF5
+}
+
+.step-box.st-incomplete {
+    border-color: #FCA5A5;
+    background: #FEF2F2
+}
+
+.drag-dots {
+    color: #CCCCCC;
+    font-size: 9px;
+    letter-spacing: 4px;
+    text-align: center;
+    margin-bottom: 6px;
+    cursor: grab;
+    line-height: 1
+}
+
+.step-num {
+    font-size: 11px;
+    color: #BBBBBB;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between
+}
+
+.step-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 500
+}
+
+.step-badge.b-wait {
+    color: #3B82F6
+}
+
+.step-badge.b-inprogress {
+    color: #F97316
+}
+
+.step-badge.b-completed {
+    color: #10B981
+}
+
+.step-badge.b-incomplete {
+    color: #EF4444
+}
+
+.spinner {
+    width: 11px;
+    height: 11px;
+    border: 1.5px solid #FCA44A;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    display: inline-block;
+    flex-shrink: 0
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg)
+    }
+}
+
+.btn-del {
+    width: 18px;
+    height: 18px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: #CCCCCC;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%
+}
+
+.btn-del:hover {
+    color: #EF4444;
+    background: rgba(239, 68, 68, .08)
+}
+
+.field-lbl {
+    font-size: 10px;
+    color: #AAAAAA;
+    margin-bottom: 3px;
+    letter-spacing: .3px;
+    margin-top: 1px
+}
+
+.step-input,
+.step-select {
+    width: 100%;
+    border: 1px solid #E5E5E5;
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 12px;
+    font-family: 'Krungsri-med';
+    background: #F9F9F9;
+    color: #1a1a1a;
+    margin-bottom: 7px
+}
+
+.step-input:focus,
+.step-select:focus {
+    outline: none;
+    border-color: #CCCCCC
+}
+
+.add-btn {
+    width: 36px;
+    height: 36px;
+    border: 1.5px dashed #CCCCCC;
+    border-radius: 50%;
+    background: #ffffff;
+    cursor: pointer;
+    font-size: 24px;
+    color: #AAAAAA;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .15s
+}
+
+.add-btn:hover {
+    border-color: #888;
+    color: #555;
+    background: #F5F5F5
+}
+
+.output-panel {
+    display: none;
+    border-top: 1px solid #E5E5E5;
+    background: #ffffff;
+    padding: 14px 20px;
+    max-height: 600px;
+    overflow-y: auto
+}
+
+.output-panel.show {
+    display: block
+}
+
+.output-panel h3 {
+    font-size: 10px;
+    color: #AAAAAA;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+    text-transform: uppercase
+}
+
+.output-panel pre {
+    font-size: 11px;
+    background: #F8F8F8;
+    border: 1px solid #E5E5E5;
+    border-radius: 6px;
+    padding: 10px;
+    overflow-x: auto;
+    line-height: 1.6;
+    color: #1a1a1a
+}
+
+.btn-copy {
+    margin-top: 8px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-family: 'Krungsri-med';
+    border: 1px solid #E0E0E0;
+    border-radius: 5px;
+    background: transparent;
+    cursor: pointer;
+    color: #888
+}
+
+.btn-copy:hover {
+    background: #F5F5F5
+}
+
+.btn-result {
+    margin-top: 6px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-family: 'Krungsri-med';
+    border: none;
+    border-radius: 5px;
+    background: #3B82F6;
+    color: #ffffff;
+    cursor: pointer
+}
+
+.btn-result:hover {
+    background: #2563EB
+}
+
+select[disabled] {
+    background: #F5F5F5;
+    color: #888
+}
+
+.brand-icon {
+    /* สั่งให้กรอบภายนอกล็อกขนาดไว้ที่ 20px และตัดส่วนที่ล้นออก */
+    width:30px;
+    height: 30px;
+    overflow: hidden; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* ตัดส่วนเกิน */
+        object-position: center; /* ดึงตรงกลาง */
+        
+        /* ใส่ค่า Zoom ที่ต้องการตรงนี้ (เช่น 1.5 คือซูม 150%) */
+        transform: scale(1.8); 
+    }
+}
+
+/* กล่องใหญ่ครอบทั้งหมด จัดเรียงแบบแนวนอน (row) */
+.app-container {
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+    /* ให้สูงเต็มหน้าจอ */
+    overflow: hidden;
+}
+
+/* โครงสร้างหลักของ Sidebar */
+.sidebar {
+    width: 240px;
+    min-width: 240px;
+    background-color: #f2f0f0;
+    /* สีเทาอ่อนตามรูป */
+    color: #4a4a4a;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    border-right: 1px solid #e0e0e0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow-y: auto;
+}
+
+/* ส่วนหัว */
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 15px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.brand-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.brand-icon {
+    background-color: #7b615c;
+    /* สีน้ำตาลตามโลโก้ */
+    padding: 6px;
+    border-radius: 6px;
+    color: #f1c40f;
+}
+
+.sidebar-brand {
+    font-weight: 600;
+    font-size: 16px;
+    color: #333;
+}
+
+.btn-toggle-sidebar {
+    background: black;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* หัวข้อกลุ่มเมนู */
+.menu-section-title {
+    font-family: 'Krungsri-med';
+    padding: 20px 20px 10px 20px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #666;
+    /* text-transform: uppercase; */
+}
+
+/* รายการเมนูหลัก */
+.sidebar-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-menu>li>a {
+    display: flex;
+    align-items: center;
+    padding: 8px 15px;
+    color: #333;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+    justify-content: space-between;
+    /* gap:10px; */
+}
+
+.sidebar-menu>li>a > *:nth-child(2) {
+    margin-left: auto;
+}
+
+.menu-icon {
+    margin-right: 10px;
+    font-size: 16px;
+}
+
+.arrow {
+    font-size: 15px;
+    transition: transform 0.2s;
+    color: #666;
+}
+
+/* สไตล์ของ Submenu (เมนูย่อย) */
+.submenu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    background-color: #eceaea;
+    /* เข้มกว่าพื้นหลังนิดหน่อยให้เห็นมิติ */
+    display: none;
+    /* ซ่อนไว้เป็นค่าเริ่มต้น */
+}
+
+.submenu li a {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px 10px 35px;
+    /* ดันเข้าไปข้างใน */
+    color: #555;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+/* จุดสีหน้าเมนูย่อย */
+.dot-yellow {
+    color: #ffcc00;
+    margin-right: 10px;
+    font-size: 10px;
+}
+
+.dot-gray {
+    color: #a0a0a0;
+    margin-right: 10px;
+    font-size: 10px;
+}
+
+/* สถานะเมื่อเปิดใช้งาน Submenu หรือกำลังกดอยู่ */
+.has-submenu.open>.submenu {
+    display: block;
+    /* สั่งให้แสดงผลออกมา */
+}
+
+.has-submenu.open .arrow {
+    transform: rotate(90deg);
+    /* หมุนลูกศรชี้ขึ้นเมื่อกางออก */
+}
+
+.submenu li.active a {
+    font-weight: bold;
+    color: #222;
+}
+
+/* สไตล์ของฝั่งขวา (เนื้อหาหลัก) */
+.main-content {
+
+    flex-grow: 1;
+    /* กินพื้นที่ที่เหลือทั้งหมดทางขวา */
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    /* ให้ scroll ได้ถ้าเนื้อหายาวเกินหน้าจอ */
+    background-color: #fff;
+}
+
+/* ตกแต่งส่วนที่มีอยู่เดิมเล็กน้อยเพื่อให้เข้ากับ Layout ใหม่ */
+.topbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    /* ป้องกันปุ่มล้นถ้าจอแคบ */
+}
+
+.canvas222 {
+    flex-grow: 1;
+    /* ให้ canvas ขยายตัวตามพื้นที่ที่เหลือ */
+    min-height: 400px;
+    background-color: white;
+    /* border: 1px solid #ccc; */
+    margin-bottom: 15px;
+}
+
+.canvas{
+    padding: 75px 28px 28px 28px;
+    overflow:auto;
+    background-image:radial-gradient(circle,#DCDFE9 1px,transparent 1px);
+    background-size:11px 11px;
+    flex-grow: 1;
+    /* ให้ canvas ขยายตัวตามพื้นที่ที่เหลือ */
+    min-height: 400px;
+    background-color: white;
+    /* border: 1px solid #ccc; */
+    margin-bottom: 15px;
+  }
+
+
+#main_header {
+    padding: 10px 20px;
+    background-color: #fff;
+    border-bottom: 2px solid #EEE;
+
+    font-size: 14px;
+    min-height: 72px;
+    /* color: #FFF; */
+    /* item center */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    div{
+        font-size: 14px;
+        font-family: 'Krungsri';
+    }
+
+}
+
+#list_flow_table {
+    border-collapse: collapse;
+}
+
+
+#list_flow_table th {
+    color: #ffffff;
+    border: 1px solid #dedede;
+    background-color: #6f5f5e;
+    border-right: 1px solid #dedede !important;
+    padding: 8px !important
+}
+
+#list_flow_table th:last-child {
+    border-right: 0 !important;
+}
+
+#list_flow_table td {
+    border: 1px solid #dedede;
+    color: #5a5a5a !important;
+    padding: 6px !important
+}
+
+button[disabled]{
+    background: #cccccc;
+    /* color: #666666; */
+    cursor: not-allowed;
+}
+
+/* .new_menu {
+    position: relative;
+}
+
+.new_menu::after {
+    content: "New";
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: #10B981;
+    color: #ffffff;
+    font-size: 8px;
+    padding: 2px 4px;
+    border-radius: 4px;
+} */
+
+/* กล่องครอบ */
+.dropdown-container {
+    position: relative;
+    display: inline-block;
+  }
+  
+  /* ปุ่ม 3 จุด */
+  .btn-dots {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 8px;
+    color: #6b7280; /* สีเทา */
+    transition: color 0.2s;
+  }
+  
+  .btn-dots:hover {
+    color: #000000; /* เปลี่ยนสีเมื่อเอาเมาส์วาง */
+  }
+  
+  /* เมนู Tooltip (ซ่อนไว้ก่อนในตอนแรก) */
+  .dropdown-menu {
+    display: none; /* ซ่อนไว้ */
+    position: absolute;
+    /* width:200px; */
+    top: 100%; /* ให้เด้งลงมาใต้ปุ่ม 3 จุด */
+    right: -50px;
+    transform: translateX(-50%); /* จัดให้อยู่ตรงกลางปุ่ม */
+    background-color: #ffffff;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 4px;
+    z-index: 10;
+    white-space: nowrap; /* ป้องกันปุ่ม View ตกบรรทัด */
+
+    padding:8px;
+
+    button {
+        font-size: 14pt;
+        min-width:70px;
+        padding:3px;
+        border: none;
+        background-color: #FFF;
+        cursor: pointer;
+        /* text-left */
+        text-align: left;
+    }
+    button:hover{
+        background-color: #F3F4F6;
+        border-radius: 4px;
+    }
+  }
+  
+  /* คลาสที่จะถูกเปิดด้วย JavaScript เมื่อคลิก */
+  .dropdown-menu.show {
+    display: block;
+  }

@@ -1,0 +1,233 @@
+<link rel="stylesheet" href="main.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+@font-face {
+    font-family: "Krungsri-med";
+    font-style: normal;
+    font-weight: normal;
+    src: url("./font/krungsri_con-webfont.ttf") format("truetype");
+}
+
+input, textarea, select { border: none !important; }
+
+/* ============ page ============ */
+.wl-page{
+  padding:20px;
+  font-family:'Krungsri-med',-apple-system,BlinkMacSystemFont,Roboto,sans-serif;
+  color:#1E2433;
+}
+.wl-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;}
+.wl-head h3{margin:0;}
+.wl-count{font-size:12px;color:#9AA2B1;font-weight:600;}
+
+/* ============ table ============ */
+#worklist_table{width:100%;border-collapse:collapse;background:#FFFFFF;border:1px solid #E4E7EF;}
+#worklist_table th{
+  font-size:16px;font-weight:600;color:#FFFFFF;background:#6F5F5E;
+  text-align:left;padding:11px 12px;white-space:nowrap;
+  border-right:1px solid rgba(255,255,255,.14);
+}
+#worklist_table th:last-child{border-right:none;}
+#worklist_table td{
+  padding:11px 12px;border:1px solid #dedede;font-size:14.5px;
+  color:#1E2433;background:#fff;vertical-align:middle;
+}
+#worklist_table tbody tr:last-child td{border-bottom:none;}
+#worklist_table tbody tr:hover td{background:#FBFCFE;}
+.cell-id{font-weight:700;letter-spacing:.3px;white-space:nowrap;}
+.cell-name{font-weight:600;color:#1E2433;}
+.cell-sub{font-size:11px;color:#9AA2B1;margin-top:2px;}
+.cell-date{white-space:nowrap;color:#4B5563;}
+.muted-dash{color:#C6CBD6;}
+
+/* chip แบบเดียวกับหน้า workflow */
+.wl-chip{
+  display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.3px;
+  padding:2px 8px;border-radius:999px;white-space:nowrap;
+  background:#FFFFFF;border:1px solid #E4E7EF;color:#6B7280;
+}
+.wl-chip.lead{background:#F4F5F7;border-color:#DDE1EA;color:#4B5563;}
+.wl-chip.sup{background:#FDF3D3;border-color:#EFD98F;color:#8A6A03;}
+
+/* status pill — โทนเดียวกับ note-pill ของหน้า workflow */
+.wl-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:999px;white-space:nowrap;
+}
+.wl-pill::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;}
+.wp-wait{background:#EEF1F6;color:#64748B;}
+.wp-inprogress{background:#FEF4E2;color:#B45309;}
+.wp-completed{background:#E4F7EF;color:#0E9F6E;}
+.wp-incomplete{background:#FDE8E8;color:#DC2626;}
+
+/* dropdown ⋮ (ปิดใช้งาน) */
+.dropdown-container{position:relative;display:inline-block;}
+.btn-dots{
+  border:none;background:white;font-size:17px;color:#6B7280;
+  padding:2px 8px;border-radius:7px;line-height:1;font-family:inherit;cursor:pointer;
+}
+.btn-dots:hover:not(:disabled){background:white;color:#1E2433;}
+/* .btn-dots:disabled{color:#D5DAE5;cursor:not-allowed;} */
+.dropdown-menu{
+  position:absolute;right:0;background:#fff;border:1px solid #E4E7EF;border-radius:9px;
+  box-shadow:0 6px 20px rgba(20,30,60,.14);min-width:120px;padding:4px;display:none;z-index:50;
+}
+.dropdown-menu.show{display:block;}
+.dropdown-menu button{
+  display:block;width:100%;text-align:left;border:none;background:none;cursor:pointer;
+  padding:8px 12px;font-size:12.5px;color:#1E2433;border-radius:6px;font-family:inherit;
+}
+.dropdown-menu button:hover{background:#F0F2F8;}
+
+.wl-empty{padding:26px 12px;text-align:center;font-size:12.5px;color:#9AA2B1;}
+</style>
+
+<div id="worklist_page" class="page_all wl-page">
+  <div class="wl-head">
+    <h3>Worklist</h3>
+  </div>
+
+  <table id="worklist_table" width="100%">
+    <thead>
+      <tr>
+        <th>Lead ID</th>
+        <th>Lead Name</th>
+        <th>Lead Type</th>
+        <th>Entity</th>
+        <th>Transaction ID</th>
+        <th>Flow ID</th>
+        <th>Flow Name</th>
+        <th>Suppression</th>
+        <th>Submit Date</th>
+        <th>Complete Date</th>
+        <th>Status</th>
+        <th style="width:44px"></th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script>
+/* ============================================================
+   MOCK DATA — worklist
+   status : Wait | Inprogress | Completed | Incomplete
+   ============================================================ */
+const WORKLIST = [
+//   {
+//     lead_id:      'L2026000001',
+//     lead_name:    'X Sell Pool',
+//     lead_sub:     'X Sell Pool',
+//     lead_type:    'CRM_X_SELL_POOL',
+//     entity:       'KA',
+//     flow_id:      '',
+//     flow_name:    '',
+//     tran_id:      '',
+//     suppression:  '',
+//     submit_date:  '',
+//     complete_date:'',
+//     status:       'LEAD_OPENED'
+//   }
+];
+
+const STATUS_LABEL = {
+  Wait:'Wait', Inprogress:'In Progress', Completed:'Completed', Incomplete:'Failed'
+};
+
+const dash = '<span class="muted-dash">—</span>';
+
+function renderWorklist(){
+  const tbody = document.querySelector('#worklist_table tbody');
+  tbody.innerHTML = '';
+
+  if(!WORKLIST.length){
+    tbody.innerHTML = `<tr><td colspan="9" class="wl-empty">Data Not Found</td></tr>`;
+    // document.getElementById('wlCount').textContent = '';
+    return;
+  }
+
+  WORKLIST.forEach(row => {
+    const st = STATUS_LABEL[row.status] ? row.status : 'LEAD_OPENED';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td align="center" class="cell-id">${row.lead_id}</td>
+      <td>
+        ${row.lead_name}
+      </td>
+      <td>${row.lead_type}</td>
+      <td align="center">${row.entity}</td>
+      <td align="center">${row.tran_id}</td>
+        <td align="center">${row.flow_id}</td>
+      <td align="center">${row.flow_name}</td>
+      <td></td>
+      <td align="center" class="cell-date"></td>
+      <td align="center" class="cell-date"></td>
+      <td align="center">${st}</td>
+      <td align="center">
+        
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  const n = WORKLIST.length;
+//   document.getElementById('wlCount').textContent = `${n} lead${n>1?'s':''}`;
+}
+
+/* เปิดใช้งานเมนู ⋮ ภายหลังได้โดยเอา disabled ออก แล้วใช้ toggleDropdown */
+function toggleDropdown(event, button){
+  event.stopPropagation();
+  const menu = button.nextElementSibling;
+  document.querySelectorAll('.dropdown-menu').forEach(m => { if(m !== menu) m.classList.remove('show'); });
+  menu.classList.toggle('show');
+}
+document.addEventListener('click', function(){
+  document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
+});
+
+function viewLead(lead_id){
+  console.log('view lead', lead_id);
+}
+
+
+// ready
+$(function(){
+    // const url = `worklist.html?lead_id=${data.lead_id}&lead_name=${encodeURIComponent(data.lead_name)}&lead_sub=${encodeURIComponent(data.lead_sub)}&lead_type=${data.lead_type}&entity=${data.entity}&suppression=${data.suppression}&submit_date=${data.submit_date}&complete_date=${data.complete_date}&status=${data.status}`;
+
+    let lead_id = new URLSearchParams(window.location.search).get('lead_id');
+    let lead_name = new URLSearchParams(window.location.search).get('lead_name');
+    let lead_sub = new URLSearchParams(window.location.search).get('lead_sub');
+    let entity = new URLSearchParams(window.location.search).get('entity');
+    let flow_id = new URLSearchParams(window.location.search).get('flow_id');
+    let flow_name = new URLSearchParams(window.location.search).get('flow_name');
+    let tran_id = new URLSearchParams(window.location.search).get('tran_id');
+    let suppression = new URLSearchParams(window.location.search).get('suppression');
+    let submit_date = new URLSearchParams(window.location.search).get('submit_date');
+    let complete_date = new URLSearchParams(window.location.search).get('complete_date');
+    let status = new URLSearchParams(window.location.search).get('status');
+    let lead_type = new URLSearchParams(window.location.search).get('lead_type');
+    console.log('lead_id:', lead_id, 'lead_name:', lead_name, 'lead_sub:', lead_sub, 'entity:', entity, 'suppression:', suppression, 'submit_date:', submit_date, 'complete_date:', complete_date, 'status:', status, 'lead_type:', lead_type);
+    if (lead_id ) {
+        WORKLIST.push({
+            lead_id: lead_id,
+            lead_name: lead_name,
+            lead_sub: lead_sub,
+            entity: entity,
+            flow_id: flow_id,
+            flow_name: flow_name,
+            tran_id: tran_id,
+            suppression: suppression,
+            submit_date: submit_date,
+            complete_date: complete_date,
+            status: status,
+            lead_type: lead_type
+        });
+    }
+
+
+/* ready */
+renderWorklist();
+
+});
+
+</script>

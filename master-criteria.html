@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Criteria Setup</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.31/vue.global.prod.min.js"></script>
+<style>
+@font-face {
+    font-family: "Krungsri-med";
+    font-style: normal;
+    font-weight: normal;
+    src: url("./font/krungsri_con-webfont.ttf") format("truetype");
+}
+:root{
+  --bg:#F1F3F6;
+  --surface:#FFFFFF;
+  --surface-alt:#F7F8FA;
+  --primary:#6f5f5e;
+  --primary-dark:#1B3050;
+  --accent:#E6A23D;
+  --accent-soft:#FBEEDA;
+  --text:#1C2333;
+  --text-secondary:#6B7280;
+  --border:#E3E6EC;
+  --success:#2F9E68;
+  --success-soft:#E5F5EC;
+  --danger:#D64545;
+  --danger-soft:#FBEAEA;
+  --violet:#6D5BD0;
+  --violet-soft:#EDEAFB;
+  --radius:10px;
+  --shadow-sm:0 1px 2px rgba(20,30,50,.06);
+  --shadow-md:0 8px 24px rgba(20,30,50,.12);
+}
+*{box-sizing:border-box;font-family:'Krungsri-med';}
+html,body{margin:0;padding:0;}
+body{background:#FFF;font-family:'Krungsri-med', sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;}
+.mono{font-family:'Krungsri-med', monospace;}
+#app{min-height:100vh;display:flex;flex-direction:column;background-color:#FFF;}
+
+.panel-head{padding:20px 24px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;}
+.panel-title-row{display:flex;align-items:center;gap:10px;}
+.panel-head h2{margin:0;font-size:19px;font-weight:700;}
+.panel-head .desc{margin:4px 0 0;color:var(--text-secondary);font-size:13.5px;}
+
+.filter-row{padding:16px 24px 0;display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;}
+.filter-field{display:flex;flex-direction:column;gap:6px;min-width:200px;}
+.filter-field label{font-size:11.5px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.3px;}
+.filter-field select{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:'Krungsri-med';font-size:13.5px;background:var(--surface-alt);color:var(--text);}
+.filter-hint{font-size:12px;color:var(--text-secondary);padding:8px 24px 0;}
+
+.btn{font-family:'Krungsri-med';font-size:13.5px;font-weight:600;padding:10px 16px;border-radius:8px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.12s;white-space:nowrap;}
+.btn-primary{background:var(--primary);color:#fff;}
+.btn-primary:hover{background:var(--primary-dark);}
+.btn-ghost{background:transparent;color:var(--text-secondary);border:1px solid var(--border);}
+.btn-ghost:hover{background:var(--surface-alt);}
+.btn-danger{background:var(--danger);color:#fff;}
+.btn-danger:hover{background:#B93636;}
+
+.table-wrap{padding:16px 24px 24px;flex:1;}
+.order-pill{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-secondary);}
+.value-pill{display:inline-block;font-weight:700;background:var(--violet-soft);color:var(--violet);padding:4px 12px;border-radius:8px;font-size:13px;}
+.status-badge{display:inline-flex;align-items:center;justify-content:center;min-width:32px;padding:3px 10px;border-radius:14px;font-weight:700;font-size:12.5px;}
+.status-badge.y{background:var(--success-soft);color:var(--success);}
+.status-badge.n{background:var(--danger-soft);color:var(--danger);}
+
+.key-chip{display:inline-flex;align-items:center;gap:5px;background:var(--accent-soft);color:#9A6316;font-size:11.5px;font-weight:600;padding:3px 8px 3px 6px;border-radius:20px;}
+.key-chip .idx{background:var(--accent);color:#fff;width:15px;height:15px;border-radius:50%;font-size:9.5px;display:flex;align-items:center;justify-content:center;font-weight:700;}
+
+.cond-chip-row{display:flex;flex-wrap:wrap;gap:6px;max-width:520px;}
+.cond-chip{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);border:1px solid #F0D9B4;color:#9A6316;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:20px;}
+.cond-chip .k{font-family:'IBM Plex Mono',monospace;font-weight:600;}
+.cond-chip .v{background:#fff;border-radius:10px;padding:1px 7px;color:var(--text);}
+.cond-chip.na{background:var(--surface-alt);border-color:var(--border);color:var(--text-secondary);}
+.cond-chip.na .v{background:transparent;color:var(--text-secondary);}
+
+.switch{position:relative;display:inline-block;width:38px;height:22px;cursor:pointer;}
+.switch input{opacity:0;width:0;height:0;}
+.slider{position:absolute;inset:0;background:#D8DCE4;border-radius:22px;transition:.15s;}
+.slider::before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s;box-shadow:var(--shadow-sm);}
+.switch input:checked + .slider{background:var(--success);}
+.switch input:checked + .slider::before{transform:translateX(16px);}
+
+.empty-state{text-align:center;padding:64px 20px;color:var(--text-secondary);}
+.empty-state .glyph{width:56px;height:44px;margin:0 auto 16px;border:2px solid #C7CEDA;border-radius:6px;position:relative;}
+.empty-state .glyph::after{content:'';position:absolute;left:50%;top:50%;width:18px;height:3px;background:#C7CEDA;transform:translate(-50%,-50%);border-radius:2px;}
+.empty-state h3{color:var(--text);margin:0 0 4px;font-size:15px;}
+
+table.data-table{width:100%;border-collapse:collapse;font-size:14px;margin-bottom:0;}
+table.data-table thead th{text-align:left;font-size:14.5px;font-weight:700;color:#FFF;letter-spacing:.02em;background:#6f5f5e;padding:13px 18px;border:1px solid #dedede;}
+table.data-table tbody td{padding:14px 18px;border:1px solid #dedede;vertical-align:middle;color:var(--text);}
+table.data-table tbody tr:hover{background:var(--surface-alt);}
+
+.dropdown-container{position:relative;display:inline-block;}
+.btn-dots{background:none;border:none;font-size:20px;cursor:pointer;padding:0 8px;color:#6b7280;transition:color .2s;}
+.btn-dots:hover{color:#000;}
+.dropdown-menu{display:none;position:absolute;top:100%;right:0;width:max-content;min-width:100px;padding:6px;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.1);border:1px solid #e5e7eb;border-radius:6px;z-index:10;}
+.dropdown-menu button{display:block;width:100%;font-size:16px;padding:6px 12px;border:none;background:transparent;cursor:pointer;text-align:left;color:#1f2937;white-space:nowrap;}
+.dropdown-menu button:hover{background:#F3F4F6;border-radius:4px;color:#000;}
+.dropdown-menu.show{display:block;}
+
+.overlay{position:fixed;inset:0;background:rgba(20,26,40,.42);display:flex;justify-content:flex-start;z-index:50;}
+.side-drawer{width:480px;max-width:92vw;background:var(--surface);box-shadow:var(--shadow-md);display:flex;flex-direction:column;animation:slideIn .18s ease;top:20px;margin-bottom:70px;left:33%;position:relative;}
+@keyframes slideIn{from{transform:translateX(24px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+.side-drawer-head{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.side-drawer-head h3{margin:0;font-size:16px;}
+.close-x{background:none;border:none;font-size:20px;color:var(--text-secondary);cursor:pointer;line-height:1;}
+.side-drawer-body{padding:20px 24px;overflow-y:auto;flex:1;}
+.field{margin-bottom:18px;}
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;}
+.field .hint{font-size:11.5px;color:var(--text-secondary);margin-top:5px;}
+.field-inline{display:flex;gap:8px;align-items:flex-end;}
+.field-inline .field{flex:1;margin-bottom:0;}
+.field input[type=text], .field input[type=number], .field textarea, .field select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-family:'Krungsri-med';font-size:13.5px;color:var(--text);background:var(--surface-alt);outline:none;}
+.field input:focus, .field textarea:focus, .field select:focus{border-color:var(--primary);background:#fff;}
+.active-toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface-alt);padding:12px 14px;border-radius:8px;}
+.active-toggle-row .lab strong{display:block;font-size:13.5px;}
+.active-toggle-row .lab span{font-size:12px;color:var(--text-secondary);}
+.meta-box{margin-top:6px;padding:12px 14px;background:var(--surface-alt);border-radius:8px;font-size:12px;color:var(--text-secondary);line-height:1.7;}
+.side-drawer-foot{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;}
+
+.cond-input-row{display:grid;grid-template-columns:180px 1fr;gap:10px;align-items:center;margin-bottom:10px;}
+.cond-input-row.three{grid-template-columns:160px 92px 1fr;}
+.op-select{padding:9px 8px;border:1px solid var(--border);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;background:var(--surface-alt);color:var(--text);outline:none;}
+.op-select:focus{border-color:var(--primary);background:#fff;}
+.cond-input-row input:disabled{background:#f5f5f5;color:var(--text-secondary);cursor:not-allowed;}
+.cond-input-row .cond-label b{display:block;font-size:12.5px;font-family:'IBM Plex Mono',monospace;}
+.cond-input-row .cond-label span{font-size:11px;color:var(--text-secondary);}
+.cond-input-row input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:'Krungsri-med';font-size:13px;background:var(--surface-alt);outline:none;}
+.cond-input-row input:focus{border-color:var(--primary);background:#fff;}
+.cond-input-row input.is-na{color:var(--text-secondary);}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(20,26,40,.42);display:flex;align-items:center;justify-content:center;z-index:99999;}
+.modal-box{background:#fff;border-radius:12px;padding:24px;width:400px;max-width:92vw;box-shadow:var(--shadow-md);animation:pop .15s ease;}
+@keyframes pop{from{transform:scale(.96);opacity:0;}to{transform:scale(1);opacity:1;}}
+.modal-box h3{margin:0 0 8px;font-size:16px;}
+.modal-box p{margin:0 0 20px;color:var(--text-secondary);font-size:13.5px;line-height:1.6;}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--primary-dark);color:#fff;padding:12px 20px;border-radius:8px;font-size:13.5px;box-shadow:var(--shadow-md);z-index:80;display:flex;align-items:center;gap:10px;}
+.toast .tick{color:#6FE3A6;font-weight:700;}
+input[readonly]{background-color:#f5f5f5;cursor:not-allowed;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const { createApp, ref, reactive, computed, watch } = Vue;
+
+function toggleDropdown(event, button){
+  event.stopPropagation();
+  const currentMenu = button.nextElementSibling;
+  document.querySelectorAll('.dropdown-menu').forEach(menu => { if (menu !== currentMenu) menu.classList.remove('show'); });
+  currentMenu.classList.toggle('show');
+}
+document.addEventListener('click', function(){
+  document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.remove('show'));
+});
+
+createApp({
+  setup(){
+    const now = () => { const d = new Date(); return d.toLocaleDateString('en-US') + ' ' + d.toTimeString().slice(0,5); };
+
+    /* ---------- master (สำหรับ dropdown filter) ---------- */
+    const entityMaster = [
+      { CODE:'KA', NAME:'KA' },
+      { CODE:'AY', NAME:'AY' },
+    ];
+    const leadTypeMaster = [
+      { CODE:'CRM_X_SELL_POOL', NAME:'CRM_X_SELL_POOL' },
+      { CODE:'INS_PPI', NAME:'INS_PPI' },
+      { CODE:'EV_NETA', NAME:'EV_NETA' },
+    ];
+    const programMaster = [
+      { CODE:'TOPUP', NAME:'Topup' },
+      { CODE:'REVOLVING_LOAN', NAME:'Revolving Loan' },
+      { CODE:'PRE_APPROVE_R', NAME:'Pre-Approve (R)' },
+      { CODE:'PRE_APPROVE_NU', NAME:'Pre-Approve (N/U)' },
+    ];
+
+    /* ชื่อแสดงผลของแต่ละ base key */
+    const baseKeyNames = {
+      b_score_m_customer:'B-Score band_MKT_Cust',
+      b_score_account:'b_score_account',
+      b_score_customer:'b_score_customer',
+      cash_offer:'cash_offer',
+      iir:'iir',
+      product_base:'product_base',
+      auto_group:'auto_group',
+      region:'region',
+      model_type_group:'model_type_group',
+    };
+    const baseKeyName = k => baseKeyNames[k] || k;
+
+    /* พารามิเตอร์ + Base Key ของแต่ละ Program/Entity (มาจากหน้า Parameter Master Setup) */
+    const paramConfigs = [
+      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'TOPUP_OPTION',       PARAMETER_NAME:'Topup Option',       KEY_BASE:['b_score_m_customer','cash_offer','iir','product_base'] },
+      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'MAX_LTV',            PARAMETER_NAME:'Max LTV',            KEY_BASE:['b_score_m_customer','product_base'] },
+      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'RECEIPT_TERM',       PARAMETER_NAME:'Receipt Term',       KEY_BASE:['b_score_m_customer','product_base'] },
+      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'X_INSTALLMENT_OPT1', PARAMETER_NAME:'X Installment OPT1', KEY_BASE:['b_score_m_customer'] },
+      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'X_INSTALLMENT_OPT2', PARAMETER_NAME:'X Installment OPT2', KEY_BASE:['b_score_m_customer'] },
+      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'X_INSTALLMENT_OPT3', PARAMETER_NAME:'X Installment OPT3', KEY_BASE:['b_score_m_customer'] },
+      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'X_INSTALLMENT_OPT4', PARAMETER_NAME:'X Installment OPT4', KEY_BASE:['b_score_m_customer'] },
+      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'FLAT_RATE_OPT1',     PARAMETER_NAME:'Flat rate OPTT1',    KEY_BASE:['b_score_account','product_base','auto_group','region'] },
+      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'FLAT_RATE_OPT2',     PARAMETER_NAME:'Flat rate OPTT2',    KEY_BASE:['b_score_account','product_base','auto_group','region'] },
+      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'FLAT_RATE_OPT3',     PARAMETER_NAME:'Flat rate OPTT3',    KEY_BASE:['b_score_account','product_base','auto_group','region'] },
+      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'FLAT_RATE_OPT4',     PARAMETER_NAME:'Flat rate OPTT4',    KEY_BASE:['b_score_account','product_base','auto_group','region'] },
+      { PROGRAM_CODE:'TOPUP', ENTITY:'KA', PARAMETER_CODE:'NCB',                PARAMETER_NAME:'NCB',                KEY_BASE:['b_score_m_customer'] },
+      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'TOPUP_OPTION',       PARAMETER_NAME:'Topup Option',       KEY_BASE:['b_score_customer','auto_group','cash_offer'] },
+      { PROGRAM_CODE:'TOPUP', ENTITY:'AY', PARAMETER_CODE:'MAX_LTV',            PARAMETER_NAME:'Max LTV',            KEY_BASE:['b_score_customer'] },
+    ];
+
+    /* ---------- ข้อมูล criteria ----------
+       1 แถว = 1 Option: มี value (ผลลัพธ์) และ key_value ของแต่ละ base key
+       key_value เป็นข้อความอิสระ เช่น '>= 50000', 'VL,L', 'N/A' */
+    const criteriaRows = reactive([
+      { ENTITY:'KA', LEAD_TYPE:'CRM_X_SELL_POOL', PROGRAM_CODE:'TOPUP', PARAMETER_CODE:'TOPUP_OPTION',
+        VALUE:'TP_Option 1', ORDER:'1', ACTIVE:'Y',
+        KEY_VALUES:{
+          b_score_m_customer:{ op:'IN', value:'VL,L,M,H,VH' },
+          cash_offer:{ op:'>=', value:'50000' },
+          iir:{ op:'N/A', value:'' },
+          product_base:{ op:'N/A', value:'' } },
+        CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
+      { ENTITY:'KA', LEAD_TYPE:'CRM_X_SELL_POOL', PROGRAM_CODE:'TOPUP', PARAMETER_CODE:'TOPUP_OPTION',
+        VALUE:'TP_Option 2', ORDER:'2', ACTIVE:'Y',
+        KEY_VALUES:{
+          b_score_m_customer:{ op:'IN', value:'VL,L' },
+          cash_offer:{ op:'N/A', value:'' },
+          iir:{ op:'N/A', value:'' },
+          product_base:{ op:'N/A', value:'' } },
+        CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
+      { ENTITY:'KA', LEAD_TYPE:'CRM_X_SELL_POOL', PROGRAM_CODE:'TOPUP', PARAMETER_CODE:'TOPUP_OPTION',
+        VALUE:'TP_Option 3', ORDER:'3', ACTIVE:'Y',
+        KEY_VALUES:{
+          b_score_m_customer:{ op:'IN', value:'VL,L' },
+          cash_offer:{ op:'>=', value:'50000' },
+          iir:{ op:'>=', value:'2.40' },
+          product_base:{ op:'N/A', value:'' } },
+        CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
+      { ENTITY:'KA', LEAD_TYPE:'CRM_X_SELL_POOL', PROGRAM_CODE:'TOPUP', PARAMETER_CODE:'MAX_LTV',
+        VALUE:'LTV150', ORDER:'1', ACTIVE:'Y',
+        KEY_VALUES:{
+          b_score_m_customer:{ op:'IN', value:'VL,L' },
+          product_base:{ op:'N/A', value:'' } },
+        CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
+      { ENTITY:'AY', LEAD_TYPE:'CRM_X_SELL_POOL', PROGRAM_CODE:'TOPUP', PARAMETER_CODE:'TOPUP_OPTION',
+        VALUE:'TP_Option 1', ORDER:'1', ACTIVE:'Y',
+        KEY_VALUES:{
+          b_score_customer:{ op:'IN', value:'VL,L,M' },
+          auto_group:{ op:'N/A', value:'' },
+          cash_offer:{ op:'>=', value:'50000' } },
+        CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
+    ]);
+
+    /* ---------- filters ---------- */
+    const critEntity = ref('KA');
+    const critLeadType = ref('CRM_X_SELL_POOL');
+    const critProgram = ref('TOPUP');
+    const critParameter = ref('TOPUP_OPTION');
+
+    const critParamOptions = computed(() => paramConfigs.filter(c => c.PROGRAM_CODE===critProgram.value && c.ENTITY===critEntity.value));
+    watch([critProgram, critEntity], () => {
+      const opts = critParamOptions.value;
+      if (!opts.some(p => p.PARAMETER_CODE === critParameter.value)){
+        critParameter.value = opts.length ? opts[0].PARAMETER_CODE : '';
+      }
+    });
+    const critParamCfg = computed(() => critParamOptions.value.find(p => p.PARAMETER_CODE === critParameter.value));
+    const critBaseKeys = computed(() => critParamCfg.value ? critParamCfg.value.KEY_BASE : []);
+
+    const critRecords = computed(() => criteriaRows
+      .filter(r => r.ENTITY===critEntity.value && r.LEAD_TYPE===critLeadType.value && r.PROGRAM_CODE===critProgram.value && r.PARAMETER_CODE===critParameter.value)
+      .sort((a,b)=>Number(a.ORDER)-Number(b.ORDER)));
+
+    /* operator ตามรูปแบบ SQL — เลือก N/A หากไม่ใช้ base key นั้น */
+    const KV_OPS = ['N/A','=','!=','>','>=','<','<=','IN','NOT IN'];
+    const isNA = c => !c || c.op==='N/A' || String(c.value ?? '').trim()==='';
+    const kvText = c => `${c.op} ${String(c.value).trim()}`;
+
+    /* ---------- form ---------- */
+    const showCritForm = ref(false);
+    const isEditingCrit = ref(false);
+    const editingRow = ref(null);
+    const critFormModel = reactive({ VALUE:'', ORDER:'1', ACTIVE:'Y', KEY_VALUES:{} });
+
+    function openAddCrit(){
+      if (!critParamCfg.value){ showToast('ยังไม่มีพารามิเตอร์ของโปรแกรมนี้', false); return; }
+      isEditingCrit.value = false;
+      editingRow.value = null;
+      const kv = {};
+      critBaseKeys.value.forEach(k => kv[k] = { op:'N/A', value:'' });
+      Object.assign(critFormModel, { VALUE:'', ORDER:String(critRecords.value.length+1), ACTIVE:'Y', KEY_VALUES:kv });
+      showCritForm.value = true;
+    }
+    function openEditCrit(row){
+      isEditingCrit.value = true;
+      editingRow.value = row;
+      const kv = {};
+      critBaseKeys.value.forEach(k => kv[k] = row.KEY_VALUES[k] ? { ...row.KEY_VALUES[k] } : { op:'N/A', value:'' });
+      Object.assign(critFormModel, { VALUE:row.VALUE, ORDER:row.ORDER, ACTIVE:row.ACTIVE, KEY_VALUES:kv,
+        CREATE_BY:row.CREATE_BY, CREATE_DATE:row.CREATE_DATE, UPDATE_BY:row.UPDATE_BY, UPDATE_DATE:row.UPDATE_DATE });
+      showCritForm.value = true;
+    }
+    function closeCritForm(){ showCritForm.value = false; }
+    function saveCrit(){
+      const val = critFormModel.VALUE.trim();
+      if (!val){ showToast('กรุณากรอก value', false); return; }
+      const dup = criteriaRows.some(r =>
+        r !== editingRow.value &&
+        r.ENTITY===critEntity.value && r.LEAD_TYPE===critLeadType.value &&
+        r.PROGRAM_CODE===critProgram.value && r.PARAMETER_CODE===critParameter.value &&
+        r.VALUE===val);
+      if (dup){ showToast('มี value นี้อยู่แล้วในพารามิเตอร์นี้', false); return; }
+      if (isEditingCrit.value){
+        Object.assign(editingRow.value, {
+          VALUE:val, ORDER:critFormModel.ORDER, ACTIVE:critFormModel.ACTIVE,
+          KEY_VALUES:JSON.parse(JSON.stringify(critFormModel.KEY_VALUES)),
+          UPDATE_BY:'ADMIN', UPDATE_DATE:now()
+        });
+        showToast(`บันทึกการแก้ไข "${val}" เรียบร้อย`);
+      } else {
+        criteriaRows.push({
+          ENTITY:critEntity.value, LEAD_TYPE:critLeadType.value, PROGRAM_CODE:critProgram.value, PARAMETER_CODE:critParameter.value,
+          VALUE:val, ORDER:critFormModel.ORDER, ACTIVE:critFormModel.ACTIVE,
+          KEY_VALUES:JSON.parse(JSON.stringify(critFormModel.KEY_VALUES)),
+          CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now()
+        });
+        showToast(`เพิ่ม "${val}" เรียบร้อย`);
+      }
+      showCritForm.value = false;
+    }
+
+    const confirmDeleteCrit = ref(null);
+    function askDeleteCrit(row){ confirmDeleteCrit.value = row; }
+    function confirmDeleteCritRow(){
+      criteriaRows.splice(criteriaRows.findIndex(r=>r===confirmDeleteCrit.value),1);
+      showToast('ลบรายการแล้ว');
+      confirmDeleteCrit.value = null;
+    }
+
+    const toast = reactive({ show:false, msg:'', ok:true });
+    let toastTimer = null;
+    function showToast(msg, ok=true){ toast.msg=msg; toast.ok=ok; toast.show=true; clearTimeout(toastTimer); toastTimer=setTimeout(()=>toast.show=false,2600); }
+
+    return {
+      entityMaster, leadTypeMaster, programMaster,
+      critEntity, critLeadType, critProgram, critParameter, critParamOptions, critParamCfg, critBaseKeys, critRecords, isNA, kvText, KV_OPS, baseKeyName,
+      showCritForm, isEditingCrit, critFormModel, openAddCrit, openEditCrit, closeCritForm, saveCrit,
+      confirmDeleteCrit, askDeleteCrit, confirmDeleteCritRow,
+      toast
+    };
+  },
+  template: `
+  <div id="app">
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <div class="panel-title-row"><h2>Criteria Setup</h2></div>
+          <p class="desc">กำหนด key_value ของแต่ละ base key และ value ของแต่ละ Option</p>
+        </div>
+        <button class="btn btn-primary" @click="openAddCrit">+ Add</button>
+      </div>
+
+      <div class="filter-row">
+        <div class="filter-field">
+          <label>Entity (gecid)</label>
+          <select v-model="critEntity"><option v-for="e in entityMaster" :key="e.CODE" :value="e.CODE">{{ e.NAME }} ({{ e.CODE }})</option></select>
+        </div>
+        <div class="filter-field">
+          <label>Lead Type</label>
+          <select v-model="critLeadType"><option v-for="l in leadTypeMaster" :key="l.CODE" :value="l.CODE">{{ l.NAME }}</option></select>
+        </div>
+        <div class="filter-field">
+          <label>Program</label>
+          <select v-model="critProgram"><option v-for="p in programMaster" :key="p.CODE" :value="p.CODE">{{ p.NAME }} ({{ p.CODE }})</option></select>
+        </div>
+        <div class="filter-field">
+          <label>Parameter</label>
+          <select v-model="critParameter">
+            <option v-if="!critParamOptions.length" value="" disabled>— ยังไม่มีพารามิเตอร์ —</option>
+            <option v-for="p in critParamOptions" :key="p.PARAMETER_CODE" :value="p.PARAMETER_CODE">{{ p.PARAMETER_NAME }} ({{ p.PARAMETER_CODE }})</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="filter-hint" v-if="critParamCfg">
+        Base Key ของพารามิเตอร์นี้:
+        <span class="key-chip" v-for="(k,i) in critBaseKeys" :key="k" style="margin-left:6px;"><span class="idx">{{ i+1 }}</span>{{ baseKeyName(k) }}</span>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table" v-if="critRecords.length">
+          <thead><tr>
+            <th style="width:60px">ลำดับ</th>
+            <th style="width:160px">value</th>
+            <th>base key → key_value</th>
+            <th style="width:110px">Status</th>
+            <th style="width:80px">จัดการ</th>
+          </tr></thead>
+          <tbody>
+            <tr v-for="row in critRecords" :key="row.VALUE">
+              <td><span class="order-pill">{{ row.ORDER }}</span></td>
+              <td><span class="value-pill">{{ row.VALUE }}</span></td>
+              <td>
+                <div class="cond-chip-row">
+                  <span class="cond-chip" v-for="k in critBaseKeys" :key="k" :class="{na: isNA(row.KEY_VALUES[k])}">
+                    <span class="k">{{ baseKeyName(k) }}</span>
+                    <span class="v">{{ isNA(row.KEY_VALUES[k]) ? 'N/A' : kvText(row.KEY_VALUES[k]) }}</span>
+                  </span>
+                </div>
+              </td>
+              <td><span class="status-badge" :class="row.ACTIVE==='Y' ? 'y' : 'n'">{{ row.ACTIVE==='Y' ? 'Active' : 'Inactive' }}</span></td>
+              <td>
+                <div class="dropdown-container">
+                  <button class="btn-dots" onclick="toggleDropdown(event, this)">⋮</button>
+                  <div class="dropdown-menu">
+                    <button @click="openEditCrit(row)">Edit</button><button @click="askDeleteCrit(row)">Delete</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div v-else class="empty-state">
+          <div class="glyph"></div>
+          <h3 v-if="!critParamOptions.length">ยังไม่มีพารามิเตอร์ของ {{ critProgram }} / {{ critEntity }}</h3>
+          <h3 v-else>ยังไม่มีรายการของพารามิเตอร์นี้</h3>
+          <p>เพิ่มรายการแรกของ {{ critParameter }} ({{ critEntity }} / {{ critLeadType }}) ได้เลย</p>
+          <button v-if="critParamOptions.length" class="btn btn-primary" style="margin-top:12px" @click="openAddCrit">+ Add</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- form drawer -->
+    <div class="overlay" v-if="showCritForm" @click.self="closeCritForm">
+      <div class="side-drawer">
+        <div class="side-drawer-head"><h3>{{ isEditingCrit ? 'แก้ไข Criteria' : 'เพิ่ม Criteria' }} · {{ critParamCfg?.PARAMETER_NAME }} ({{ critEntity }} / {{ critLeadType }})</h3><button class="close-x" @click="closeCritForm">✕</button></div>
+        <div class="side-drawer-body">
+          <div class="field-inline" style="margin-bottom:18px;">
+            <div class="field">
+              <label>value</label>
+              <input type="text" v-model="critFormModel.VALUE" placeholder="เช่น TP_Option 1, LTV150 หรือตัวเลข">
+            </div>
+            <div class="field" style="max-width:110px;">
+              <label>ลำดับ</label>
+              <input type="number" v-model="critFormModel.ORDER">
+            </div>
+          </div>
+
+          <div class="field">
+            <label>key_value ของแต่ละ base key <span style="font-weight:400;">(เลือก operator เป็น N/A หากไม่ใช้)</span></label>
+            <div class="cond-input-row three" v-for="k in critBaseKeys" :key="k">
+              <div class="cond-label"><b>{{ baseKeyName(k) }}</b><span v-if="baseKeyName(k)!==k">{{ k }}</span></div>
+              <select class="op-select" v-model="critFormModel.KEY_VALUES[k].op">
+                <option v-for="o in KV_OPS" :key="o" :value="o">{{ o }}</option>
+              </select>
+              <input type="text" v-model="critFormModel.KEY_VALUES[k].value"
+                :disabled="critFormModel.KEY_VALUES[k].op==='N/A'"
+                :class="{'is-na': isNA(critFormModel.KEY_VALUES[k])}"
+                :placeholder="(critFormModel.KEY_VALUES[k].op==='IN'||critFormModel.KEY_VALUES[k].op==='NOT IN') ? 'คั่นด้วย , เช่น VL,L' : 'เช่น 50000'">
+            </div>
+          </div>
+
+          <div class="field"><div class="active-toggle-row"><div class="lab"><strong>เปิดใช้งานรายการนี้</strong><span>รายการที่ปิดใช้งานจะไม่ถูกใช้ในการคำนวณ</span></div><label class="switch"><input type="checkbox" v-model="critFormModel.ACTIVE" true-value="Y" false-value="N"><span class="slider"></span></label></div></div>
+          <div class="meta-box" v-if="isEditingCrit">สร้างโดย {{ critFormModel.CREATE_BY }} เมื่อ {{ critFormModel.CREATE_DATE }}<br>แก้ไขล่าสุดโดย {{ critFormModel.UPDATE_BY }} เมื่อ {{ critFormModel.UPDATE_DATE }}</div>
+        </div>
+        <div class="side-drawer-foot"><button class="btn btn-ghost" @click="closeCritForm">ยกเลิก</button><button class="btn btn-primary" @click="saveCrit">บันทึกข้อมูล</button></div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" v-if="confirmDeleteCrit" @click.self="confirmDeleteCrit=null">
+      <div class="modal-box">
+        <h3>ลบรายการนี้ใช่หรือไม่?</h3>
+        <p>คุณกำลังจะลบ <strong>{{ confirmDeleteCrit.VALUE }}</strong> ของ {{ critParameter }} ({{ critEntity }} / {{ critLeadType }})</p>
+        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmDeleteCrit=null">ยกเลิก</button><button class="btn btn-danger" @click="confirmDeleteCritRow">ยืนยันลบ</button></div>
+      </div>
+    </div>
+
+    <div class="toast" v-if="toast.show"><span class="tick">{{ toast.ok ? '✓' : '!' }}</span> {{ toast.msg }}</div>
+  </div>
+  `
+}).mount('#app');
+</script>
+</body>
+</html>

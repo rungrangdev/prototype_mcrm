@@ -1,0 +1,1588 @@
+<link rel="stylesheet" href="main.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+/* ===== Category styles (ย้ายไปไว้ใน main.css ได้เลย) ===== */
+
+/* กล่องทุก Category รูปทรงเดียวกัน ต่างแค่สี (โทน น้ำตาล / เหลือง / เทา) */
+.step-box.cat-eligible{
+  border-top:5px solid #8B5E3C;   /* น้ำตาล */
+  background:#FAF4EC;
+}
+.step-box.cat-parameter{
+  border-top:5px solid #D9A404;   /* เหลือง */
+  background:#FDF9E7;
+}
+.step-box.cat-profile{
+  border-top:5px solid #6B7280;   /* เทา */
+  background:#F4F5F7;
+}
+
+/* ป้ายบอก Category มุมกล่อง */
+.cat-tag{
+  display:inline-block;font-size:10px;font-weight:bold;
+  padding:2px 8px;border-radius:10px;color:#fff;vertical-align:middle;
+}
+.cat-tag.cat-eligible{background:#8B5E3C}
+.cat-tag.cat-parameter{background:#D9A404}
+.cat-tag.cat-profile{background:#6B7280}
+
+/* ===== ทำให้กล่อง step กระชับขึ้น ===== */
+.canvas .step-box{padding:8px 12px 10px}
+.canvas .step-box .field-lbl{font-size:10px;color:#6B7280;margin:5px 0 2px}
+.canvas .step-box .step-input,
+.canvas .step-box .step-select{font-size:12px;padding:4px 6px;line-height:1.3}
+.canvas .step-box textarea.step-input{resize:none}
+.canvas .step-box .drag-dots{font-size:9px;line-height:1;margin-bottom:2px}
+/* Category กับ Type วางคู่กันในแถวเดียว ประหยัดความสูง */
+.canvas .step-box .row-2col{display:flex;gap:8px}
+.canvas .step-box .row-2col>div{flex:1;min-width:0}
+.canvas .step-box .row-2col .step-select{width:100%}
+
+/* ===== ปุ่มเลือก Category ใน modal ตอนกด + (แบบย่อ: จุดสี + ชื่อ) ===== */
+.cat-pick-wrap{display:flex;flex-direction:column;gap:8px;padding:4px 2px}
+.cat-pick{
+  display:flex;align-items:center;gap:10px;width:100%;
+  padding:10px 14px;border:1.5px solid #E5E7EB;border-radius:8px;
+  background:#fff;cursor:pointer;text-align:left;font-size:14px;font-weight:bold;color:#374151;
+}
+.cat-pick:hover{border-color:#94A3B8;background:#F8FAFC}
+.cat-pick .dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+
+/* ===== Run Type (AUTO / MANUAL) - โทนเดียวกับ cat-tag ===== */
+.run-tag{
+  display:inline-block;font-size:10px;font-weight:bold;
+  padding:2px 8px;border-radius:10px;color:#fff;vertical-align:middle;
+}
+.run-tag.run-auto{background:#D9A404}    /* เหลือง = ตั้งเวลาอัตโนมัติ */
+.run-tag.run-manual{background:#6B7280}  /* เทา = กดรันเอง */
+
+/* กล่องแสดง cron expression */
+.sched-code{
+  font-family:monospace;font-size:12px;color:#374151;
+  background:#F4F5F7;border:1px solid #E5E7EB;border-radius:6px;
+  padding:2px 8px;display:inline-block;vertical-align:middle;
+}
+.sched-desc{font-size:10px;color:#6B7280;margin-top:2px}
+
+/* ===== แถบ Schedule ใต้ topbar (แสดงเมื่อ Flow Type = AUTO) ===== */
+.sched-bar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:#FDF9E7;border:1px solid #EFE3B0;border-left:4px solid #D9A404;
+  border-radius:8px;padding:7px 14px;margin:8px 20px;
+  font-size:13px;color:#374151;
+}
+.sched-bar-ic{font-size:15px;line-height:1}
+.sched-bar-lbl{font-weight:bold;color:#8A6D03}
+.sched-bar-desc{color:#374151}
+.sched-bar-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+
+/* ===== Cron Schedule Modal (แบบกระชับ: เลือกความถี่ -> กรอกเวลา) ===== */
+.sch-modes{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:14px}
+.sch-mode{
+  padding:6px 14px;border:1.5px solid #E5E7EB;border-radius:20px;
+  background:#fff;font-size:13px;color:#374151;cursor:pointer;
+}
+.sch-mode:hover{border-color:#94A3B8}
+.sch-mode.active{background:#D9A404;border-color:#D9A404;color:#fff;font-weight:bold}
+.sch-panel{
+  display:none;background:#F8F9FA;border:1px solid #E5E7EB;border-radius:8px;
+  padding:18px 16px;font-size:14px;color:#374151;text-align:center;min-height:64px;
+}
+.sch-panel.show{display:block}
+.sch-panel select,.sch-panel input[type="time"],.sch-panel input[type="text"]{
+  font-size:14px;padding:5px 8px;border:1px solid #D1D5DB;border-radius:6px;margin:0 4px;background:#fff;color:#374151;
+}
+.sch-panel input[type="text"]{font-family:monospace;letter-spacing:2px;text-align:center;width:220px}
+.sch-hint{font-size:11px;color:#6B7280;margin-top:8px}
+.sch-days{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.sch-day{
+  width:40px;height:32px;border:1.5px solid #E5E7EB;border-radius:8px;
+  background:#fff;cursor:pointer;font-size:12px;color:#374151;
+}
+.sch-day.on{background:#8B5E3C;border-color:#8B5E3C;color:#fff;font-weight:bold}
+.cron-preview{
+  margin-top:14px;background:#1F2937;border-radius:8px;
+  padding:10px 12px;text-align:center;
+}
+.cron-preview .cp-code{color:#A7F3D0;font-family:monospace;font-size:15px;letter-spacing:2px}
+.cron-preview .cp-desc{display:block;color:#9CA3AF;font-size:11px;margin-top:4px}
+
+.finput{
+  border:1px solid #E4DED7 !important;border-radius:7px;padding:0 12px;font-size:13px;
+  color:#3D3835;background:#FFFFFF;height:38px;
+  
+}
+
+.dropdown-menu{
+  position:absolute;background:#fff;border:1px solid #E4DED7;border-radius:10px;
+  box-shadow:0 6px 20px rgba(60,50,45,.14);min-width:110px;padding:4px;display:none;z-index:50;
+}
+.dropdown-menu.show{display:block}
+.dropdown-menu button{
+  display:block;width:100%;text-align:left;border:none;background:none;cursor:pointer;
+  padding:8px 13px;font-size:16px;color:#3D3835;border-radius:7px;font-family:inherit;
+}
+.dropdown-menu button:hover{background:#F3EEE9}
+
+/* ===== Parameter box: Lead Type / Entity / Program + multi-select Parameter ===== */
+.param-tag-field{
+  display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-height:32px;
+  border:1px solid #E4DED7;border-radius:7px;padding:5px 8px;background:#fff;cursor:pointer;
+}
+.param-tag-field:hover{border-color:#D9A404}
+.param-chip{
+  display:inline-flex;align-items:center;gap:4px;background:#FDF9E7;border:1px solid #EFE3B0;
+  border-radius:6px;padding:2px 7px;font-size:11px;color:#8A6D03;font-weight:600;max-width:170px;
+}
+.param-chip span.pctxt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.param-chip-x{cursor:pointer;color:#B4ACA5;font-size:10px;line-height:1;flex-shrink:0}
+.param-chip-x:hover{color:#D64C4C}
+.param-ph{font-size:11.5px;color:#B4ACA5}
+
+.param-dd{
+  position:fixed;background:#fff;border:1px solid #E4DED7;border-radius:8px;
+  box-shadow:0 6px 20px rgba(60,50,45,.16);z-index:9999;min-width:210px;max-height:230px;
+  overflow-y:auto;padding:4px 0;display:none;
+}
+.param-dd.open{display:block}
+.param-dd .dd-opt{display:flex;align-items:center;gap:8px;padding:7px 11px;font-size:12px;cursor:pointer;color:#374151}
+.param-dd .dd-opt:hover{background:#FDF9E7}
+.param-dd .dd-opt input{accent-color:#D9A404;width:13px;height:13px;flex-shrink:0}
+.param-dd .dd-empty{padding:11px;font-size:11.5px;color:#B4ACA5;font-style:italic}
+</style>
+
+<div id="flow_table" class="page_all" style="padding:20px;display:block;">
+    <h3>Workflow Config</h3>
+    <div align="right" style="margin-bottom: 10px;">
+      <button class="btn-run" onclick="chooseFlow_func('')">+ New Flow</button>
+    </div>
+    <table id="list_flow_table" width="100%">
+        <thead>
+          <tr>
+            <th>Flow ID</th>
+            <th>Flow Name</th>
+            <th>Steps</th>
+            <th>Run Type</th>
+            <th>Schedule (Cronjob)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<div id="flow_area" class="page_all" style="display:none;">
+  <div class="topbar">
+    <label>Flow ID</label>
+    <input id="flowId" value="F00001">
+    <label>Flow Name</label>
+    <input id="flowName" value="Select Base X_Sell_Pool (KA)" style="width:300px">
+    <label>Run Type</label>
+    <select class="finput" id="flowRunType" onchange="onRunTypeChange()">
+      <option value="MANUAL">MANUAL</option>
+      <option value="AUTO">AUTO</option>
+    </select>
+    <button class="btn-submit" onclick="submitFlow()">Save</button>
+  </div>
+
+  <!-- แถบ schedule แยกบรรทัด แสดงเฉพาะตอน Flow Type = AUTO -->
+  <div class="sched-bar" id="schedBar" style="display:none">
+    <span class="sched-bar-ic">&#9202;</span>
+    <span class="sched-bar-lbl">Schedule</span>
+    <span class="sched-bar-desc" id="schedDesc"></span>
+    <span class="sched-bar-right">
+      <span class="sched-code" id="schedText">* * * * *</span>
+      <button class="btn-run" onclick="showScheduleDialog()">แก้ไข</button>
+    </span>
+  </div>
+
+  <div class="canvas" id="canvas"></div>
+
+  <div class="output-panel" id="outputPanel" style="height: 600px;">
+    <h3>Payload</h3>
+    <pre id="outputPre"></pre>
+    <button class="btn-copy" onclick="copyPayload()">Copy</button>
+  </div>
+</div>
+
+<div class="param-dd" id="global-param-dd"></div>
+
+  <script>
+  const TYPES=['AUTO','MANUAL'];
+  const STATUSES=['Wait','Inprogress','Completed','Incomplete'];
+  let COLS=5; // จำนวนกล่องต่อแถว (คำนวณใหม่อัตโนมัติตามความกว้างจอใน computeCols)
+  const BOX_W=250,GAP_X=45,GAP_Y=20,PAD=5;
+  const MIN_BOX_H=120; // ความสูงขั้นต่ำกันเหนียว (กล่องจริงสูงตามเนื้อหา)
+
+  // ===== คำนวณจำนวนกล่องต่อแถวจากความกว้างที่มองเห็นจริงของ canvas =====
+  function computeCols(){
+    const canvas=document.getElementById('canvas');
+    let avail=canvas?canvas.clientWidth:0;
+    if(avail<=0)avail=window.innerWidth; // กรณี canvas ยังซ่อนอยู่ (display:none)
+    avail-=PAD*2+GAP_X; // กันพื้นที่ขอบ + ช่องให้เส้นวนกลับด้านข้าง
+    COLS=Math.max(1,Math.floor((avail+GAP_X)/(BOX_W+GAP_X)));
+  }
+
+  // เก็บค่าที่ user พิมพ์ค้างอยู่ในกล่องกลับเข้า steps ก่อน re-render (กันค่าหายตอน resize)
+  function captureInputs(){
+    steps.forEach(s=>{['name','type','status','detail','code','category','leadType','entity','program'].forEach(f=>{const el=document.getElementById(`${f}_${s.id}`);if(el)s[f]=el.value})});
+  }
+
+  // ย่อ/ขยายจอ -> คำนวณ COLS ใหม่ ถ้าเปลี่ยนค่อย render (debounce กัน render รัว)
+  let _resizeTimer=null;
+  window.addEventListener('resize',()=>{
+    clearTimeout(_resizeTimer);
+    _resizeTimer=setTimeout(()=>{
+      const old=COLS;
+      computeCols();
+      if(COLS!==old){captureInputs();render();}
+    },150);
+  });
+
+  // ===== layout ที่คำนวณจากความสูงจริงของกล่อง (เติมค่าโดย computeLayout ทุกครั้งก่อน render) =====
+  let _hs=[];   // ความสูงจริงของกล่องแต่ละใบ
+  let _rowH=[]; // ความสูงของแต่ละแถว = กล่องที่สูงสุดในแถวนั้น
+  let _rowY=[]; // ตำแหน่ง y ของแต่ละแถว
+  const STROKE='#CCCCCC',STROKE_W=2;
+
+  // ===== รายการ Code ของแต่ละประเภท =====
+  const ELIGI   = ["E00001","E00002","E00003","E00004","E00005","E00006","E00007","E00008","E00009","E00010"];
+  const PARAMS  = ["P00001","P00002","P00003","P00004","P00005","P00006","P00007","P00008","P00009","P00010"];
+  const PROFILES= ["F00001","F00002","F00003","F00004","F00005"];
+
+  // ===== Config ของแต่ละ Category =====
+  const CATEGORIES = {
+    ELIGIBLE : { label:'Eligible',  css:'cat-eligible',  codeLabel:'Eligible Code', codes:ELIGI,
+                 color:'#8B5E3C' },   // น้ำตาล
+    PARAMETER: { label:'Parameter', css:'cat-parameter', codeLabel:'Parameter ID',  codes:PARAMS,
+                 color:'#D9A404' },   // เหลือง
+    PROFILE  : { label:'Profile',   css:'cat-profile',   codeLabel:'Workflow ID',    codes:PROFILES,
+                 color:'#6B7280' }    // เทา
+  };
+  const DEFAULT_CATEGORY='ELIGIBLE';
+
+  // ============================================================
+  // ===== Parameter box: master ของ Lead Type / Entity / Program / Parameter =====
+  // (โครงเดียวกับหน้า Master Data Manager — ต่อไปควรดึงจากที่เดียวกัน)
+  // ============================================================
+  const LEAD_TYPES = [
+    { code:'CRM_X_SELL_POOL', name:'CRM_X_SELL_POOL' }
+  ];
+  const ENTITIES = [
+    { code:'KA', name:'KA' },
+    { code:'AY', name:'AY' }
+  ];
+  const PROGRAMS = [
+    { code:'TOPUP',          name:'Topup' },
+    { code:'REVOLVING_LOAN', name:'Revolving Loan' },
+    { code:'PRE_APPROVE_R',  name:'Pre-Approve (R)' },
+    { code:'PRE_APPROVE_NU', name:'Pre-Approve (N/U)' },
+    { code:'PRE_APPROVE_MC', name:'Pre-Approve (MC)' }
+  ];
+  // key = `${PROGRAM_CODE}|${ENTITY_CODE}`
+  const PARAM_CATALOG = {
+    'TOPUP|KA':[
+      {code:'TOPUP_OPTION',       name:'Topup Option'},
+      {code:'MAX_LTV',            name:'Max LTV'},
+      {code:'RECEIPT_TERM',       name:'Receipt Term'},
+      {code:'X_INSTALLMENT_OPT1', name:'X Installment OPT1'},
+      {code:'X_INSTALLMENT_OPT2', name:'X Installment OPT2'},
+      {code:'X_INSTALLMENT_OPT3', name:'X Installment OPT3'},
+      {code:'X_INSTALLMENT_OPT4', name:'X Installment OPT4'},
+      {code:'FLAT_RATE_OPT1',     name:'Flat rate OPTT1'},
+      {code:'FLAT_RATE_OPT2',     name:'Flat rate OPTT2'},
+      {code:'FLAT_RATE_OPT3',     name:'Flat rate OPTT3'},
+      {code:'FLAT_RATE_OPT4',     name:'Flat rate OPTT4'},
+      {code:'NCB',                name:'NCB'},
+    ],
+    'TOPUP|AY':[
+      {code:'TOPUP_OPTION',       name:'Topup Option'},
+      {code:'MAX_LTV',            name:'Max LTV'},
+      {code:'X_INSTALLMENT_OPT1', name:'X Installment OPT1'},
+      {code:'X_INSTALLMENT_OPT2', name:'X Installment OPT2'},
+      {code:'X_INSTALLMENT_OPT3', name:'X Installment OPT3'},
+      {code:'X_INSTALLMENT_OPT4', name:'X Installment OPT4'},
+      {code:'FLAT_RATE_OPT1',     name:'Flat rate OPTT1'},
+      {code:'FLAT_RATE_OPT2',     name:'Flat rate OPTT2'},
+      {code:'FLAT_RATE_OPT3',     name:'Flat rate OPTT3'},
+      {code:'FLAT_RATE_OPT4',     name:'Flat rate OPTT4'},
+      {code:'NCB',                name:'NCB'},
+    ],
+    'REVOLVING_LOAN|KA':[
+      {code:'RL_OPTION',       name:'Revolving Loan Option'},
+      {code:'FLAT_RATE_TP_RH', name:'Flat rate TP_RH'},
+    ],
+    'REVOLVING_LOAN|AY':[
+      {code:'RL_OPTION', name:'Revolving Loan Option'},
+    ],
+    'PRE_APPROVE_R|KA':[
+      {code:'PA_R_OPTION',     name:'Pre-Approve (R) Option'},
+      {code:'PA_R_FLAT_RATE',  name:'Pre-Approve (R) Flat Rate'},
+    ],
+    'PRE_APPROVE_R|AY':[
+      {code:'PA_R_OPTION', name:'Pre-Approve (R) Option'},
+    ],
+    'PRE_APPROVE_NU|KA':[
+      {code:'PA_NU_OPTION',    name:'Pre-Approve (N/U) Option'},
+      {code:'PA_NU_FLAT_RATE', name:'Pre-Approve (N/U) Flat Rate'},
+    ],
+    'PRE_APPROVE_NU|AY':[
+      {code:'PA_NU_OPTION', name:'Pre-Approve (N/U) Option'},
+    ],
+    'PRE_APPROVE_MC|KA':[
+      {code:'PA_MC_OPTION',    name:'Pre-Approve (MC) Option'},
+      {code:'PA_MC_FLAT_RATE', name:'Pre-Approve (MC) Flat Rate'},
+    ],
+    'PRE_APPROVE_MC|AY':[
+      {code:'PA_MC_OPTION', name:'Pre-Approve (MC) Option'},
+    ],
+  };
+  function getParamList(program, entity){
+    if(!program || !entity) return [];
+    return PARAM_CATALOG[`${program}|${entity}`] || [];
+  }
+  function paramNameOf(program, entity, code){
+    const f = getParamList(program, entity).find(p=>p.code===code);
+    return f ? f.name : code;
+  }
+
+  // ============================================================
+  // ===== Run Type (AUTO/MANUAL) + Cronjob Schedule Builder =====
+  // ============================================================
+  const DEFAULT_CRON='* * * * *';
+  let flowRunType='MANUAL'; // run type ของ flow ที่กำลังแก้ไข
+  let flowSchedule='';      // cron expression ของ flow ที่กำลังแก้ไข (ใช้เมื่อ AUTO)
+
+  const WD_TH=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์'];
+  const WD_TH_SHORT=['อา','จ','อ','พ','พฤ','ศ','ส'];
+  const pad2=n=>String(n).padStart(2,'0');
+
+  // ===== แปลง cron -> รูปแบบง่ายๆ 6 แบบ (minute/hourly/daily/weekly/monthly/custom) =====
+  function parseCron(cron){
+    const p=(cron||DEFAULT_CRON).trim().split(/\s+/);
+    if(p.length!==5)return{mode:'custom',cron:cron||DEFAULT_CRON};
+    const[mi,h,dom,mo,dw]=p;
+    const isNum=x=>/^\d+$/.test(x);
+    if(mo!=='*')return{mode:'custom',cron};
+    if(mi==='*'&&h==='*'&&dom==='*'&&dw==='*')return{mode:'minute',every:1};
+    const st=mi.match(/^\*\/(\d+)$/);
+    if(st&&h==='*'&&dom==='*'&&dw==='*')return{mode:'minute',every:+st[1]};
+    if(isNum(mi)&&h==='*'&&dom==='*'&&dw==='*')return{mode:'hourly',minute:+mi};
+    if(isNum(mi)&&isNum(h)&&dom==='*'&&dw==='*')return{mode:'daily',time:pad2(h)+':'+pad2(mi)};
+    if(isNum(mi)&&isNum(h)&&dom==='*'&&dw!=='*'){
+      const days=expandDW(dw);
+      if(days)return{mode:'weekly',time:pad2(h)+':'+pad2(mi),days};
+    }
+    if(isNum(mi)&&isNum(h)&&isNum(dom)&&dw==='*')return{mode:'monthly',time:pad2(h)+':'+pad2(mi),day:+dom};
+    return{mode:'custom',cron};
+  }
+
+  // ขยาย "1-5" หรือ "1,3,5" -> [1,2,3,4,5] (คืน null ถ้า parse ไม่ได้)
+  function expandDW(s){
+    const out=new Set();
+    for(const part of s.split(',')){
+      if(/^\d$/.test(part)){out.add(+part);continue}
+      const m=part.match(/^(\d)-(\d)$/);
+      if(!m)return null;
+      for(let i=+m[1];i<=+m[2];i++)out.add(i);
+    }
+    return[...out].sort((a,b)=>a-b);
+  }
+
+  // บีบ [1,2,3,4,5] -> "1-5" / [1,3] -> "1,3"
+  function compressDays(days){
+    const d=[...days].sort((a,b)=>a-b);
+    if(!d.length)return'*';
+    const ranges=[];let s=d[0],e=d[0];
+    for(let i=1;i<=d.length;i++){
+      if(d[i]===e+1){e=d[i];continue}
+      ranges.push(s===e?`${s}`:e===s+1?`${s},${e}`:`${s}-${e}`);
+      s=e=d[i];
+    }
+    return ranges.join(',');
+  }
+
+  // ===== คำอธิบายภาษาไทย (โชว์ในตาราง + แถบ schedule + preview) =====
+  function cronDescribe(cron){
+    const s=parseCron(cron);
+    switch(s.mode){
+      case'minute': return s.every>1?`รันทุก ${s.every} นาที`:'รันทุกนาที';
+      case'hourly': return`รันทุกชั่วโมง ที่นาทีที่ ${s.minute}`;
+      case'daily':  return`รันทุกวัน เวลา ${s.time} น.`;
+      case'weekly': return`รันทุกวัน${s.days.map(d=>WD_TH[d]).join(', ')} เวลา ${s.time} น.`;
+      case'monthly':return`รันทุกวันที่ ${s.day} ของเดือน เวลา ${s.time} น.`;
+      default:{
+        // เผื่อ cron แบบหลายวันที่ในเดือน เช่น "0 3 1,15 * *"
+        const m=(cron||'').trim().match(/^(\d+)\s+(\d+)\s+([\d,]+)\s+\*\s+\*$/);
+        if(m)return`รันทุกวันที่ ${m[3].split(',').join(', ')} ของเดือน เวลา ${pad2(m[2])}:${pad2(m[1])} น.`;
+        return'กำหนดเอง (custom cron)';
+      }
+    }
+  }
+
+  // ===== modal ตั้งเวลาแบบกระชับ : เลือกความถี่ก่อน แล้วค่อยกรอกรายละเอียดนิดเดียว =====
+  let _schMode='daily';   // โหมดที่เลือกอยู่ใน modal
+  let _schDays=[1];       // วันที่เลือก (โหมด weekly)
+
+  const SCH_MODES=[
+    {key:'minute', label:'ทุกนาที'},
+    {key:'hourly', label:'รายชั่วโมง'},
+    {key:'daily',  label:'รายวัน'},
+    {key:'weekly', label:'รายสัปดาห์'},
+    {key:'monthly',label:'รายเดือน'},
+    {key:'custom', label:'กำหนดเอง'}
+  ];
+
+  function schedModalHTML(s){
+    const minOpts=[1,5,10,15,30].map(v=>`<option value="${v}"${(s.every||1)===v?' selected':''}>${v===1?'1 นาที':v+' นาที'}</option>`).join('');
+    const hmOpts=Array.from({length:60},(_,i)=>`<option value="${i}"${(s.minute||0)===i?' selected':''}>${pad2(i)}</option>`).join('');
+    const domOpts=Array.from({length:31},(_,i)=>`<option value="${i+1}"${(s.day||1)===i+1?' selected':''}>${i+1}</option>`).join('');
+    const t=s.time||'09:00';
+    const dayBtns=WD_TH_SHORT.map((n,i)=>`<button type="button" class="sch-day${_schDays.includes(i)?' on':''}" id="sch_day_${i}" onclick="toggleSchDay(${i})">${n}</button>`).join('');
+    return `
+      <div class="sch-modes">
+        ${SCH_MODES.map(m=>`<button type="button" class="sch-mode" id="sch_mode_${m.key}" onclick="setSchMode('${m.key}')">${m.label}</button>`).join('')}
+      </div>
+      <div class="sch-panel" id="sch_p_minute">
+        รันทุกๆ <select id="sch_min_every" onchange="updateSchPreview()">${minOpts}</select>
+      </div>
+      <div class="sch-panel" id="sch_p_hourly">
+        รันทุกชั่วโมง ที่นาทีที่ <select id="sch_hr_min" onchange="updateSchPreview()">${hmOpts}</select>
+      </div>
+      <div class="sch-panel" id="sch_p_daily">
+        รันทุกวัน เวลา <input type="time" id="sch_daily_time" value="${t}" onchange="updateSchPreview()">
+      </div>
+      <div class="sch-panel" id="sch_p_weekly">
+        <div class="sch-days">${dayBtns}</div>
+        เวลา <input type="time" id="sch_weekly_time" value="${t}" onchange="updateSchPreview()">
+      </div>
+      <div class="sch-panel" id="sch_p_monthly">
+        รันทุกวันที่ <select id="sch_month_day" onchange="updateSchPreview()">${domOpts}</select>
+        ของเดือน เวลา <input type="time" id="sch_monthly_time" value="${t}" onchange="updateSchPreview()">
+      </div>
+      <div class="sch-panel" id="sch_p_custom">
+        <input type="text" id="sch_custom" value="${s.mode==='custom'?(s.cron||DEFAULT_CRON):(flowSchedule||DEFAULT_CRON)}" oninput="updateSchPreview()">
+        <div class="sch-hint">รูปแบบ: นาที &nbsp; ชั่วโมง &nbsp; วันที่ &nbsp; เดือน &nbsp; วันในสัปดาห์</div>
+      </div>
+      <div class="cron-preview">
+        <span class="cp-code" id="schPrevCode"></span>
+        <span class="cp-desc" id="schPrevDesc"></span>
+      </div>`;
+  }
+
+  function setSchMode(mode){
+    _schMode=mode;
+    SCH_MODES.forEach(m=>{
+      const b=document.getElementById(`sch_mode_${m.key}`);
+      const p=document.getElementById(`sch_p_${m.key}`);
+      if(b)b.classList.toggle('active',m.key===mode);
+      if(p)p.classList.toggle('show',m.key===mode);
+    });
+    updateSchPreview();
+  }
+
+  function toggleSchDay(i){
+    _schDays=_schDays.includes(i)?_schDays.filter(d=>d!==i):[..._schDays,i];
+    const b=document.getElementById(`sch_day_${i}`);
+    if(b)b.classList.toggle('on',_schDays.includes(i));
+    updateSchPreview();
+  }
+
+  function buildCronFromSch(){
+    const val=id=>document.getElementById(id)?document.getElementById(id).value:'';
+    const tm=id=>{const[h,m]=(val(id)||'09:00').split(':');return{h:+h,m:+m}};
+    switch(_schMode){
+      case'minute':{const e=+val('sch_min_every');return e>1?`*/${e} * * * *`:'* * * * *'}
+      case'hourly': return`${+val('sch_hr_min')} * * * *`;
+      case'daily':{const t=tm('sch_daily_time');return`${t.m} ${t.h} * * *`}
+      case'weekly':{const t=tm('sch_weekly_time');return`${t.m} ${t.h} * * ${compressDays(_schDays)}`}
+      case'monthly':{const t=tm('sch_monthly_time');return`${t.m} ${t.h} ${+val('sch_month_day')} * *`}
+      default: return val('sch_custom').trim();
+    }
+  }
+
+  function updateSchPreview(){
+    const code=document.getElementById('schPrevCode');
+    const desc=document.getElementById('schPrevDesc');
+    if(!code)return;
+    const cron=buildCronFromSch();
+    code.textContent=cron||'-';
+    desc.textContent=cronDescribe(cron);
+  }
+
+  function showScheduleDialog(){
+    const s=parseCron(flowSchedule||DEFAULT_CRON);
+    _schMode=s.mode;
+    _schDays=s.days&&s.days.length?s.days:[1];
+    Swal.fire({
+      title:'ตั้งเวลารัน (Cronjob)',
+      html:schedModalHTML(s),
+      width:520,
+      showCancelButton:true,
+      confirmButtonText:'ตกลง',
+      cancelButtonText:'ยกเลิก',
+      didOpen:()=>setSchMode(_schMode),
+      preConfirm:()=>{
+        if(_schMode==='weekly'&&!_schDays.length){
+          Swal.showValidationMessage('เลือกวันอย่างน้อย 1 วัน');
+          return false;
+        }
+        const cron=buildCronFromSch();
+        if(_schMode==='custom'&&cron.split(/\s+/).length!==5){
+          Swal.showValidationMessage('Cron ต้องมี 5 ช่อง เช่น 0 1 * * *');
+          return false;
+        }
+        return cron;
+      }
+    }).then(result=>{
+      if(result.isConfirmed){
+        flowSchedule=result.value;
+        refreshRunTypeUI();
+      }
+    });
+  }
+
+  // เปลี่ยน Run Type ใน topbar -> โชว์/ซ่อนส่วน schedule
+  function onRunTypeChange(){
+    flowRunType=document.getElementById('flowRunType').value;
+    if(flowRunType==='AUTO'&&!flowSchedule)flowSchedule=DEFAULT_CRON;
+    refreshRunTypeUI();
+  }
+
+  function refreshRunTypeUI(){
+    document.getElementById('flowRunType').value=flowRunType;
+    const bar=document.getElementById('schedBar');
+    if(flowRunType==='AUTO'){
+      bar.style.display='flex';
+      document.getElementById('schedText').textContent=flowSchedule||DEFAULT_CRON;
+      document.getElementById('schedDesc').textContent=cronDescribe(flowSchedule||DEFAULT_CRON);
+    }else{
+      bar.style.display='none';
+    }
+  }
+
+  const listFlows = [
+              {
+                "flow_id": "F00001",
+                "flow_name": "Select Base X_Sell_Pool (KA)",
+                "run_type": "AUTO",
+                "schedule": "0 1 * * *",
+                "steps": [
+                    { "order": 1, "type": "AUTO", "name": "mcrm_select_base_topup_tele", "status": "Wait" },
+                    { "order": 2, "type": "AUTO", "name": "mcrm_select_base_topup_tele_config", "status": "Wait" },
+                    { "order": 3, "type": "AUTO", "name": "mcrm_select_base_topup_rh", "status": "Wait" },
+                    { "order": 4, "type": "AUTO", "name": "mcrm_select_base_topup_dtu", "status": "Wait" },
+                    { "order": 5, "type": "AUTO", "name": "mcrm_select_base_preapprove_refin", "status": "Wait" },
+                    { "order": 6, "type": "AUTO", "name": "mcrm_select_base_feedback", "status": "Wait" }
+                ]
+          },
+          {
+          "flow_id": "F00002",
+          "flow_name": "Select Base X_Sell_Pool (AY)",
+          "run_type": "AUTO",
+          "schedule": "30 2 * * 1-5",
+          "steps": [
+              { "order": 1, "type": "AUTO", "name": "mcrm_select_base_topmc", "status": "Wait" },
+              { "order": 2, "type": "AUTO", "name": "mcrm_select_base_feedback", "status": "Wait" }
+          ]
+      },
+      {
+        "flow_id": "F00003",
+        "flow_name": "Gen X_SELL_POOL (by program)",
+        "run_type": "AUTO",
+        "schedule": "0 3 1,15 * *",
+        "steps": [
+            { "order": 1, "type": "AUTO", "name": "DWH-program Topup", "status": "Wait" },
+            { "order": 2, "type": "AUTO", "name": "DWH-program Revolving loan", "status": "Wait" },
+            { "order": 3, "type": "AUTO", "name": "DWH-program Pre-Approve (R)", "status": "Wait" },
+            { "order": 4, "type": "AUTO", "name": "DWH-program Pre-Approve (N/U)", "status": "Wait" },
+            { "order": 5, "type": "AUTO", "name": "DWH-program Pre-Approve (MC)", "status": "Wait" }
+        ]
+    },
+    {
+      "flow_id": "F00004",
+      "flow_name": "Gen X_SELL_POOL (by parameter)",
+      "run_type": "AUTO",
+      "schedule": "*/30 * * * *",
+      "steps": [
+          { "order": 1, "type": "AUTO", "name": "DWH-Max LTV", "status": "Wait", "category":"PARAMETER", "leadType":"CRM_X_SELL_POOL", "entity":"KA", "program":"TOPUP", "params":["MAX_LTV"] },
+          { "order": 2, "type": "AUTO", "name": "DWH-Receipt Term", "status": "Wait", "category":"PARAMETER", "leadType":"CRM_X_SELL_POOL", "entity":"KA", "program":"TOPUP", "params":["RECEIPT_TERM"] },
+          { "order": 3, "type": "AUTO", "name": "DWH-FOIR", "status": "Wait", "category":"PARAMETER" },
+          { "order": 4, "type": "AUTO", "name": "DWH-Flat rate,Flat rate TP_RH", "status": "Wait", "category":"PARAMETER", "leadType":"CRM_X_SELL_POOL", "entity":"KA", "program":"TOPUP", "params":["FLAT_RATE_OPT1","FLAT_RATE_OPT2","FLAT_RATE_OPT3","FLAT_RATE_OPT4"] },
+          { "order": 5, "type": "AUTO", "name": "DWH-Flat rate OPTT%", "status": "Wait", "category":"PARAMETER" },
+          { "order": 6, "type": "AUTO", "name": "DWH-X Installment%", "status": "Wait", "category":"PARAMETER", "leadType":"CRM_X_SELL_POOL", "entity":"KA", "program":"TOPUP", "params":["X_INSTALLMENT_OPT1","X_INSTALLMENT_OPT2","X_INSTALLMENT_OPT3","X_INSTALLMENT_OPT4"] },
+          { "order": 7, "type": "AUTO", "name": "DWH-NCB", "status": "Wait", "category":"PARAMETER", "leadType":"CRM_X_SELL_POOL", "entity":"KA", "program":"TOPUP", "params":["NCB"] },
+          { "order": 8, "type": "AUTO", "name": "DWH-Minimum down payment", "status": "Wait", "category":"PARAMETER" },
+          { "order": 9, "type": "AUTO", "name": "DWH-Minimum Credit line (Threshold)", "status": "Wait", "category":"PARAMETER" }
+      ]
+  },
+  {
+    "flow_id": "F00005",
+    "flow_name": "Gen X_SELL_POOL (Final)",
+    "run_type": "MANUAL",
+    "schedule": null,
+    "steps": [
+        {
+            "order": 1,
+            "type": "AUTO",
+            "name": "Inquiry Data X Sell Pool",
+            "detail": "Retain all condition columns defined in the proposal that filter basic conditions",
+            "category": "ELIGIBLE",
+            "code": "E00001",
+            "status": "Wait"
+        },
+        {
+            "order": 2,
+            "type": "AUTO",
+            "name": "Update data of Topup program per parameter",
+            "detail": "update Loan offer Parameters for Topup, parameter:all(exclude: Flat rate%)",
+            "category": "PARAMETER",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "TOPUP",
+            "params": ["TOPUP_OPTION","MAX_LTV","RECEIPT_TERM","X_INSTALLMENT_OPT1","X_INSTALLMENT_OPT2","X_INSTALLMENT_OPT3","X_INSTALLMENT_OPT4","NCB"],
+            "status": "Wait"
+        },
+        {
+            "order": 3,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-topup-flat-rate1",
+            "detail": "update Loan offer Parameters for Topup, parameter:Flat rate option 1",
+            "category": "PARAMETER",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "TOPUP",
+            "params": ["FLAT_RATE_OPT1"],
+            "status": "Wait"
+        },
+        {
+            "order": 4,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-topup-flat-rate2",
+            "detail": "update Loan offer Parameters for Flat rate option 2",
+            "category": "PARAMETER",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "TOPUP",
+            "params": ["FLAT_RATE_OPT2"],
+            "status": "Wait"
+        },
+        {
+            "order": 5,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-topup-flat-rate3",
+            "detail": "update Loan offer Parameters for Flat rate option 3",
+            "category": "PARAMETER",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "TOPUP",
+            "params": ["FLAT_RATE_OPT3"],
+            "status": "Wait"
+        },
+        {
+            "order": 6,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-topup-flat-rate4",
+            "detail": "update Loan offer Parameters for Flat rate option 4",
+            "category": "PARAMETER",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "TOPUP",
+            "params": ["FLAT_RATE_OPT4"],
+            "status": "Wait"
+        },
+        {
+            "order": 7,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-revolving-loan",
+            "detail": "update program Loan offer Parameters for revoling Loan",
+            "category": "PARAMETER",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "REVOLVING_LOAN",
+            "params": ["RL_OPTION"],
+            "status": "Wait"
+        },
+        {
+            "order": 8,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-revolving-loan-flat-rate-tp_rh",
+            "detail": "update Loan offer Parameters for Flat Rate",
+            "category": "PARAMETER",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "REVOLVING_LOAN",
+            "params": ["FLAT_RATE_TP_RH"],
+            "status": "Wait"
+        },
+        {
+            "order": 9,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-pre-approve-r",
+            "detail": "Update Loan offer Parameters for pre-approve r",
+            "category": "PARAMETER",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "PRE_APPROVE_R",
+            "params": ["PA_R_OPTION"],
+            "status": "Wait"
+        },
+        {
+            "order": 10,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-pre-approve-r-flat-rate",
+            "detail": "Update Loan offer Parameters for flat-rate pre-approve r",
+            "category": "PARAMETER",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "PRE_APPROVE_R",
+            "params": ["PA_R_FLAT_RATE"],
+            "status": "Wait"
+        },
+        {
+            "order": 11,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-pre-approve-nu",
+            "detail": "Update Loan offer Parameters for pre-approve N/U",
+            "category": "PARAMETER",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "PRE_APPROVE_NU",
+            "params": ["PA_NU_OPTION"],
+            "status": "Wait"
+        },
+        {
+            "order": 12,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-pre-approve-nu-flat-rate",
+            "detail": "Update Loan offer Parameters for flat-rate pre-approve N/U",
+            "category": "PARAMETER",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "PRE_APPROVE_NU",
+            "params": ["PA_NU_FLAT_RATE"],
+            "status": "Wait"
+        },
+        {
+            "order": 13,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-pre-approve-mc",
+            "detail": "Update Loan offer Parameters for pre-approve MC",
+            "category": "PARAMETER",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "PRE_APPROVE_MC",
+            "params": ["PA_MC_OPTION"],
+            "status": "Wait"
+        },
+        {
+            "order": 14,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-pre-approve-mc-flat-rate",
+            "detail": "Update Loan offer Parameters for pre-approve MC flag rate",
+            "category": "PARAMETER",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "PRE_APPROVE_MC",
+            "params": ["PA_MC_FLAT_RATE"],
+            "status": "Wait"
+        },
+        {
+            "order": 15,
+            "type": "AUTO",
+            "name": "dev-mcrm-cap-max-special-criteria",
+            "detail": "Run special logic of Cap Max Flat Rate and Max LTV for Topup program",
+            "category": "PARAMETER",
+            "code": "",
+            "status": "Wait"
+        },
+        {
+            "order": 16,
+            "type": "AUTO",
+            "name": "credit line calculations Top up programs (X Sell Pool)",
+            "detail": "calculate credit line and cash offer",
+            "category": "PARAMETER",
+            "code": "",
+            "status": "Wait"
+        },
+        {
+            "order": 17,
+            "type": "AUTO",
+            "name": "credit line calculations Revolving Loan programs (X Sell Pool)",
+            "detail": "",
+            "category": "PARAMETER",
+            "code": "",
+            "status": "Wait"
+        },
+        {
+            "order": 18,
+            "type": "AUTO",
+            "name": "credit line calculations Pre-Approve (R) programs (X Sell Pool)",
+            "detail": "",
+            "category": "PARAMETER",
+            "code": "",
+            "status": "Wait"
+        },
+        {
+            "order": 19,
+            "type": "AUTO",
+            "name": "credit line calculations Pre-Approve (N/U) programs (X Sell Pool)",
+            "detail": "",
+            "category": "PARAMETER",
+            "code": "",
+            "status": "Wait"
+        },
+        {
+            "order": 20,
+            "type": "AUTO",
+            "name": "Flag Program Top up",
+            "detail": "Flag Program Top up",
+            "category": "PARAMETER",
+            "code": "",
+            "status": "Wait"
+        },
+        {
+            "order": 21,
+            "type": "AUTO",
+            "name": "Flag Program Revolving Loan",
+            "detail": "Flag Program Revolving Loan",
+            "category": "PARAMETER",
+            "code": "",
+            "status": "Wait"
+        },
+        {
+            "order": 22,
+            "type": "AUTO",
+            "name": "Flag Program Pre-Approve (R)",
+            "detail": "Flag Program Pre-Approve (R)",
+            "category": "PARAMETER",
+            "code": "",
+            "status": "Wait"
+        },
+        {
+            "order": 23,
+            "type": "AUTO",
+            "name": "Flag Program Pre-Approve (N/U) ",
+            "detail": "Flag Program Pre-Approve (N/U) ",
+            "category": "PARAMETER",
+            "code": "",
+            "status": "Wait"
+        }
+    ]
+}
+    ];
+
+  let steps=[];
+  let nextId=steps.length+1,dragSrcId=null;
+
+  // ===== แปลง step ดิบ -> step ที่ใช้ใน canvas (รองรับ field เก่า eligible_code) =====
+  function normalizeStep(s,i){
+    let category = s.category || (s.eligible_code ? 'ELIGIBLE' : DEFAULT_CATEGORY);
+    if(!CATEGORIES[category]) category = DEFAULT_CATEGORY;
+    return {
+      id: i + 1,
+      name: s.name || `Step${i + 1}`,
+      type: s.type || 'AUTO',
+      status: s.status || 'Wait',
+      detail: s.detail || '',
+      category: category,
+      code: s.code || s.eligible_code || '',
+      leadType: s.leadType || (LEAD_TYPES[0] ? LEAD_TYPES[0].code : ''),
+      entity: s.entity || '',
+      program: s.program || '',
+      params: Array.isArray(s.params) ? s.params.slice() : []
+    };
+  }
+
+  // ===== กดปุ่ม + : เปิด modal เลือกประเภทกล่อง (แบบย่อ: จุดสี + ชื่อ) =====
+  function showAddStepDialog(){
+    const html =
+      '<div class="cat-pick-wrap">' +
+      Object.keys(CATEGORIES).map(key=>{
+        const c=CATEGORIES[key];
+        return `<button type="button" class="cat-pick" onclick="Swal.close();addStep('${key}')">
+                  <span class="dot" style="background:${c.color}"></span>${c.label}
+                </button>`;
+      }).join('') +
+      '</div>';
+    Swal.fire({
+      title: 'Select',
+      html: html,
+      width: 320,
+      showConfirmButton: false,
+      showCancelButton: true,
+      cancelButtonText: 'ยกเลิก'
+    });
+  }
+
+  function addStep(category){
+    category = CATEGORIES[category] ? category : DEFAULT_CATEGORY;
+    steps.push({
+      id:nextId++,
+      name:`Step${steps.length+1}`,
+      type:'AUTO',
+      status:'Wait',
+      detail:'',
+      category:category,
+      code:'',
+      leadType: LEAD_TYPES[0] ? LEAD_TYPES[0].code : '',
+      entity:'',
+      program:'',
+      params:[]
+    });
+    render();
+  }
+
+  function removeStep(id){steps=steps.filter(s=>s.id!==id);render()}
+
+  function syncStep(id){
+    const s=steps.find(s=>s.id===id);if(!s)return;
+    ['name','type','status','detail','code'].forEach(f=>{const el=document.getElementById(`${f}_${id}`);if(el)s[f]=el.value});
+    render();
+  }
+
+  // เปลี่ยน Category ของกล่อง -> เคลียร์ code/parameter เดิม แล้ว render ใหม่
+  function changeCategory(id){
+    const s=steps.find(s=>s.id===id);if(!s)return;
+    // เก็บค่าที่ user พิมพ์ค้างไว้ก่อน re-render
+    ['name','type','status','detail'].forEach(f=>{const el=document.getElementById(`${f}_${id}`);if(el)s[f]=el.value});
+    const el=document.getElementById(`category_${id}`);
+    if(el){
+      s.category=el.value;
+      s.code='';
+      s.leadType = LEAD_TYPES[0] ? LEAD_TYPES[0].code : '';
+      s.entity='';
+      s.program='';
+      s.params=[];
+    }
+    closeParamPicker();
+    render();
+  }
+
+  // เปลี่ยน Lead Type / Entity / Program ของกล่อง Parameter
+  function changeParamScope(id){
+    const s=steps.find(s=>s.id===id);if(!s)return;
+    ['name','detail'].forEach(f=>{const el=document.getElementById(`${f}_${id}`);if(el)s[f]=el.value});
+    const ltEl=document.getElementById('leadType_'+id);
+    const enEl=document.getElementById('entity_'+id);
+    const prEl=document.getElementById('program_'+id);
+    const newEntity  = enEl ? enEl.value : s.entity;
+    const newProgram = prEl ? prEl.value : s.program;
+    if(newEntity!==s.entity || newProgram!==s.program) s.params=[]; // scope เปลี่ยน -> เลือก parameter ใหม่
+    if(ltEl) s.leadType = ltEl.value;
+    s.entity  = newEntity;
+    s.program = newProgram;
+    closeParamPicker();
+    render();
+  }
+
+  function getPos(idx){
+    const row=Math.floor(idx/COLS),col=idx%COLS;
+    const rev=row%2===1;
+    const c=rev?(COLS-1-col):col;
+    const y=(_rowY[row]!==undefined)?_rowY[row]:PAD;
+    return{x:PAD+c*(BOX_W+GAP_X),y,row,c,rev};
+  }
+
+  // จุดกึ่งกลางแนวตั้งของกล่อง i (ใช้ความสูงจริง)
+  function boxCY(i){
+    const p=getPos(i);
+    const h=_hs[i]||MIN_BOX_H;
+    return p.y+h/2;
+  }
+
+  function makePath(){
+    if(steps.length<2)return'';
+    const parts=[];
+    for(let i=0;i<steps.length-1;i++){
+      const a=getPos(i),b=getPos(i+1);
+
+      // 1. หาจุดปล่อยเส้นออกจากกล่องต้นทาง (a) ตามทิศทางการวิ่งของแถวนั้น
+      const ax = a.rev ? a.x : (a.x + BOX_W);
+      const ay = boxCY(i);
+
+      // 2. หาจุดรับเส้นเข้ากล่องปลายทาง (b) ตามทิศทางการวิ่งของแถวนั้น
+      const bx = b.rev ? (b.x + BOX_W) : b.x;
+      const by = boxCY(i+1);
+
+      if(a.row===b.row){
+        const mx=(ax+bx)/2;
+        parts.push(`M${ax},${ay} C${mx},${ay} ${mx},${by} ${bx},${by}`);
+      } else {
+        // กรณีขึ้นแถวใหม่
+        const midX = a.rev ? (PAD - GAP_X/2) : (PAD + COLS * (BOX_W + GAP_X) - GAP_X/2);
+        const cr = 12;
+        const d1 = a.rev ? -1 : 1;
+        const d2 = b.rev ? -1 : 1;
+
+        parts.push(
+          `M${ax},${ay} ` +
+          `L${midX - d1*cr},${ay} Q${midX},${ay} ${midX},${ay+cr} ` +
+          `L${midX},${by - cr} Q${midX},${by} ${midX + d2*cr},${by} ` +
+          `L${bx},${by}`
+        );
+      }
+    }
+    return parts.join(' ');
+}
+
+  function svgW(){return PAD*2+COLS*(BOX_W+GAP_X)-GAP_X+GAP_X+80}
+  function svgH(){
+    // ความสูงรวม = ตำแหน่งแถวสุดท้าย + ความสูงแถวสุดท้าย (คิดรวมแถวของปุ่ม + ด้วย)
+    const totalRows=Math.ceil((steps.length+1)/COLS)||1;
+    const lastRow=totalRows-1;
+    const y=(_rowY[lastRow]!==undefined)?_rowY[lastRow]:PAD;
+    const h=(_rowH[lastRow]!==undefined)?_rowH[lastRow]:MIN_BOX_H;
+    return y+h+PAD+80;
+  }
+
+  // ===== HTML ของฟิลด์ Lead Type / Entity / Program + multi-select Parameter (เฉพาะ category = PARAMETER) =====
+  function parameterFieldsHTML(s){
+    const selected = s.params || [];
+    const chipsHTML = selected.length
+      ? selected.map(pc=>`<span class="param-chip"><span class="pctxt">${paramNameOf(s.program,s.entity,pc)}</span><span class="param-chip-x" onclick="event.stopPropagation();removeParam(${s.id},'${pc}')">&times;</span></span>`).join('')
+      : '<span class="param-ph">-- Select Parameter --</span>';
+
+    return `
+        <div class="field-lbl">Lead Type</div>
+        <select class="step-select" id="leadType_${s.id}" onchange="changeParamScope(${s.id})">
+          ${LEAD_TYPES.map(l=>`<option value="${l.code}"${l.code===s.leadType?' selected':''}>${l.name}</option>`).join('')}
+        </select>
+        <div class="field-lbl">Entity</div>
+        <select class="step-select" id="entity_${s.id}" onchange="changeParamScope(${s.id})">
+          <option value="">-- Select Entity --</option>
+          ${ENTITIES.map(e=>`<option value="${e.code}"${e.code===s.entity?' selected':''}>${e.name}</option>`).join('')}
+        </select>
+        <div class="field-lbl">Program</div>
+        <select class="step-select" id="program_${s.id}" onchange="changeParamScope(${s.id})">
+          <option value="">-- Select Program --</option>
+          ${PROGRAMS.map(p=>`<option value="${p.code}"${p.code===s.program?' selected':''}>${p.name}</option>`).join('')}
+        </select>
+        <div class="field-lbl">Parameter (เลือกได้หลายรายการ)</div>
+        <div class="param-tag-field" id="paramField_${s.id}" onclick="event.stopPropagation();toggleParamPicker(${s.id})">
+          ${chipsHTML}
+        </div>`;
+  }
+
+  // ===== HTML ภายในกล่อง (ใช้ทั้งตอนวัดความสูงและตอน render จริง) =====
+  function boxInnerHTML(s,i,status_box_before){
+    const cat=CATEGORIES[s.category];
+    return `
+        <div class="drag-dots">· · · · ·</div>
+        <div class="step-num">
+          <span style="font-size:12pt;color:#000;font-weight:bold;">#${i+1}</span>
+          <span class="cat-tag ${cat.css}">${cat.label}</span>
+          ${badgeHTML(s.status)}
+          <button class="btn-del" onclick="removeStep(${s.id})">×</button>
+        </div>
+        <div class="field-lbl">Name</div>
+        <input class="step-input box_name" id="name_${s.id}" value="${s.name}" onchange="syncStep(${s.id})">
+        <div class="field-lbl">Detail</div>
+        <textarea class="step-input" id="detail_${s.id}" rows="2">${s.detail}</textarea>
+        <div class="row-2col">
+          <div>
+            <div class="field-lbl">Category</div>
+            <select class="step-select box_category" id="category_${s.id}" onchange="changeCategory(${s.id})">
+              ${Object.keys(CATEGORIES).map(k=>`<option value="${k}"${k===s.category?' selected':''}>${CATEGORIES[k].label}</option>`).join('')}
+            </select>
+          </div>
+          <div style="display:none">
+            <div class="field-lbl" >Type</div>
+            <select class="step-select box_type" id="type_${s.id}" onchange="syncStep(${s.id})">
+              ${TYPES.map(t=>`<option${t===s.type?' selected':''}>${t}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        ${s.category==='PARAMETER' ? parameterFieldsHTML(s) : codeSelectHTML(s)}
+        <div class="field-lbl" style="display:none">Status</div>
+        <select style="display:none" class="step-select box_status" id="status_${s.id}" onchange="syncStep(${s.id})" disabled>
+          ${STATUSES.map(st=>`<option${st===s.status?' selected':''}>${st}</option>`).join('')}
+        </select>
+        <div style="margin-top:5px" align="center">${resultButtonModalHTML(s.status,s.name,s.type,status_box_before,i)}</div>
+        `;
+  }
+
+  // ===== วัดความสูงจริงของกล่องทุกใบ แล้วคำนวณความสูง/ตำแหน่ง y ของแต่ละแถว =====
+  function computeLayout(){
+    _hs=[];_rowH=[];_rowY=[];
+
+    // สร้างกล่องจำลองนอกจอ (visibility:hidden) เพื่อวัด offsetHeight ตาม CSS จริง
+    const meas=document.createElement('div');
+    meas.style.cssText=`position:absolute;left:-99999px;top:0;width:${BOX_W}px;visibility:hidden;`;
+    document.body.appendChild(meas);
+
+    steps.forEach((s,i)=>{
+      if(!CATEGORIES[s.category])s.category=DEFAULT_CATEGORY;
+      const status_box_before = steps[i-1] ? steps[i-1].status : null;
+      const box=document.createElement('div');
+      box.className=`step-box ${statusClass(s.status)} ${CATEGORIES[s.category].css}`;
+      box.innerHTML=boxInnerHTML(s,i,status_box_before)
+        // id ต้องไม่ซ้ำกับของจริง เลยถอด id ออกตอนวัด (ความสูงเท่ากัน)
+        .replace(/ id="[^"]*"/g,'');
+      meas.appendChild(box);
+      _hs.push(Math.max(box.offsetHeight+4,MIN_BOX_H)); // +4 กันขอบโดนตัด
+      meas.removeChild(box);
+    });
+    document.body.removeChild(meas);
+
+    // ความสูงแต่ละแถว = กล่องที่สูงสุดในแถว / แถวของปุ่ม + ที่ไม่มีกล่องใช้ MIN_BOX_H
+    const totalRows=Math.ceil((steps.length+1)/COLS)||1;
+    for(let r=0;r<totalRows;r++){
+      const hsInRow=_hs.slice(r*COLS,(r+1)*COLS);
+      _rowH[r]=hsInRow.length?Math.max(...hsInRow):MIN_BOX_H;
+    }
+    // ตำแหน่ง y สะสมของแต่ละแถว
+    let y=PAD;
+    for(let r=0;r<totalRows;r++){
+      _rowY[r]=y;
+      y+=_rowH[r]+GAP_Y;
+    }
+  }
+
+  function statusClass(st){return st==='Wait'?'st-wait':st==='Inprogress'?'st-inprogress':st==='Completed'?'st-completed':st==='Incomplete'?'st-incomplete':''}
+
+  function badgeHTML(st){
+    if(st==='Wait') return`<span class="step-badge b-wait"><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.5" fill="none" stroke="#3B82F6" stroke-width="1.5"/></svg>Wait</span>`;
+    if(st==='Inprogress') return`<span class="step-badge b-inprogress"><span class="spinner"></span>In Progress</span>`;
+    if(st==='Completed') return`<span class="step-badge b-completed"><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="5.5" fill="#10B981"/><polyline points="2.8,5.5 4.5,7.5 8.2,3.2" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Completed</span>`;
+    if(st==='Incomplete') return`<span class="step-badge b-incomplete"><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.5" fill="none" stroke="#FCA5A5" stroke-width="1.5"/></svg>Incomplete</span>`;
+    return'';
+  }
+
+  // ===== สร้าง select ของ code ตาม category (ELIGIBLE / PROFILE) =====
+  function codeSelectHTML(s){
+    const cat = CATEGORIES[s.category] || CATEGORIES[DEFAULT_CATEGORY];
+    if(!cat.codes.length) return ''; // OTHER ไม่ต้องมี select code
+    return `
+      <div class="field-lbl">${cat.codeLabel}</div>
+      <select class="step-select box_code" id="code_${s.id}" onchange="syncStep(${s.id})">
+        <option value="">-- Select ${cat.codeLabel} --</option>
+        ${cat.codes.map(t=>`<option${t===s.code?' selected':''}>${t}</option>`).join('')}
+      </select>`;
+  }
+
+  function resultButtonModalHTML(st,name,type,status_box_before,i){
+    if(st==='Completed') {
+      return `<button class="btn-result" onclick="showResultModal('${name}')">View Result</button>`;
+    }
+    if(st==='Incomplete') {
+      return `<p style="color:#EF4444;font-size:11px;margin-top:6px">Something went wrong, Please try again.</p>`;
+    }
+    if(st==='Wait' && type==='MANUAL' && (status_box_before === 'Completed' || status_box_before === null)) {
+      return `<button class="btn-run" onclick="runFlow('${i}')">Run >> </button>`;
+    }
+    return ''
+  }
+
+  function showList(){
+    const tbody = document.querySelector('#list_flow_table tbody');
+    tbody.innerHTML = listFlows.map(f => {
+      const rt=(f.run_type||'MANUAL').toUpperCase();
+      const schedCell = rt==='AUTO'
+        ? `<span class="sched-code">${f.schedule||DEFAULT_CRON}</span>
+           <div class="sched-desc">${cronDescribe(f.schedule||DEFAULT_CRON)}</div>`
+        : `<span style="color:#9CA3AF">-</span>`;
+      return `
+      <tr>
+        <td align="center">${f.flow_id}</td>
+        <td>${f.flow_name}</td>
+        <td align="center">${f.steps.length}</td>
+        <td align="center"><span class="run-tag ${rt==='AUTO'?'run-auto':'run-manual'}">${rt}</span></td>
+        <td align="center">${schedCell}</td>
+        <td align="center">
+            <div class="dropdown-container">
+              <button class="btn-dots" onclick="toggleDropdown(event, this)">⋮</button>
+
+              <div class="dropdown-menu">
+                <button class="" onclick="chooseFlow_func('${f.flow_id}');">Edit</button>
+                <button class="" onclick="runFlowFromList('${f.flow_id}');">Run Flow</button>
+              </div>
+            </div>
+          </td>
+      </tr>
+    `}).join('');
+  }
+
+  function chooseFlow(flow_id){
+    $("#flowId").val("");
+    $("#flowName").val("");
+    var flow = listFlows.find(f => f.flow_id === flow_id);
+    if (flow) {
+      document.getElementById('flowId').value = flow.flow_id;
+      document.getElementById('flowName').value = flow.flow_name;
+      flowRunType = (flow.run_type||'MANUAL').toUpperCase();
+      flowSchedule = flow.schedule || (flowRunType==='AUTO'?DEFAULT_CRON:'');
+      steps = flow.steps.map(normalizeStep);
+      nextId = steps.length + 1;
+      refreshRunTypeUI();
+      render();
+    } else {
+      steps = [];
+      nextId = 1;
+      flowRunType='MANUAL';
+      flowSchedule='';
+      refreshRunTypeUI();
+      render();
+    }
+  }
+  function chooseFlow_func(flow_id){
+    $('#flow_table').hide();
+    $('#flow_area').show();
+    chooseFlow(flow_id);
+  }
+
+  function runFlowFromList(flow_id){
+    var flow = listFlows.find(f => f.flow_id === flow_id);
+    if (flow) {
+      Swal.fire({
+        title: 'Run Flow',
+        text: `Are you sure you want to run the flow "${flow.flow_name}"?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, run it!',
+        cancelButtonText: 'Cancel'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Simulate running the flow
+          // show success then redirect to workflow_management.html?flow_id=...
+          Swal.fire('Running', `The flow "${flow.flow_name}" is now running.`, 'success').then(() => {
+            window.location.href = `workflow_management.html?create_flow_id=${flow.flow_id}`;
+          });
+        }
+      });
+    } else {
+      Swal.fire('Error', 'Flow not found.', 'error');
+    }
+  }
+
+  function showResultModal(name){
+    const dataShow = [
+      { "channel" : "TELE", "qty" : 1000 },
+      { "channel" : "DTU", "qty" : 500 },
+      { "channel" : "CSP", "qty" : 200 }
+    ]
+
+    Swal.fire({
+      title:"Result : "+name,
+      html: tableHTML(dataShow),
+      width: 700,
+      confirmButtonText: 'Back',
+    });
+  }
+
+  function numberWithCommas(x) {
+    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
+
+  function tableHTML(data){
+    let html = '<table style="width:100%;border-collapse:collapse;">';
+    html += '<thead><tr><th style="border:1px solid #ddd;padding:8px;text-align:left;">Channel</th><th style="border:1px solid #ddd;padding:8px;text-align:left;">Quantity</th></tr></thead>';
+    html += '<tbody>';
+    data.forEach(row => {
+      html += `<tr><td style="border:1px solid #ddd;padding:8px;" width="100px">${row.channel}</td><td style="border:1px solid #ddd;padding:8px;">${numberWithCommas(row.qty)}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    return html;
+  }
+
+  function render(){
+    const canvas=document.getElementById('canvas');
+    canvas.innerHTML='';
+    computeCols();   // จำนวนกล่องต่อแถวตามความกว้างจอปัจจุบัน
+    computeLayout(); // วัดความสูงจริงก่อน แล้วค่อยวาด
+    const W=svgW(),H=svgH();
+    const ns='http://www.w3.org/2000/svg';
+    const svg=document.createElementNS(ns,'svg');
+    svg.setAttribute('width',W);svg.setAttribute('height',H);
+    svg.classList.add('flow-svg');
+
+    const defs=document.createElementNS(ns,'defs');
+    const marker=document.createElementNS(ns,'marker');
+    marker.setAttribute('id','arr');marker.setAttribute('markerWidth','9');
+    marker.setAttribute('markerHeight','9');marker.setAttribute('refX','7');
+    marker.setAttribute('refY','3.5');marker.setAttribute('orient','auto');
+    const mp=document.createElementNS(ns,'path');
+    mp.setAttribute('d','M1,1 L7,3.5 L1,6');mp.setAttribute('fill','none');
+    mp.setAttribute('stroke','#CCCCCC');mp.setAttribute('stroke-width','1.5');
+    mp.setAttribute('stroke-linecap','round');mp.setAttribute('stroke-linejoin','round');
+    marker.appendChild(mp);defs.appendChild(marker);svg.appendChild(defs);
+
+    if(steps.length>1){
+      const pe=document.createElementNS(ns,'path');
+      pe.setAttribute('d',makePath());
+      pe.setAttribute('fill','none');pe.setAttribute('stroke',STROKE);
+      pe.setAttribute('stroke-width',STROKE_W);pe.setAttribute('stroke-linecap','round');
+      pe.setAttribute('stroke-linejoin','round');pe.setAttribute('marker-end','url(#arr)');
+      svg.appendChild(pe);
+    }
+
+    steps.forEach((s,i)=>{
+      const{x,y}=getPos(i);
+      const fo=document.createElementNS(ns,'foreignObject');
+      fo.setAttribute('x',x);fo.setAttribute('y',y);
+      fo.setAttribute('width',BOX_W);fo.setAttribute('height',_hs[i]||MIN_BOX_H); // สูงตามเนื้อหาจริง
+      const status_box_before = steps[i-1] ? steps[i-1].status : null;
+      const box=document.createElement('div');
+      if(s.detail===undefined)s.detail='';
+      if(s.code===undefined)s.code='';
+      if(s.leadType===undefined)s.leadType=LEAD_TYPES[0]?LEAD_TYPES[0].code:'';
+      if(s.entity===undefined)s.entity='';
+      if(s.program===undefined)s.program='';
+      if(!Array.isArray(s.params))s.params=[];
+      if(!CATEGORIES[s.category])s.category=DEFAULT_CATEGORY;
+      const cat=CATEGORIES[s.category];
+
+      // ใส่ class ตาม status + category (สีต่างกันตามประเภท)
+      box.className=`step-box ${statusClass(s.status)} ${cat.css}`;
+      box.draggable=true;
+      box.dataset.id=s.id;
+      box.innerHTML=boxInnerHTML(s,i,status_box_before);
+
+      box.addEventListener('dragstart',e=>{
+        ['name','type','status','code'].forEach(f=>{const el=document.getElementById(`${f}_${s.id}`);if(el)s[f]=el.value});
+        dragSrcId=s.id;setTimeout(()=>box.classList.add('dragging'),0);e.dataTransfer.effectAllowed='move';
+      });
+      box.addEventListener('dragend',()=>{box.classList.remove('dragging');document.querySelectorAll('.step-box').forEach(b=>b.classList.remove('drag-over'))});
+      box.addEventListener('dragover',e=>{e.preventDefault();document.querySelectorAll('.step-box').forEach(b=>b.classList.remove('drag-over'));if(s.id!==dragSrcId)box.classList.add('drag-over')});
+      box.addEventListener('dragleave',()=>box.classList.remove('drag-over'));
+      box.addEventListener('drop',e=>{
+        e.preventDefault();if(dragSrcId===s.id)return;
+        const fi=steps.findIndex(x=>x.id===dragSrcId),ti=steps.findIndex(x=>x.id===s.id);
+        const[m]=steps.splice(fi,1);steps.splice(ti,0,m);dragSrcId=null;render();
+      });
+
+      fo.appendChild(box);svg.appendChild(fo);
+    });
+
+    // ปุ่ม + ที่ตำแหน่งถัดไป -> เปิด modal เลือกประเภท
+    const{x:ax,y:ay,row:arow}=getPos(steps.length);
+    const rowH=_rowH[arow]||MIN_BOX_H;
+    const addFo=document.createElementNS(ns,'foreignObject');
+    addFo.setAttribute('x',ax);addFo.setAttribute('y',ay+rowH/2-18);
+    addFo.setAttribute('width',70);addFo.setAttribute('height',44);
+    const addDiv=document.createElement('div');
+    addDiv.style.cssText='display:flex;align-items:center;gap:6px';
+    if(steps.length>0){
+      const ln=document.createElement('div');
+      ln.style.cssText='width:12px;height:1.5px;background:#DDDDDD;flex-shrink:0';
+      addDiv.appendChild(ln);
+    }
+    const btn=document.createElement('button');btn.className='add-btn';btn.textContent='+';btn.onclick=showAddStepDialog;
+    addDiv.appendChild(btn);addFo.appendChild(addDiv);svg.appendChild(addFo);
+
+    canvas.appendChild(svg);
+    closeParamPicker(); // canvas วาดใหม่ทุกครั้ง -> ปิด picker เดิมกันชี้ผิดตำแหน่ง
+  }
+
+  // ============================================================
+  // ===== Parameter multi-select picker (dropdown ลอย) =====
+  // ============================================================
+  let openParamStepId = null;
+
+  function renderParamPicker(s){
+    const panel = document.getElementById('global-param-dd');
+    const list = getParamList(s.program, s.entity);
+    if(!s.program || !s.entity){
+      panel.innerHTML = '<div class="dd-empty">กรุณาเลือก Entity และ Program ก่อน</div>';
+      return;
+    }
+    panel.innerHTML = list.length
+      ? list.map(p=>{
+          const checked = (s.params||[]).includes(p.code);
+          return `<div class="dd-opt" onclick="event.stopPropagation();toggleParamValue(${s.id},'${p.code}')">
+                    <input type="checkbox" ${checked?'checked':''} onclick="event.stopPropagation();toggleParamValue(${s.id},'${p.code}')">
+                    <span>${p.name}</span>
+                  </div>`;
+        }).join('')
+      : '<div class="dd-empty">ไม่มี Parameter สำหรับ Program/Entity นี้</div>';
+  }
+
+  function toggleParamPicker(id){
+    const panel = document.getElementById('global-param-dd');
+    if(openParamStepId === id){ closeParamPicker(); return; }
+    const s = steps.find(x=>x.id===id);
+    if(!s) return;
+    openParamStepId = id;
+    renderParamPicker(s);
+
+    const anchor = document.getElementById('paramField_'+id);
+    if(anchor){
+      const rect = anchor.getBoundingClientRect();
+      panel.style.left = Math.max(8,rect.left)+'px';
+      panel.style.top  = (rect.bottom+4)+'px';
+      panel.style.minWidth = Math.max(rect.width,200)+'px';
+    }
+    panel.classList.add('open');
+  }
+
+  function toggleParamValue(id, code){
+    const s = steps.find(x=>x.id===id); if(!s) return;
+    s.params = s.params || [];
+    const i = s.params.indexOf(code);
+    if(i>=0) s.params.splice(i,1); else s.params.push(code);
+    renderParamPicker(s);
+    updateParamFieldDisplay(id);
+  }
+
+  function removeParam(id, code){
+    const s = steps.find(x=>x.id===id); if(!s) return;
+    s.params = (s.params||[]).filter(c=>c!==code);
+    updateParamFieldDisplay(id);
+    if(openParamStepId===id) renderParamPicker(s);
+  }
+
+  function updateParamFieldDisplay(id){
+    const s = steps.find(x=>x.id===id); if(!s) return;
+    const field = document.getElementById('paramField_'+id);
+    if(!field) return;
+    field.innerHTML = (s.params&&s.params.length)
+      ? s.params.map(pc=>`<span class="param-chip"><span class="pctxt">${paramNameOf(s.program,s.entity,pc)}</span><span class="param-chip-x" onclick="event.stopPropagation();removeParam(${id},'${pc}')">&times;</span></span>`).join('')
+      : '<span class="param-ph">-- Select Parameter --</span>';
+  }
+
+  function closeParamPicker(){
+    openParamStepId = null;
+    const panel = document.getElementById('global-param-dd');
+    if(panel) panel.classList.remove('open');
+  }
+  document.getElementById('global-param-dd').addEventListener('click', e=>e.stopPropagation());
+  document.addEventListener('click', closeParamPicker);
+
+  function submitFlow(){
+    steps.forEach(s=>{['name','type','status','detail','code'].forEach(f=>{const el=document.getElementById(`${f}_${s.id}`);if(el)s[f]=el.value})});
+    flowRunType=document.getElementById('flowRunType').value;
+    const payload={
+      flow_id:document.getElementById('flowId').value,
+      flow_name:document.getElementById('flowName').value,
+      run_type:flowRunType,
+      schedule:flowRunType==='AUTO'?(flowSchedule||DEFAULT_CRON):null,
+      steps:steps.map((s,i)=>{
+        const base={order:i+1,type:s.type,name:s.name,detail:s.detail,category:s.category,status:s.status};
+        if(s.category==='PARAMETER'){
+          base.leadType=s.leadType;
+          base.entity=s.entity;
+          base.program=s.program;
+          base.params=s.params||[];
+        }else{
+          base.code=s.code;
+        }
+        return base;
+      })
+    };
+    document.getElementById('outputPre').textContent=JSON.stringify(payload,null,4);
+    document.getElementById('outputPanel').classList.add('show');
+  }
+  function copyPayload(){
+    navigator.clipboard.writeText(document.getElementById('outputPre').textContent).then(()=>{
+      const b=document.querySelector('.btn-copy');b.textContent='Copied!';setTimeout(()=>b.textContent='Copy',1500);
+    });
+  }
+
+  function runFlow(i){
+    submitFlow();
+    const payload=document.getElementById('outputPre').textContent;
+    console.log('Running flow with payload:',payload);
+
+    processRunFlow(payload,i);
+  }
+
+  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function processRunFlow(payload,indexFlow) {
+  const allFlow = JSON.parse(payload);
+
+  if (indexFlow == undefined) {
+    indexFlow=-1
+  }
+  let index = 0;
+  for (const step of allFlow.steps) {
+    if (index < indexFlow) {
+      index++;
+      continue;
+    }
+    console.log(`Executing Step ${index + 1}: ${step.name} (Type: ${step.type}, Status: ${step.status})`);
+    const status = $(".box_status")[index];
+    const box_status_id = status.id;
+    if(steps[index].type === "MANUAL" && indexFlow != index ){
+      return Swal.fire({
+        title: 'Manual Step Detected',
+        text: `Step ${index + 1}: ${step.name} is a manual step. Please complete it manually before proceeding.`,
+        icon: 'warning',
+        confirmButtonText: 'OK'
+      });
+    }
+    steps[index].status = "Inprogress";
+    $("#"+box_status_id).val("Inprogress").change();
+
+    await delay(2000);
+    steps[index].status = "Completed";
+    $("#"+box_status_id).val("Completed").change();
+
+    index++;
+  }
+
+  console.log("All flows processed!");
+}
+
+  function clearFlow(){
+    steps = [];
+    render();
+  }
+
+  function replaceFlow(){
+    Swal.fire({
+      title: 'Replace Flow',
+      input: 'textarea',
+      inputLabel: 'Paste your flow JSON here',
+      inputPlaceholder: 'Paste your flow JSON here...',
+      inputAttributes: {
+        'aria-label': 'Paste your flow JSON here'
+      },
+      showCancelButton: true
+    }).then((result) => {
+      if (result.isConfirmed) {
+        try {
+          const newFlow = JSON.parse(result.value);
+          if (newFlow.steps && Array.isArray(newFlow.steps)) {
+            steps = newFlow.steps.map(normalizeStep);
+            nextId = steps.length + 1;
+            if(newFlow.run_type){flowRunType=newFlow.run_type.toUpperCase();flowSchedule=newFlow.schedule||'';refreshRunTypeUI();}
+            render();
+            Swal.fire('Success', 'Flow replaced successfully!', 'success');
+          } else {
+            throw new Error('Invalid flow structure');
+          }
+        } catch (e) {
+          Swal.fire('Error', 'Invalid JSON format. Please check your input.', 'error');
+        }
+      }
+    });
+  }
+
+  function toggleDropdown(event, button) {
+  event.stopPropagation();
+
+  const currentMenu = button.nextElementSibling;
+
+  document.querySelectorAll('.dropdown-menu').forEach(menu => {
+    if (menu !== currentMenu) {
+      menu.classList.remove('show');
+    }
+  });
+
+  currentMenu.classList.toggle('show');
+}
+
+document.addEventListener('click', function() {
+  document.querySelectorAll('.dropdown-menu').forEach(menu => {
+    menu.classList.remove('show');
+  });
+});
+
+  //ready
+  render();
+  showList();
+
+  </script>

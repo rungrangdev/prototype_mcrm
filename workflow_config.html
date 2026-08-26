@@ -1,0 +1,837 @@
+
+<link rel="stylesheet" href="main.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<div id="flow_table" class="page_all" style="padding:20px;display:block;">
+    <h3>Workflow Config</h3>
+    <div align="right" style="margin-bottom: 10px;">
+      <button class="btn-run" onclick="chooseFlow_func('')">+ New Flow</button>
+    </div>
+    <table id="list_flow_table" width="100%">
+        <thead>
+          <tr>
+            <th>Flow ID</th>
+            <th>Flow Name</th>
+            <th>Steps</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<div id="flow_area" class="page_all" style="display:none;">
+  <div class="topbar">
+    <label>Flow ID</label>
+    <input id="flowId" value="F00001">
+    <label>Flow Name</label>
+    <input id="flowName" value="Select Base X_Sell_Pool (KA)" style="width:300px">
+    <!-- <button class="btn-run" onclick="runFlow()">Run >></button>
+    <button class="btn-clear" onclick="clearFlow()">Clear</button>
+    <button class="btn-replace" onclick="replaceFlow()">Replace flow</button> -->
+    <!-- <button class="btn-allflow" onclick="showList()">All Flows</button> -->
+    <button class="btn-submit" onclick="submitFlow()">Save</button>
+    
+  </div>
+  
+  <div class="canvas" id="canvas"></div>
+  
+  <div class="output-panel" id="outputPanel" style="height: 600px;">
+    <h3>Payload</h3>
+    <pre id="outputPre"></pre>
+    <button class="btn-copy" onclick="copyPayload()">Copy</button>
+  </div>
+</div>
+  
+  <script>
+  const TYPES=['AUTO','MANUAL'];
+
+  const STATUSES=['Wait','Inprogress','Completed','Incomplete'];
+  const COLS=5;
+  const BOX_W=270,BOX_H=400,GAP_X=50,GAP_Y=20,PAD=5;
+  const STROKE='#CCCCCC',STROKE_W=2;
+  const ELIGI = ["E00001","E00002","E00003","E00004","E00005","E00006","E00007","E00008","E00009","E00010"];
+  const listFlows = [
+              {
+                "flow_id": "F00001",
+                "flow_name": "Select Base X_Sell_Pool (KA)",
+                "steps": [
+                    {
+                        "order": 1,
+                        "type": "AUTO",
+                        "name": "mcrm_select_base_topup_tele",
+                        "status": "Wait"
+                    },
+                    {
+                        "order": 2,
+                        "type": "AUTO",
+                        "name": "mcrm_select_base_topup_tele_config",
+                        "status": "Wait"
+                    },
+                    {
+                        "order": 3,
+                        "type": "AUTO",
+                        "name": "mcrm_select_base_topup_rh",
+                        "status": "Wait"
+                    },
+                    {
+                        "order": 4,
+                        "type": "AUTO",
+                        "name": "mcrm_select_base_topup_dtu",
+                        "status": "Wait"
+                    },
+                    {
+                        "order": 5,
+                        "type": "AUTO",
+                        "name": "mcrm_select_base_preapprove_refin",
+                        "status": "Wait"
+                    },
+                    {
+                        "order": 6,
+                        "type": "AUTO",
+                        "name": "mcrm_select_base_feedback",
+                        "status": "Wait"
+                    }
+                ]
+          },
+          {
+          "flow_id": "F00002",
+          "flow_name": "Select Base X_Sell_Pool (AY)",
+          "steps": [
+              {
+                  "order": 1,
+                  "type": "AUTO",
+                  "name": "mcrm_select_base_topmc",
+                  "status": "Wait"
+              },
+              {
+                  "order": 2,
+                  "type": "AUTO",
+                  "name": "mcrm_select_base_feedback",
+                  "status": "Wait"
+              }
+          ]
+      },
+      {
+        "flow_id": "F00003",
+        "flow_name": "Gen X_SELL_POOL (by program)",
+        "steps": [
+            {
+                "order": 1,
+                "type": "AUTO",
+                "name": "DWH-program Topup",
+                "status": "Wait"
+            },
+            {
+                "order": 2,
+                "type": "AUTO",
+                "name": "DWH-program Revolving loan",
+                "status": "Wait"
+            },
+            {
+                "order": 3,
+                "type": "AUTO",
+                "name": "DWH-program Pre-Approve (R)",
+                "status": "Wait"
+            },
+            {
+                "order": 4,
+                "type": "AUTO",
+                "name": "DWH-program Pre-Approve (N/U)",
+                "status": "Wait"
+            },
+            {
+                "order": 5,
+                "type": "AUTO",
+                "name": "DWH-program Pre-Approve (MC)",
+                "status": "Wait"
+            }
+        ]
+    },
+    {
+      "flow_id": "F00004",
+      "flow_name": "Gen X_SELL_POOL (by parameter)",
+      "steps": [
+          {
+              "order": 1,
+              "type": "AUTO",
+              "name": "DWH-Max LTV",
+              "status": "Wait"
+          },
+          {
+              "order": 2,
+              "type": "AUTO",
+              "name": "DWH-Receipt Term",
+              "status": "Wait"
+          },
+          {
+              "order": 3,
+              "type": "AUTO",
+              "name": "DWH-FOIR",
+              "status": "Wait"
+          },
+          {
+              "order": 4,
+              "type": "AUTO",
+              "name": "DWH-Flat rate,Flat rate TP_RH",
+              "status": "Wait"
+          },
+          {
+              "order": 5,
+              "type": "AUTO",
+              "name": "DWH-Flat rate OPTT%",
+              "status": "Wait"
+          },
+          {
+              "order": 6,
+              "type": "AUTO",
+              "name": "DWH-X Installment%",
+              "status": "Wait"
+          },
+          {
+              "order": 7,
+              "type": "AUTO",
+              "name": "DWH-NCB",
+              "status": "Wait"
+          },
+          {
+              "order": 8,
+              "type": "AUTO",
+              "name": "DWH-Minimum down payment",
+              "status": "Wait"
+          },
+          {
+              "order": 9,
+              "type": "AUTO",
+              "name": "DWH-Minimum Credit line (Threshold)",
+              "status": "Wait"
+          }
+      ]
+  },
+  {
+    "flow_id": "F00005",
+    "flow_name": "Gen X_SELL_POOL (Final)",
+    "steps": [
+        {
+            "order": 1,
+            "type": "AUTO",
+            "name": "Step 1 : Get Eligible data X sell pool ", 
+            "detail" : "Retain all condition columns defined in the proposal, including those not used in the WHERE clause." ,
+            "status": "Completed"
+        },
+        {
+            "order": 2,
+            "type": "AUTO",
+            "name": "Step 2 : Keep data to Base lead temp Table",
+            "detail" : "Retain all condition columns defined in the proposal that filter basic conditions",
+            "eligible_code" : "E00001",
+            "status": "Inprogress"
+			//xxxxx
+        },
+        {
+            "order": 3,
+            "type": "MANUAL",
+            "name": "Refresh minibook data" ,
+            "detail" : "Prep data for logic (insert key and car price from minibook )",
+            "status": "Wait"
+			// "dev-mcrm-minibook-logic" ,
+        },
+		   {
+            "order": 4,
+            "type": "MANUAL",
+            "name": "Refresh Depreciation data" ,
+            "detail" : "Prep data for logic (Mapping Depreciation for lead)",
+            "status": "Wait"
+			// "dev-mcrm-Depreciation-logic" ,
+        },
+        {
+            "order": 5,
+            "type": "AUTO",
+            "name": "Update data of Topup program per parameter",
+            "detail" : "update Loan offer Parameters for Topup, parameter:all(exclude: Flat rate%)",
+            "status": "Wait"
+			//dev-mcrm-program-topup
+        },
+        {
+            "order": 6,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-topup-flat-rate1",
+            "detail" : "update Loan offer Parameters for Topup, parameter:Flat rate option 1",
+            "status": "Wait"
+        },
+        {
+            "order": 7,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-topup-flat-rate2",
+            "detail" : "update Loan offer Parameters for Flat rate option 2",
+            "status": "Wait"
+        },
+        {
+            "order": 8,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-topup-flat-rate3",
+            "detail" : "update Loan offer Parameters for Flat rate option 3",
+            "status": "Wait"
+        },
+        {
+            "order": 9,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-topup-flat-rate4",
+            "detail" : "update Loan offer Parameters for Flat rate option 4",
+            "status": "Wait"
+        },
+        {
+            "order": 10,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-revolving-loan",
+            "detail" : "update program Loan offer Parameters for revoling Loan",
+            "status": "Wait"
+        },
+        {
+            "order": 11,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-revolving-loan-flat-rate-tp_rh",
+            "detail" : "update Loan offer Parameters for Flat Rate",
+            "status": "Wait"
+        },
+        {
+            "order": 12,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-pre-approve-r",
+            "detail" : "Update Loan offer Parameters for pre-approve r",
+            "status": "Wait"
+        },
+        {
+            "order": 13,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-pre-approve-r-flat-rate",
+            "detail" : "Update Loan offer Parameters for flat-rate pre-approve r",
+            "status": "Wait"
+        },
+        {
+            "order": 14,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-pre-approve-nu",
+            "detail" : "Update Loan offer Parameters for pre-approve N/U",
+            "status": "Wait"
+        },
+        {
+            "order": 15,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-pre-approve-nu-flat-rate",
+            "detail" : "Update Loan offer Parameters for flat-rate pre-approve N/U",
+            "status": "Wait"
+        },
+        {
+            "order": 16,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-pre-approve-mc",
+            "detail" : "Update Loan offer Parameters for pre-approve MC",
+            "status": "Wait"
+        },
+        {
+            "order": 17,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-pre-approve-mc-flat-rate",
+            "detail" : "Update Loan offer Parameters for pre-approve MC flag rate",
+            "status": "Wait"
+        },
+        {
+            "order": 18,
+            "type": "AUTO",
+            "name": "dev-mcrm-cap-max-special-criteria",
+            "detail" : "Run special logic of Cap Max Flat Rate and Max LTV for Topup program",
+            "status": "Wait"
+        },
+        {
+            "order": 19,
+            "type": "AUTO",
+            "name": "credit line calculations all programs (X Sell Pool)",
+            "detail" : "calculate credit line and cash offer",
+            "status": "Wait"
+        },
+        {
+            "order": 20,
+            "type": "AUTO",
+            "name": "dev-mcrm-eligible-lead",
+            "detail" : "flag program and other condition",
+            "status": "Wait"
+			//ระบุว่า lead คนไหนได้ program อะไร
+        }
+    ]
+}
+    ];
+  // let steps=[{id:1,name:'mcrm_select_base_topup_tele',type:'AUTO',status:'Completed'}];
+  let steps=[];
+  
+  // Select Base X_Sell_Pool (KA)
+  // mcrm_select_base_topup_tele
+  // mcrm_select_base_topup_tele_config
+  // mcrm_select_base_topup_rh
+  // mcrm_select_base_topup_dtu
+  // mcrm_select_base_preapprove_refin
+  // mcrm_select_base_feedback
+  // steps.push({id:1,name:'mcrm_select_base_topup_tele',type:'AUTO',status:'Wait'});
+  // steps.push({id:2,name:'mcrm_select_base_topup_tele_config',type:'AUTO',status:'Wait'});
+  // steps.push({id:3,name:'mcrm_select_base_topup_rh',type:'AUTO',status:'Wait'});
+  // steps.push({id:4,name:'mcrm_select_base_topup_dtu',type:'AUTO',status:'Wait'});
+  // steps.push({id:5,name:'mcrm_select_base_preapprove_refin',type:'AUTO',status:'Wait'});
+  // steps.push({id:6,name:'mcrm_select_base_feedback',type:'AUTO',status:'Wait'});
+
+  // Select Base X_Sell_Pool (AY)
+  // mcrm_select_base_topmc
+  // mcrm_select_base_feedback
+  // steps.push({id:1,name:'mcrm_select_base_topmc',type:'AUTO',status:'Wait'});
+  // steps.push({id:2,name:'mcrm_select_base_feedback',type:'AUTO',status:'Wait'});
+
+  let nextId=steps.length+1,dragSrcId=null;
+  
+  // initial render with default flow
+  // chooseFlow('F00001');
+
+
+  function addStep(){steps.push({id:nextId++,name:`Step${steps.length+1}`,type:'INVOKE',status:'Wait'});render()}
+  function removeStep(id){steps=steps.filter(s=>s.id!==id);render()}
+  function syncStep(id){
+    const s=steps.find(s=>s.id===id);if(!s)return;
+    ['name','type','status','detail'].forEach(f=>{const el=document.getElementById(`${f}_${id}`);if(el)s[f]=el.value});
+    render();
+  }
+  
+  function getPos(idx){
+    const row=Math.floor(idx/COLS),col=idx%COLS;
+    const rev=row%2===1;
+    const c=rev?(COLS-1-col):col;
+    return{x:PAD+c*(BOX_W+GAP_X),y:PAD+row*(BOX_H+GAP_Y),row,c,rev};
+  }
+  
+  // function makePath(){
+  //   if(steps.length<2)return'';
+  //   const parts=[];
+  //   for(let i=0;i<steps.length-1;i++){
+  //     const a=getPos(i),b=getPos(i+1);
+  //     const ax=a.x+BOX_W,ay=a.y+BOX_H/2;
+  //     const bx=b.x,by=b.y+BOX_H/2;
+  //     if(a.row===b.row){
+  //       const mx=(ax+bx)/2;
+  //       parts.push(`M${ax},${ay} C${mx},${ay} ${mx},${by} ${bx},${by}`);
+  //     } else {
+  //       const midX=a.rev?PAD-GAP_X/2:(PAD+COLS*(BOX_W+GAP_X)-GAP_X/2);
+  //       const cr=12;
+  //       const d1=a.rev?-1:1,d2=a.rev?1:-1;
+  //       parts.push(
+  //         `M${ax},${ay} L${midX-d1*cr},${ay} Q${midX},${ay} ${midX},${ay+cr}`+
+  //         ` L${midX},${by-cr} Q${midX},${by} ${midX+d2*cr},${by} L${bx},${by}`
+  //       );
+  //     }
+  //   }
+  //   return parts.join(' ');
+  // }
+
+  function makePath(){
+    if(steps.length<2)return'';
+    const parts=[];
+    for(let i=0;i<steps.length-1;i++){
+      const a=getPos(i),b=getPos(i+1);
+      
+      // 1. หาจุดปล่อยเส้นออกจากกล่องต้นทาง (a) ตามทิศทางการวิ่งของแถวนั้น
+      const ax = a.rev ? a.x : (a.x + BOX_W);
+      const ay = a.y + BOX_H/2;
+      
+      // 2. หาจุดรับเส้นเข้ากล่องปลายทาง (b) ตามทิศทางการวิ่งของแถวนั้น
+      // ถ้า b อยู่แถวขากลับ (เช่น กล่อง 6) เส้นต้องวิ่งเข้าทางขวา (b.x + BOX_W)
+      const bx = b.rev ? (b.x + BOX_W) : b.x;
+      const by = b.y + BOX_H/2;
+      
+      if(a.row===b.row){
+        // วิ่งแถวเดียวกัน ใช้ Cubic Bezier (C) โค้งแนวนอนปกติ
+        const mx=(ax+bx)/2;
+        parts.push(`M${ax},${ay} C${mx},${ay} ${mx},${by} ${bx},${by}`);
+      } else {
+        // 3. กรณีขึ้นแถวใหม่ (คนละแถว) 
+        // หาค่า midX หรือจุดพักเลี้ยวอ้อม โดยอิงจากทิศทางของกล่องต้นทาง (a) ว่าสุดสายฝั่งไหน
+        const midX = a.rev ? (PAD - GAP_X/2) : (PAD + COLS * (BOX_W + GAP_X) - GAP_X/2);
+        const cr = 12; // รัศมีความโค้ง (Corner Radius)
+        
+        // กำหนดทิศทางหัวโค้งแรกตามกล่อง a และหัวโค้งสุดท้ายตามกล่อง b
+        const d1 = a.rev ? -1 : 1; 
+        const d2 = b.rev ? -1 : 1; // เปลี่ยนเป็น -1 เพื่อให้โค้งสุดท้ายหักเลี้ยวกลับมาทางซ้ายเข้าหาขอบขวากล่อง
+        
+        parts.push(
+          `M${ax},${ay} ` +
+          `L${midX - d1*cr},${ay} Q${midX},${ay} ${midX},${ay+cr} ` + // เลี้ยวโค้งแรกย้อยลงมา
+          `L${midX},${by - cr} Q${midX},${by} ${midX + d2*cr},${by} ` + // เลี้ยวโค้งสองเพื่อหันไปหากล่องใหม่
+          `L${bx},${by}`
+        );
+      }
+    }
+    return parts.join(' ');
+}
+  
+  function svgW(){return PAD*2+COLS*(BOX_W+GAP_X)-GAP_X+GAP_X+80}
+  function svgH(){
+    const rows=Math.ceil((steps.length+1)/COLS)||1;
+    return PAD*2+rows*(BOX_H+GAP_Y)-GAP_Y+80;
+  }
+  
+  function statusClass(st){return st==='Wait'?'st-wait':st==='Inprogress'?'st-inprogress':st==='Completed'?'st-completed':st==='Incomplete'?'st-incomplete':''}
+  
+  function badgeHTML(st){
+    if(st==='Wait') return`<span class="step-badge b-wait"><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.5" fill="none" stroke="#3B82F6" stroke-width="1.5"/></svg>Wait</span>`;
+    if(st==='Inprogress') return`<span class="step-badge b-inprogress"><span class="spinner"></span>In Progress</span>`;
+    if(st==='Completed') return`<span class="step-badge b-completed"><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="5.5" fill="#10B981"/><polyline points="2.8,5.5 4.5,7.5 8.2,3.2" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Completed</span>`;
+    if(st==='Incomplete') return`<span class="step-badge b-incomplete"><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.5" fill="none" stroke="#FCA5A5" stroke-width="1.5"/></svg>Incomplete</span>`;
+    return'';
+  }
+
+  function resultButtonModalHTML(st,name,type,status_box_before,i){
+    if(st==='Completed') {
+      return `<button class="btn-result" onclick="showResultModal('${name}')">View Result</button>`;
+    }
+    if(st==='Incomplete') {
+      return `<p style="color:#EF4444;font-size:11px;margin-top:6px">Something went wrong, Please try again.</p>`;
+    }
+    if(st==='Wait' && type==='MANUAL' && (status_box_before === 'Completed' || status_box_before === null)) {
+      return `<button class="btn-run" onclick="runFlow('${i}')">Run >> </button>`;
+    }
+    return ''
+  }
+
+  function showList(){
+    // Swal.fire({
+    //   title: 'All Flows',
+    //   html: listFlows.map(f => `<table style="width:100%;border-collapse:collapse;margin-bottom:10px;"><tr><td style="border:1px solid #ddd;padding:8px;width:80px;">${f.flow_id}</td><td style="border:1px solid #ddd;padding:8px;">${f.flow_name}</td><td style="border:1px solid #ddd;padding:8px;width:100px;"><button class="btn-run" onclick="chooseFlow('${f.flow_id}');Swal.close();">Select</button></td></tr></table>`).join(''),
+    //   width: 800,
+    //   confirmButtonText: 'Close',
+    // });
+    // list_flow_table
+    const tbody = document.querySelector('#list_flow_table tbody');
+    tbody.innerHTML = listFlows.map(f => `
+      <tr>
+        <td align="center">${f.flow_id}</td>
+        <td>${f.flow_name}</td>
+        <td align="center">${f.steps.length}</td>
+        <td align="center">
+            <div class="dropdown-container">
+              <button class="btn-dots" onclick="toggleDropdown(event, this)">⋮</button>
+              
+              <div class="dropdown-menu">
+                <button class="" onclick="chooseFlow_func('${f.flow_id}');">Edit</button>
+              </div>
+            </div>
+          </td>
+      </tr>
+    `).join('');
+  }
+
+  function chooseFlow(flow_id){
+    $("#flowId").val("");
+    $("#flowName").val("");
+    var flow = listFlows.find(f => f.flow_id === flow_id);
+    if (flow) {
+      document.getElementById('flowId').value = flow.flow_id;
+      document.getElementById('flowName').value = flow.flow_name;
+      steps = flow.steps.map((s, i) => ({
+        id: i + 1,
+        name: s.name || `Step${i + 1}`,
+        type: s.type || 'INVOKE',
+        status: s.status || 'Wait',
+        detail: s.detail || ''
+      }));
+      nextId = steps.length + 1;
+      render();
+    } else {
+      console.error(`Flow with ID ${flow_id} not found.`);
+    }
+
+  }
+  function chooseFlow_func(flow_id){
+    $('#flow_table').hide();
+    $('#flow_area').show();
+    chooseFlow(flow_id);
+
+  }
+
+  function showResultModal(name){
+    const dataShow = [
+      {
+        "channel" : "TELE",
+        "qty" : 1000,
+      },
+      {
+        "channel" : "DTU",
+        "qty" : 500,
+      },
+      {
+        "channel" : "CSP",
+        "qty" : 200,
+      }
+    ]
+
+    Swal.fire({
+      title:"Result : "+name,
+      html: tableHTML(dataShow),
+      width: 700,
+      confirmButtonText: 'Back',
+    });
+  }
+
+  function numberWithCommas(x) {
+    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
+
+  function tableHTML(data){
+    let html = '<table style="width:100%;border-collapse:collapse;">';
+    html += '<thead><tr><th style="border:1px solid #ddd;padding:8px;text-align:left;">Channel</th><th style="border:1px solid #ddd;padding:8px;text-align:left;">Quantity</th></tr></thead>';
+    html += '<tbody>';
+    data.forEach(row => {
+      html += `<tr><td style="border:1px solid #ddd;padding:8px;" width="100px">${row.channel}</td><td style="border:1px solid #ddd;padding:8px;">${numberWithCommas(row.qty)}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    return html;
+  }
+  
+  function render(){
+    const canvas=document.getElementById('canvas');
+    canvas.innerHTML='';
+    const W=svgW(),H=svgH();
+    const ns='http://www.w3.org/2000/svg';
+    const svg=document.createElementNS(ns,'svg');
+    svg.setAttribute('width',W);svg.setAttribute('height',H);
+    svg.classList.add('flow-svg');
+  
+    const defs=document.createElementNS(ns,'defs');
+    const marker=document.createElementNS(ns,'marker');
+    marker.setAttribute('id','arr');marker.setAttribute('markerWidth','9');
+    marker.setAttribute('markerHeight','9');marker.setAttribute('refX','7');
+    marker.setAttribute('refY','3.5');marker.setAttribute('orient','auto');
+    const mp=document.createElementNS(ns,'path');
+    mp.setAttribute('d','M1,1 L7,3.5 L1,6');mp.setAttribute('fill','none');
+    mp.setAttribute('stroke','#CCCCCC');mp.setAttribute('stroke-width','1.5');
+    mp.setAttribute('stroke-linecap','round');mp.setAttribute('stroke-linejoin','round');
+    marker.appendChild(mp);defs.appendChild(marker);svg.appendChild(defs);
+  
+    if(steps.length>1){
+      const pe=document.createElementNS(ns,'path');
+      pe.setAttribute('d',makePath());
+      pe.setAttribute('fill','none');pe.setAttribute('stroke',STROKE);
+      pe.setAttribute('stroke-width',STROKE_W);pe.setAttribute('stroke-linecap','round');
+      pe.setAttribute('stroke-linejoin','round');pe.setAttribute('marker-end','url(#arr)');
+      svg.appendChild(pe);
+    }
+  
+    steps.forEach((s,i)=>{
+      const{x,y}=getPos(i);
+      const fo=document.createElementNS(ns,'foreignObject');
+      fo.setAttribute('x',x);fo.setAttribute('y',y);
+      fo.setAttribute('width',BOX_W);fo.setAttribute('height',BOX_H);
+      const status_box_before = steps[i-1] ? steps[i-1].status : null;
+      const box=document.createElement('div');
+      box.className=`step-box ${statusClass(s.status)}`;
+      box.draggable=true;
+      box.dataset.id=s.id;
+      if(s.detail===undefined)s.detail='';
+      if(s.eligible_code===undefined)s.eligible_code='';
+      box.innerHTML=`
+        <div class="drag-dots">· · · · ·</div>
+        <div class="step-num">
+          <span style="font-size:14pt;color:#000;font-weight:bold;">#${i+1}</span>
+          ${badgeHTML(s.status)}
+          <button class="btn-del" onclick="removeStep(${s.id})">×</button>
+        </div>
+        <div class="field-lbl">Name</div>
+        <input class="step-input box_name" id="name_${s.id}" value="${s.name}" onchange="syncStep(${s.id})">
+        <div class="field-lbl">Detail</div>
+        <textarea class="step-input" id="detail_${s.id}" rows="2">${s.detail}</textarea>
+        <div class="field-lbl">Eligible Code</div>
+        <select class="step-select box_eligible_code" id="eligible_code_${s.id}" onchange="">
+          <option value="">-- Select Eligible Code --</option>
+          ${ELIGI.map(t=>`<option${t===s.eligible_code?' selected':''}>${t}</option>`).join('')}
+        </select>
+        <div class="field-lbl">Type</div>
+        <select class="step-select box_type" id="type_${s.id}" onchange="syncStep(${s.id})">
+          ${TYPES.map(t=>`<option${t===s.type?' selected':''}>${t}</option>`).join('')}
+        </select>
+        <div class="field-lbl" style="display:none">Status</div>
+        <select style="display:none" class="step-select box_status" id="status_${s.id}" onchange="syncStep(${s.id})" disabled>
+          ${STATUSES.map(st=>`<option${st===s.status?' selected':''}>${st}</option>`).join('')}
+        </select>
+        <div style="margin-top:6px" align="center">${resultButtonModalHTML(s.status,s.name,s.type,status_box_before,i)}</div>
+        `;
+        
+      box.addEventListener('dragstart',e=>{
+        ['name','type','status'].forEach(f=>{const el=document.getElementById(`${f}_${s.id}`);if(el)s[f]=el.value});
+        dragSrcId=s.id;setTimeout(()=>box.classList.add('dragging'),0);e.dataTransfer.effectAllowed='move';
+      });
+      box.addEventListener('dragend',()=>{box.classList.remove('dragging');document.querySelectorAll('.step-box').forEach(b=>b.classList.remove('drag-over'))});
+      box.addEventListener('dragover',e=>{e.preventDefault();document.querySelectorAll('.step-box').forEach(b=>b.classList.remove('drag-over'));if(s.id!==dragSrcId)box.classList.add('drag-over')});
+      box.addEventListener('dragleave',()=>box.classList.remove('drag-over'));
+      box.addEventListener('drop',e=>{
+        e.preventDefault();if(dragSrcId===s.id)return;
+        const fi=steps.findIndex(x=>x.id===dragSrcId),ti=steps.findIndex(x=>x.id===s.id);
+        const[m]=steps.splice(fi,1);steps.splice(ti,0,m);dragSrcId=null;render();
+      });
+  
+      fo.appendChild(box);svg.appendChild(fo);
+    });
+  
+    // add button — placed at next slot position
+    const{x:ax,y:ay}=getPos(steps.length);
+    const addFo=document.createElementNS(ns,'foreignObject');
+    addFo.setAttribute('x',ax);addFo.setAttribute('y',ay+BOX_H/2-18);
+    addFo.setAttribute('width',70);addFo.setAttribute('height',44);
+    const addDiv=document.createElement('div');
+    addDiv.style.cssText='display:flex;align-items:center;gap:6px';
+    if(steps.length>0){
+      const ln=document.createElement('div');
+      ln.style.cssText='width:12px;height:1.5px;background:#DDDDDD;flex-shrink:0';
+      addDiv.appendChild(ln);
+    }
+    const btn=document.createElement('button');btn.className='add-btn';btn.textContent='+';btn.onclick=addStep;
+    addDiv.appendChild(btn);addFo.appendChild(addDiv);svg.appendChild(addFo);
+  
+    canvas.appendChild(svg);
+  }
+  
+  function submitFlow(){
+    steps.forEach(s=>{['name','type','status','detail'].forEach(f=>{const el=document.getElementById(`${f}_${s.id}`);if(el)s[f]=el.value})});
+    const payload={
+      flow_id:document.getElementById('flowId').value,
+      flow_name:document.getElementById('flowName').value,
+      steps:steps.map((s,i)=>({order:i+1,type:s.type,name:s.name,detail:s.detail,status:s.status}))
+    };
+    document.getElementById('outputPre').textContent=JSON.stringify(payload,null,4);
+    document.getElementById('outputPanel').classList.add('show');
+  }
+  function copyPayload(){
+    navigator.clipboard.writeText(document.getElementById('outputPre').textContent).then(()=>{
+      const b=document.querySelector('.btn-copy');b.textContent='Copied!';setTimeout(()=>b.textContent='Copy',1500);
+    });
+  }
+
+  function runFlow(i){
+    submitFlow();
+    const payload=document.getElementById('outputPre').textContent;
+    console.log('Running flow with payload:',payload);
+    
+    processRunFlow(payload,i);
+  }
+
+  // 1. สร้างฟังก์ชันช่วยเลียนแบบการหน่วงเวลา (ยิงเป็น Promise เพื่อให้ใช้ await ได้)
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function processRunFlow(payload,indexFlow) { // 2. ใส่ async หน้าฟังก์ชัน
+  const allFlow = JSON.parse(payload);
+
+  // 3. เปลี่ยนจาก forEach มาใช้ for...of เพื่อให้สามารถใช้ await ในลูปได้
+  if (indexFlow == undefined) {
+    indexFlow=-1
+  }
+  let index = 0;
+  for (const step of allFlow.steps) {
+    if (index < indexFlow) {
+      index++;
+      continue;
+    }
+    console.log(`Executing Step ${index + 1}: ${step.name} (Type: ${step.type}, Status: ${step.status})`);
+    const status = $(".box_status")[index];
+    const box_status_id = status.id;
+    if(steps[index].type === "MANUAL" && indexFlow != index ){
+      return Swal.fire({
+        title: 'Manual Step Detected',
+        text: `Step ${index + 1}: ${step.name} is a manual step. Please complete it manually before proceeding.`,
+        icon: 'warning',
+        confirmButtonText: 'OK'
+      });
+    }
+    steps[index].status = "Inprogress";
+    $("#"+box_status_id).val("Inprogress").change();
+    
+    
+    
+    
+    await delay(2000);
+    steps[index].status = "Completed";
+    $("#"+box_status_id).val("Completed").change();
+
+    index++;
+  }
+  
+  console.log("All flows processed!");
+}
+
+  function clearFlow(){
+    // delete all steps
+    steps = [];
+    render();
+  }
+
+  function replaceFlow(){
+    // swal input text area
+    Swal.fire({
+      title: 'Replace Flow',
+      input: 'textarea',
+      inputLabel: 'Paste your flow JSON here',
+      inputPlaceholder: 'Paste your flow JSON here...',
+      inputAttributes: {
+        'aria-label': 'Paste your flow JSON here'
+      },
+      showCancelButton: true
+    }).then((result) => {
+      if (result.isConfirmed) {
+        try {
+          const newFlow = JSON.parse(result.value);
+          if (newFlow.steps && Array.isArray(newFlow.steps)) {
+            steps = newFlow.steps.map((s, i) => ({
+              id: i + 1,
+              name: s.name || `Step${i + 1}`,
+              type: s.type || 'INVOKE',
+              status: s.status || 'Wait',
+              detail: s.detail || ''
+            }));
+            nextId = steps.length + 1;
+            render();
+            Swal.fire('Success', 'Flow replaced successfully!', 'success');
+          } else {
+            throw new Error('Invalid flow structure');
+          }
+        } catch (e) {
+          Swal.fire('Error', 'Invalid JSON format. Please check your input.', 'error');
+        }
+      }
+    });
+  }
+
+  function toggleDropdown(event, button) {
+  // กันไม่ให้ Event ลามไปยัง Element อื่น
+  event.stopPropagation();
+  
+  // หาเมนูที่อยู่ข้าง ๆ ปุ่มที่คลิก
+  const currentMenu = button.nextElementSibling;
+  
+  // ปิด Dropdown ตัวอื่น ๆ ที่อาจจะเปิดค้างอยู่บนหน้าจอ
+  document.querySelectorAll('.dropdown-menu').forEach(menu => {
+    if (menu !== currentMenu) {
+      menu.classList.remove('show');
+    }
+  });
+
+  // สลับการเปิด/ปิด (Toggle) เมนูปัจจุบัน
+  currentMenu.classList.toggle('show');
+}
+
+// ถ้าคลิกพื้นที่อื่นภายนอกปุ่ม ให้ปิดเมนูทันที
+document.addEventListener('click', function() {
+  document.querySelectorAll('.dropdown-menu').forEach(menu => {
+    menu.classList.remove('show');
+  });
+});
+
+  //ready
+  render();
+  // document.getElementById('flow_table').style.display='block';
+  showList();
+
+  </script>
+  
