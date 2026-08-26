@@ -362,6 +362,7 @@ createApp({
        selectable condition field here. ---- */
     const rows = MCRM.db.rows;
     const activeParamCodes = computed(() => rows.filter(r => r.TYPE === 'PARAMETER' && r.ACTIVE === 'Y').map(r => r.CODE));
+    const activeEntityCodes = computed(() => rows.filter(r => r.TYPE === 'ENTITY' && r.ACTIVE === 'Y').map(r => r.CODE));
     function fieldLabel(id){
       const meta = MCRM.FIELD_META[id];
       if (meta && meta.label) return meta.label;
@@ -378,7 +379,8 @@ createApp({
         const fields = g.fields.map(id => {
           covered.add(id);
           const meta = MCRM.FIELD_META[id] || {};
-          return { id, label: fieldLabel(id), dataType: meta.dataType ?? TXT, values: meta.values || [], hint: meta.hint, note: meta.note };
+          const values = id === 'entity' ? activeEntityCodes.value : (meta.values || []);
+          return { id, label: fieldLabel(id), dataType: meta.dataType ?? TXT, values, hint: meta.hint, note: meta.note };
         });
         return { group: g.group, fields };
       });

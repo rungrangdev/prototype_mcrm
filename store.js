@@ -38,6 +38,7 @@
     /* ---- parameter (base key) metadata: dataType + example values -------- */
     const FIELD_META = {
       company_code:      { label:'company_code',      dataType:TXT, values:S('GECAL') },
+      entity:            { label:'entity',             dataType:TXT, values:[] },
       product_id:        { label:'product_base',       dataType:TXT, values:S('HP,AL') },
       branch_code:       { label:'branch_code',        dataType:NUM, values:S('16,42,23,51,33,11,44,45,25,34,14,47,31,85,17,18,75,56,43,27,41,55,32,28,53,62,49,84,76,54,39,37,13,21,24,52,83,35,22,19') },
       model_type_group:  { label:'model_type_group',   dataType:TXT, values:S('PAL,PU,PUPA,PAM,PAS,SUV') },
@@ -87,7 +88,7 @@
   
     /* ---- how those base keys are grouped in the eligibility condition builder */
     const FIELD_GROUP_LAYOUT = [
-      { group:'Demographic Criteria', fields:['company_code','product_id','branch_code','model_type_group','model_group','model','car_cc','region','product_base','age','nationality','customer_type','specialty_flag','car_brand','car_age','engine_type_group'] },
+      { group:'Demographic Criteria', fields:['company_code','entity','product_id','branch_code','model_type_group','model_group','model','car_cc','region','product_base','age','nationality','customer_type','specialty_flag','car_brand','car_age','engine_type_group'] },
       { group:'Retention Criteria',   fields:['account_type','receipt_term','total_income','occupations','remaining_term','paid_term','no_month_after_closed'] },
       { group:'Risk Criteria',        fields:['max_dq','delinquency_status','gbi_account','gbi_customer','b_score_customer','b_score_m_customer','b_score_account','b_score_marketing_account','collection_code','consignment_flag','account_status','write_off_criteria','blacklist_customer','reject_from_product','recently_apply','debt_re_status'] },
     ];
