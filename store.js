@@ -302,8 +302,8 @@
           { code:'EL00004', name:'PPI PA', profile:'X SELL POOL TOPUP 2W', desc:'PPI / PA insurance cross-sell base', status:'Draft', updated:'05/02/2025, 11:20', groups:defaultEligibilityGroups() },
           { code:'EL00005', name:'Insurance Motor', profile:'X SELL POOL TOPUP 4W', desc:'Motor insurance renewal lead pool', status:'Draft', updated:'01/02/2025, 10:05', groups:defaultEligibilityGroups() },
         ],
-        eligibleNames: ['X SELL POOL','PPI PA','Insurance Motor','Retention Refinance','Priviledge'],
-        eligibleProfiles: ['X SELL POOL','INSURANCE PPI_PA','INSURANCE MOTOR'],
+        eligibleNames: ['X Sell Pool','Insurance PPI' ,'Insurance Motor'],
+        eligibleProfiles: ['X Sell Pool','Retention','PPI PA','Insurance Motor (IF02)'],
         workflows: [
           { flow_id:'F00001', flow_name:'Select Base X_Sell_Pool (KA)', run_type:'AUTO', schedule:'0 1 * * *', steps:[
             { order:1, type:'AUTO', name:'mcrm_select_base_topup_tele', status:'Wait' },
