@@ -144,37 +144,8 @@ createApp({
       }
     });
 
-    const rows = MCRM.db.rows;
-    const leadTypeMaster = computed(() => rows.filter(r=>r.TYPE==='LEAD_TYPE' && r.ACTIVE==='Y'));
-    const entityMaster = computed(() => rows.filter(r=>r.TYPE==='ENTITY' && r.ACTIVE==='Y'));
-    const flows = MCRM.db.workflows;
-
     function statusLabel(st){ return STATUS_LABEL[st] || st || '-'; }
     function statusPillClass(st){ return STATUS_PILL_CLASS[st] || 'wp-wait'; }
-
-    /* ---- add a lead manually ---- */
-    const showAdd = ref(false);
-    const formModel = reactive({ lead_id:'', lead_name:'', lead_type:'', entity:'', flow_id:'', tran_id:'', suppression:'', status:'Wait' });
-    function nextLeadId(){ return 'L' + String(2026000000 + worklist.length + 1); }
-    function openAdd(){
-      Object.assign(formModel, { lead_id: nextLeadId(), lead_name:'', lead_type: leadTypeMaster.value[0]?.CODE||'', entity: entityMaster.value[0]?.CODE||'', flow_id:'', tran_id:'', suppression:'', status:'Wait' });
-      showAdd.value = true;
-    }
-    function closeAdd(){ showAdd.value = false; }
-    function saveAdd(){
-      if (!formModel.lead_id.trim() || !formModel.lead_name.trim()){ showToast('กรุณากรอก Lead ID และ Lead Name', false); return; }
-      if (worklist.some(w => w.lead_id === formModel.lead_id)){ showToast('มี Lead ID นี้อยู่แล้ว', false); return; }
-      const flow = flows.find(f => f.flow_id === formModel.flow_id);
-      worklist.push({
-        lead_id: formModel.lead_id, lead_name: formModel.lead_name, lead_sub: formModel.lead_name,
-        lead_type: formModel.lead_type, entity: formModel.entity,
-        flow_id: formModel.flow_id, flow_name: flow ? flow.flow_name : '',
-        tran_id: formModel.tran_id, suppression: formModel.suppression,
-        submit_date: MCRM.nowStr(), complete_date: '', status: formModel.status,
-      });
-      showAdd.value = false;
-      showToast(`เพิ่ม Lead "${formModel.lead_id}" เรียบร้อย`);
-    }
 
     /* ---- view / delete ---- */
     function viewLead(lead_id){ console.log('view lead', lead_id); }
@@ -192,9 +163,8 @@ createApp({
     function showToast(msg, ok=true){ toast.msg=msg; toast.ok=ok; toast.show=true; clearTimeout(toastTimer); toastTimer=setTimeout(()=>toast.show=false,2600); }
 
     return {
-      worklist, leadTypeMaster, entityMaster, flows,
+      worklist,
       statusLabel, statusPillClass,
-      showAdd, formModel, openAdd, closeAdd, saveAdd,
       viewLead, confirmDeleteLead, askDelete, confirmDelete,
       toast,
     };
@@ -206,7 +176,6 @@ createApp({
         <h3>Worklist</h3>
         <div style="display:flex;align-items:center;gap:10px;">
           <span class="wl-count">{{ worklist.length }} lead{{ worklist.length!==1?'s':'' }}</span>
-          <button class="btn-run" @click="openAdd">+ Add Lead</button>
         </div>
       </div>
 
@@ -244,25 +213,6 @@ createApp({
           </tr>
         </tbody>
       </table>
-    </div>
-
-    <div class="modal-overlay" v-if="showAdd" @click.self="closeAdd">
-      <div class="modal-box">
-        <h3>Add Lead</h3>
-        <div class="field-group"><label>Lead ID</label><input v-model="formModel.lead_id"></div>
-        <div class="field-group"><label>Lead Name</label><input v-model="formModel.lead_name"></div>
-        <div class="field-group"><label>Lead Type</label>
-          <select v-model="formModel.lead_type"><option value="">— Select —</option><option v-for="l in leadTypeMaster" :key="l.CODE" :value="l.CODE">{{ l.NAME }}</option></select>
-        </div>
-        <div class="field-group"><label>Entity</label>
-          <select v-model="formModel.entity"><option value="">— Select —</option><option v-for="e in entityMaster" :key="e.CODE" :value="e.CODE">{{ e.NAME }}</option></select>
-        </div>
-        <div class="field-group"><label>Flow</label>
-          <select v-model="formModel.flow_id"><option value="">— Select —</option><option v-for="f in flows" :key="f.flow_id" :value="f.flow_id">{{ f.flow_id }} · {{ f.flow_name }}</option></select>
-        </div>
-        <div class="field-group"><label>Transaction ID</label><input v-model="formModel.tran_id"></div>
-        <div class="modal-actions"><button class="btn-ghost" @click="closeAdd">ยกเลิก</button><button class="btn-run" @click="saveAdd">เพิ่ม Lead</button></div>
-      </div>
     </div>
 
     <div class="modal-overlay" v-if="confirmDeleteLead" @click.self="confirmDeleteLead=null">

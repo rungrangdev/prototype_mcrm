@@ -117,8 +117,8 @@
 .param-ph{font-size:11.5px;color:#B4ACA5}
 
 .param-dd{
-  position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1px solid #E4DED7;border-radius:8px;
-  box-shadow:0 6px 20px rgba(60,50,45,.16);z-index:200;min-width:210px;max-height:230px;
+  position:fixed;background:#fff;border:1px solid #E4DED7;border-radius:8px;
+  box-shadow:0 6px 20px rgba(60,50,45,.16);z-index:9999;min-width:210px;max-height:230px;
   overflow-y:auto;padding:4px 0;
 }
 .param-dd .dd-opt{display:flex;align-items:center;gap:8px;padding:7px 11px;font-size:12px;cursor:pointer;color:#374151}
@@ -328,8 +328,20 @@ createApp({
     function onEntityOrProgramChange(s){ s.params = []; closeParamPicker(); }
 
     /* ---- parameter multi-select picker ---- */
+    /* Positioned as a viewport-fixed panel (not nested in the SVG box) because
+       foreignObject clips overflowing content — a dropdown nested inside it
+       would get cut off instead of floating above the canvas. */
     const paramPickerStepId = ref(null);
-    function toggleParamPicker(s){ paramPickerStepId.value = paramPickerStepId.value === s.id ? null : s.id; }
+    const paramPickerPos = reactive({ left:0, top:0, minWidth:200 });
+    const activeParamStep = computed(() => currentFlow.steps.find(x => x.id === paramPickerStepId.value) || null);
+    function toggleParamPicker(s, event){
+      if (paramPickerStepId.value === s.id){ closeParamPicker(); return; }
+      paramPickerStepId.value = s.id;
+      const rect = event.currentTarget.getBoundingClientRect();
+      paramPickerPos.left = Math.max(8, rect.left);
+      paramPickerPos.top = rect.bottom + 4;
+      paramPickerPos.minWidth = Math.max(rect.width, 200);
+    }
     function closeParamPicker(){ paramPickerStepId.value = null; }
     function toggleParamValue(s, code){
       const i = s.params.indexOf(code);
@@ -567,7 +579,7 @@ createApp({
       flows, CATEGORIES, DEFAULT_CATEGORY,
       pageView, currentFlow, openFlow, backToList, onRunTypeChange, scheduleDesc, scheduleDescFor,
       showAddStep, openAddStepDialog, addStep, removeStep, changeCategory, onEntityOrProgramChange,
-      paramPickerStepId, toggleParamPicker, toggleParamValue, removeParam,
+      paramPickerStepId, paramPickerPos, activeParamStep, toggleParamPicker, toggleParamValue, removeParam,
       canvasEl, setBoxRef, cols, boxHeights, layout, getPos, makePath, svgW, svgH, addBtnPos,
       draggingId, dragOverId, onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop,
       statusClass, badgeClass,
@@ -700,22 +712,11 @@ createApp({
                   <option v-for="p in PROGRAMS" :key="p.code" :value="p.code">{{ p.name }}</option>
                 </select>
                 <div class="field-lbl">Parameter (เลือกได้หลายรายการ)</div>
-                <div class="param-tag-field" @click.stop="toggleParamPicker(s)">
+                <div class="param-tag-field" @click.stop="toggleParamPicker(s, $event)">
                   <template v-if="s.params.length">
                     <span class="param-chip" v-for="pc in s.params" :key="pc"><span class="pctxt">{{ paramNameOf(s.program,s.entity,pc) }}</span><span class="param-chip-x" @click.stop="removeParam(s,pc)">&times;</span></span>
                   </template>
                   <span v-else class="param-ph">-- Select Parameter --</span>
-
-                  <div class="param-dd" v-if="paramPickerStepId===s.id" @click.stop>
-                    <div class="dd-empty" v-if="!s.program || !s.entity">กรุณาเลือก Entity และ Program ก่อน</div>
-                    <template v-else>
-                      <div class="dd-opt" v-for="p in getParamList(s.program,s.entity)" :key="p.code" @click="toggleParamValue(s,p.code)">
-                        <input type="checkbox" :checked="s.params.includes(p.code)" @click.stop="toggleParamValue(s,p.code)">
-                        <span>{{ p.name }}</span>
-                      </div>
-                      <div class="dd-empty" v-if="!getParamList(s.program,s.entity).length">ไม่มี Parameter สำหรับ Program/Entity นี้</div>
-                    </template>
-                  </div>
                 </div>
               </template>
               <template v-else-if="CATEGORIES[s.category].codes.length">
@@ -741,6 +742,18 @@ createApp({
             </div>
           </foreignObject>
         </svg>
+      </div>
+
+      <!-- floating panel, kept outside the SVG so it isn't clipped by foreignObject -->
+      <div class="param-dd" v-if="activeParamStep" :style="{left: paramPickerPos.left+'px', top: paramPickerPos.top+'px', minWidth: paramPickerPos.minWidth+'px'}" @click.stop>
+        <div class="dd-empty" v-if="!activeParamStep.program || !activeParamStep.entity">กรุณาเลือก Entity และ Program ก่อน</div>
+        <template v-else>
+          <div class="dd-opt" v-for="p in getParamList(activeParamStep.program, activeParamStep.entity)" :key="p.code" @click="toggleParamValue(activeParamStep, p.code)">
+            <input type="checkbox" :checked="activeParamStep.params.includes(p.code)" @click.stop="toggleParamValue(activeParamStep, p.code)">
+            <span>{{ p.name }}</span>
+          </div>
+          <div class="dd-empty" v-if="!getParamList(activeParamStep.program, activeParamStep.entity).length">ไม่มี Parameter สำหรับ Program/Entity นี้</div>
+        </template>
       </div>
 
       <div class="output-panel" :class="{show: showOutput}" style="height: 600px;">
