@@ -6,6 +6,9 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- cdn sweet alert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- shared data store (used by resetAllData() below; Vue is required by store.js) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.31/vue.global.prod.min.js"></script>
+    <script src="store.js"></script>
     <style>
       #pathmenu{
         /* v aglin middle */
@@ -147,6 +150,10 @@
         </li>
 
 
+        <li class="has-submenu-logout" onclick="resetAllData()" title="ล้างข้อมูลทั้งหมดที่แก้ไข/เพิ่ม/ลบไว้ แล้วกลับไปเป็นข้อมูลตั้งต้นของระบบ">
+          <span class="menu-icon"><img src="./img/icon_sys.png" width="20px"></span>รีเซ็ตข้อมูลทั้งหมด
+        </li>
+
         <li class="has-submenu-logout">
           <span class="menu-icon"><img src="./img/icon_out.png" width="20px"></span>ออกจากระบบ
         </li>
@@ -196,6 +203,26 @@
     parentLi.classList.toggle('open');
   });
 });
+
+// ---- ล้างข้อมูลที่แก้ไข/เพิ่ม/ลบไว้ทั้งหมด กลับไปเป็นข้อมูลตั้งต้นของระบบ ----
+// (ข้อมูลของทุกหน้าถูกเก็บรวมไว้ที่เดียวใน localStorage ผ่าน store.js)
+function resetAllData(){
+  Swal.fire({
+    title: 'รีเซ็ตข้อมูลทั้งหมด?',
+    text: 'ข้อมูลที่เพิ่ม/แก้ไข/ลบไว้ในทุกหน้าจะถูกล้างและกลับไปเป็นค่าตั้งต้นของระบบ การกระทำนี้ไม่สามารถย้อนกลับได้',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'ใช่, รีเซ็ตเลย',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#D64545'
+  }).then((result) => {
+    if (!result.isConfirmed) return;
+    MCRM.resetToDefaults();
+    const screen = document.getElementById('screen');
+    if (screen && screen.contentWindow) screen.contentWindow.location.reload();
+    Swal.fire('เรียบร้อย', 'รีเซ็ตข้อมูลกลับเป็นค่าตั้งต้นแล้ว', 'success');
+  });
+}
 
 function openpage(pathmenu,page_name){
   // load file to screen
