@@ -328,16 +328,13 @@ createApp({
     function backToList(){ pageView.value = 'list'; }
 
     function nextTransId(){ return 'T' + String(executionLogs.length+1).padStart(5,'0'); }
-    const showCreateTrans = ref(false);
     const createFlowId = ref('');
-    function openCreateTrans(){ createFlowId.value = flows[0]?.flow_id || ''; showCreateTrans.value = true; }
     function createTransaction(){
       const flow = flows.find(f => f.flow_id === createFlowId.value);
       if (!flow){ showToast('กรุณาเลือก Flow', false); return; }
       const now = MCRM.nowStr();
       const entry = { trans_id: nextTransId(), flow_id: flow.flow_id, flow_name: flow.flow_name, create_date: now, start_date: now, end_date: '', steps: flow.steps.map(normalizeStep) };
       executionLogs.push(entry);
-      showCreateTrans.value = false;
       showToast(`สร้าง Transaction "${entry.trans_id}" เรียบร้อย`);
     }
     const confirmDeleteTrans = ref(null);
@@ -537,7 +534,7 @@ createApp({
     return {
       flows, executionLogs, CATEGORIES, paramNameOf, STROKE, STROKE_W,
       pageView, currentTrans, openTransaction, backToList,
-      showCreateTrans, createFlowId, openCreateTrans, createTransaction,
+      createFlowId, createTransaction,
       confirmDeleteTrans, askDeleteTrans, confirmDeleteTransYes,
       confirmRegister, registerLead, confirmRegisterYes,
       canvasEl, cols, steps, nodeCount, isTerm, rectAt, makePath, svgW, svgH,
@@ -555,9 +552,6 @@ createApp({
     <!-- ============ LIST PAGE ============ -->
     <div id="flow_table" class="page_all" style="padding:20px" v-if="pageView==='list'">
       <h3>Workflow Execution Log</h3>
-      <div align="right" style="margin-bottom: 10px;">
-        <button class="btn-run" @click="openCreateTrans">+ Run Flow</button>
-      </div>
       <table id="list_flow_table" width="100%">
         <thead>
           <tr><th>Transaction ID</th><th>Flow ID</th><th>Flow Name</th><th>Steps</th><th>Status</th><th>Create Date</th><th>Start Date</th><th>End Date</th><th></th></tr>
@@ -668,20 +662,6 @@ createApp({
             </div>
           </foreignObject>
         </svg>
-      </div>
-    </div>
-
-    <!-- Create transaction -->
-    <div class="modal-overlay" v-if="showCreateTrans" @click.self="showCreateTrans=false">
-      <div class="modal-box">
-        <h3>Create Transaction</h3>
-        <div class="field-group">
-          <label>Select Flow</label>
-          <select v-model="createFlowId">
-            <option v-for="f in flows" :key="f.flow_id" :value="f.flow_id">{{ f.flow_id }} - {{ f.flow_name }}</option>
-          </select>
-        </div>
-        <div class="modal-actions"><button class="btn-ghost" @click="showCreateTrans=false">Cancel</button><button class="btn-run" @click="createTransaction">Create</button></div>
       </div>
     </div>
 

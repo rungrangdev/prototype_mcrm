@@ -296,11 +296,11 @@
   
         // filled in by later pages as they're converted (eligibility, workflows, worklist, executionLogs)
         eligibility: [
-          { code:'EL00001', name:'X SELL POOL', profile:'X SELL POOL TOPUP 4W', desc:'Top-up pool for 4-wheel HP/AL customers', status:'Active', updated:'15/02/2025, 14:34', groups:defaultEligibilityGroups() },
-          { code:'EL00002', name:'X SELL POOL', profile:'X SELL POOL TOPUP 2W', desc:'Top-up pool for 2-wheel motorcycle customers', status:'Active', updated:'12/02/2025, 09:12', groups:defaultEligibilityGroups() },
-          { code:'EL00003', name:'Retention Refinance', profile:'X SELL POOL TOPUP 4W', desc:'Refinance retention base — 4W near-end term', status:'Active', updated:'08/02/2025, 16:45', groups:defaultEligibilityGroups() },
-          { code:'EL00004', name:'PPI PA', profile:'X SELL POOL TOPUP 2W', desc:'PPI / PA insurance cross-sell base', status:'Draft', updated:'05/02/2025, 11:20', groups:defaultEligibilityGroups() },
-          { code:'EL00005', name:'Insurance Motor', profile:'X SELL POOL TOPUP 4W', desc:'Motor insurance renewal lead pool', status:'Draft', updated:'01/02/2025, 10:05', groups:defaultEligibilityGroups() },
+          { code:'EL00001', name:'X Sell Pool', profile:'X Sell Pool', desc:'Top-up pool for 4-wheel HP/AL customers', status:'Active', updated:'15/02/2025, 14:34', groups:defaultEligibilityGroups() },
+          { code:'EL00002', name:'X Sell Pool', profile:'X Sell Pool', desc:'Top-up pool for 2-wheel motorcycle customers', status:'Active', updated:'12/02/2025, 09:12', groups:defaultEligibilityGroups() },
+          { code:'EL00003', name:'X Sell Pool', profile:'Retention', desc:'Refinance retention base — 4W near-end term', status:'Active', updated:'08/02/2025, 16:45', groups:defaultEligibilityGroups() },
+          { code:'EL00004', name:'Insurance PPI', profile:'PPI PA', desc:'PPI / PA insurance cross-sell base', status:'Draft', updated:'05/02/2025, 11:20', groups:defaultEligibilityGroups() },
+          { code:'EL00005', name:'Insurance Motor', profile:'Insurance Motor (IF02)', desc:'Motor insurance renewal lead pool', status:'Draft', updated:'01/02/2025, 10:05', groups:defaultEligibilityGroups() },
         ],
         eligibleNames: ['X Sell Pool','Insurance PPI' ,'Insurance Motor'],
         eligibleProfiles: ['X Sell Pool','Retention','PPI PA','Insurance Motor (IF02)'],

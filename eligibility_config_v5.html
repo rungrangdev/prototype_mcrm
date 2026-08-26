@@ -353,22 +353,6 @@ function NC(fieldId, op, vals, enabled, findField){
   return c;
 }
 
-const INITIAL_LEADS = 15847;
-const RED_PCT = {
-  product_id:0, product_base:6.4, age:21.4, nationality:3.2, region:1.2, branch_code:1.4,
-  customer_type:0.6, car_age:4.8, specialty_flag:5.2, company_code:0.3,
-  occupations:9.8, total_income:16.2, account_type:2.5, remaining_term:7.6, paid_term:4.1,
-  delinquency_status:17.7, max_dq:11.3, gbi_customer:6.2, b_score_customer:8.4,
-  collection_code:17.6, consignment_flag:9.5, account_status:7.9, write_off_criteria:10.0,
-  blacklist_customer:7.4, debt_re_status:9.1, reject_from_product:5.0, recently_apply:5.4,
-};
-function pctFor(id){
-  if (RED_PCT[id] != null) return RED_PCT[id];
-  let h = 0;
-  for (const ch of id) h = (h*31 + ch.charCodeAt(0)) % 1000;
-  return Math.round((1 + (h % 160)/10) * 10) / 10;
-}
-
 createApp({
   setup(){
     const nowStr = () => new Date().toLocaleString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
@@ -645,33 +629,6 @@ createApp({
     function openValidate(issues, title){ Object.assign(sqlModal, { open:true, title, mode:'validate', issues, note: issues.length ? issues.length+' issue'+(issues.length>1?'s':'')+' found' : 'No issues found' }); }
     function validateLogic(){ openValidate(collectIssues(groups.value), 'Validate Logic'); }
 
-    /* ---- funnel ---- */
-    const funnel = reactive({ open:false, rows:[], red:0, fin:0, pct:'0', note:'' });
-    function openFunnel(){
-      const rows = [];
-      groups.value.forEach(g => g.items.forEach(item => {
-        const list = item.type === 'group' ? item.conds : [item];
-        list.forEach(c => rows.push({ c, dot:g.dot }));
-      }));
-
-      let running = INITIAL_LEADS;
-      const out = [];
-      rows.forEach((r,i) => {
-        const c = r.c;
-        const name = c.fieldId ? c.label : 'Select condition';
-        if (!c.enabled || !c.fieldId){ out.push({ idx:i+1, dot:r.dot, name, skipped:true }); return; }
-        const pct = pctFor(c.fieldId);
-        const before = running;
-        const after = Math.max(0, Math.round(before * (1 - pct/100)));
-        const red = after - before;
-        running = after;
-        out.push({ idx:i+1, dot:r.dot, name, skipped:false, before, after, red, pct, bar: Math.min(100, Math.round(pct/30*100)) });
-      });
-      const totalRed = running - INITIAL_LEADS;
-      Object.assign(funnel, { open:true, rows:out, red:totalRed, fin:running, pct:(totalRed/INITIAL_LEADS*100).toFixed(1), note:'Generated ' + new Date().toLocaleString() });
-    }
-    function closeFunnel(){ funnel.open = false; }
-
     /* ---- toast ---- */
     const toast = reactive({ show:false, msg:'' });
     let toastTimer = null;
@@ -689,7 +646,6 @@ createApp({
       pickerCond, pickerSearch, togglePicker, closePicker, pickerOptions, toggleVal, removeVal, freeMultiInput,
       isMulti, NUM,
       sqlOf, sqlModal, showSql, closeSql, validateLogic,
-      funnel, openFunnel, closeFunnel,
       toast, showToast, nextCode, opsFor,
     };
   },
@@ -953,59 +909,11 @@ createApp({
         <div style="display:flex;gap:8px">
           <button class="btn-ghost" @click="validateLogic">Validate Logic</button>
           <button class="btn-ghost" @click="showSql">View SQL</button>
-          <button class="btn-tan" @click="openFunnel">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 2h10l-4 5v3l-2-1V7L1 2z" stroke="#6F5F5E" stroke-width="1.3" fill="none" stroke-linejoin="round"/></svg>
-            Funnel Result
-          </button>
         </div>
         <div style="display:flex;gap:8px">
           <button class="btn-ghost" @click="backToList">Cancel</button>
           <button class="btn-ghost" v-if="!currentRec.isNew" @click="saveProfile(true)">Save as New Profile</button>
           <button class="btn-run" @click="saveProfile(false)">Save Profile</button>
-        </div>
-      </div>
-
-      <!-- FUNNEL MODAL -->
-      <div class="fmodal-bg" :class="{open: funnel.open}" @click="$event.target===$event.currentTarget && closeFunnel()">
-        <div class="fmodal">
-          <div class="fmodal-head">
-            <span class="fmodal-title">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 2h12l-5 6v4l-2-1V8L1 2z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linejoin="round"/></svg>
-              Funnel Results — <span>{{ currentRec.profile || '-' }}</span>
-            </span>
-            <button class="fmodal-close" @click="closeFunnel">&times;</button>
-          </div>
-          <div class="fmodal-body">
-            <table class="ftbl"><thead><tr><th style="width:28px">#</th><th>Condition</th><th>Leads Before</th><th>Leads After</th><th>Reduction</th><th>Reduction %</th></tr></thead>
-              <tbody>
-                <tr v-if="!funnel.rows.length"><td colspan="6" style="text-align:center;color:#B4ACA5;padding:18px">No conditions in this profile yet.</td></tr>
-                <tr v-for="r in funnel.rows" :key="r.idx" :class="{skipped: r.skipped}">
-                  <td>{{ r.idx }}</td>
-                  <td><div style="display:flex;align-items:center;gap:6px"><span class="sec-dot" :style="{background:r.dot}"></span>{{ r.name }}<span v-if="r.skipped" style="font-size:9px;padding:1px 6px;border-radius:999px;background:#F3EEE9;border:1px solid #E4DED7;color:#8A8480;margin-left:3px">skipped</span></div></td>
-                  <td>{{ r.skipped ? '—' : r.before.toLocaleString() }}</td>
-                  <td>{{ r.skipped ? '—' : r.after.toLocaleString() }}</td>
-                  <td><span v-if="!r.skipped && r.red" class="neg">{{ r.red.toLocaleString() }}</span><span v-else>—</span></td>
-                  <td>
-                    <div class="bar-cell" v-if="!r.skipped && r.pct"><div class="mbar"><div class="mbar-fill" :style="{width:r.bar+'%'}"></div></div><span class="neg">-{{ r.pct }}%</span></div>
-                    <span v-else>—</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <div class="sum-grid">
-              <div class="sum-card"><div class="sum-lbl">Initial Leads</div><div class="sum-val">15,847</div></div>
-              <div class="sum-card"><div class="sum-lbl">Total Filtered</div><div class="sum-val neg">{{ funnel.red.toLocaleString() }}</div></div>
-              <div class="sum-card"><div class="sum-lbl">Final Eligible</div><div class="sum-val" style="color:#2F9E5F">{{ funnel.fin.toLocaleString() }}</div></div>
-              <div class="sum-card"><div class="sum-lbl">% Reduction</div><div class="sum-val neg">{{ funnel.pct }}%</div></div>
-            </div>
-          </div>
-          <div class="fmodal-foot">
-            <span class="gen-note">{{ funnel.note }}</span>
-            <div style="display:flex;gap:8px">
-              <button class="btn-ghost" @click="showToast('Results exported')">Export Results</button>
-              <button class="btn-run" @click="closeFunnel">Close</button>
-            </div>
-          </div>
         </div>
       </div>
 
