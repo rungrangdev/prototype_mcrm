@@ -461,7 +461,7 @@ createApp({
     const eligibles = MCRM.db.eligibility;
     function nextCode(){ return 'EL' + String(eligibles.length + 1).padStart(5,'0'); }
 
-    /* option lists for the Eligible Name / Profile name pickers — persisted so
+    /* option lists for the Lead Data Set / Lead Repository pickers — persisted so
        a name/profile added on one profile is available on every other profile.
        Both these and `eligibles` above are seeded centrally in store.js so they're
        populated even if this page isn't the first one loaded in a fresh session. */
@@ -509,7 +509,7 @@ createApp({
     function saveProfile(asNew){
       const rec = currentRec.value;
       if (!rec) return;
-      if (!rec.name || !rec.profile){ showToast('Select Eligible Name and Profile name before saving'); return; }
+      if (!rec.name || !rec.profile){ showToast('Select Lead Data Set and Lead Repository before saving'); return; }
       const issues = collectIssues(rec.groups);
       if (issues.length){ openValidate(issues, 'Fix these before saving'); return; }
 
@@ -706,7 +706,7 @@ createApp({
         <table id="el_table" width="100%">
           <thead>
             <tr>
-              <th>Eligible Code</th><th>Eligible Name</th><th>Profile name</th><th>Profile description</th>
+              <th>Eligible Code</th><th>Lead Data Set</th><th>Lead Repository</th><th>Profile description</th>
               <th>Status</th><th>Update Date</th><th style="width:44px"></th>
             </tr>
           </thead>
@@ -743,23 +743,23 @@ createApp({
               <div class="code-big"><span>{{ currentRec.isNew ? nextCode() : currentRec.code }}</span><span class="new-tag" v-if="currentRec.isNew">Unsaved</span></div>
             </div>
             <div>
-              <div class="flabel">Eligible Name</div>
+              <div class="flabel">Lead Data Set (Source)</div>
               <div class="field-with-add">
                 <select class="finput" v-model="currentRec.name">
                   <option value="">— Select —</option>
                   <option v-for="n in eligibleNames" :key="n" :value="n">{{ n }}</option>
                 </select>
-                <button type="button" class="btn-icon-sm" title="Add new name" @click="openAddOption('name','Eligible Name')">+</button>
+                <button type="button" style="display:none;" class="btn-icon-sm" title="Add new name" @click="openAddOption('name','Lead Data Set')">+</button>
               </div>
             </div>
             <div>
-              <div class="flabel">Profile name</div>
+              <div class="flabel">Lead Repository (Target)</div>
               <div class="field-with-add">
                 <select class="finput" v-model="currentRec.profile">
                   <option value="">— Select —</option>
                   <option v-for="p in eligibleProfiles" :key="p" :value="p">{{ p }}</option>
                 </select>
-                <button type="button" class="btn-icon-sm" title="Add new profile" @click="openAddOption('profile','Profile Name')">+</button>
+                <button type="button" style="display:none;" class="btn-icon-sm" title="Add new profile" @click="openAddOption('profile','Lead Repository')">+</button>
               </div>
             </div>
           </div>
