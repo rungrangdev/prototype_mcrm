@@ -303,7 +303,7 @@
           { code:'EL00005', name:'Insurance Motor', profile:'X SELL POOL TOPUP 4W', desc:'Motor insurance renewal lead pool', status:'Draft', updated:'01/02/2025, 10:05', groups:defaultEligibilityGroups() },
         ],
         eligibleNames: ['X Sell Pool','Insurance PPI' ,'Insurance Motor'],
-        eligibleProfiles: ['X Sell Pool','Retention','PPI PA','Insurance Motor (IF02)'],
+        eligibleProfiles: ['X Sell Pool','Retention (Refin)', 'Retention (New, Use)','PPI PA','Insurance Motor (IF02)'],
         workflows: [
           { flow_id:'F00001', flow_name:'Select Base X_Sell_Pool (KA)', run_type:'AUTO', schedule:'0 1 * * *', steps:[
             { order:1, type:'AUTO', name:'mcrm_select_base_topup_tele', status:'Wait' },
