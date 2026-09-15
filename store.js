@@ -185,7 +185,7 @@
           ] },
         { validation_id:'V00002', validation_name:'Validation ตรวจสอบวงเงิน Max LTV',
           description:'ตรวจสอบ Max LTV ตามกลุ่มรุ่นรถและอายุรถ',
-          create_date:'01/15/2024 10:30', update_date:'07/05/2025 11:05', update_by:'SOMCHAI.P',
+          create_date:'01/15/2024 10:30', update_date:'07/05/2025 11:05', update_by:'PRASERT.L',
           conditions:[
             { criteria:[C('MODEL_TYPE_GROUP','=','PAL'),C('CAR_AGE','<=','5')], expected:C('MAX_LTV','=','100') },
             { criteria:[C('MODEL_TYPE_GROUP','=','PAL'),C('CAR_AGE','>','5')],  expected:C('MAX_LTV','=','90') },
@@ -202,14 +202,14 @@
           ] },
         { validation_id:'V00004', validation_name:'Validation ตรวจสอบจำนวนงวด (X Installment)',
           description:'จำนวนงวดที่เสนอต้องอยู่ในกรอบของแต่ละ Entity',
-          create_date:'02/20/2024 13:15', update_date:'06/18/2025 09:25', update_by:'WARUNEE.T',
+          create_date:'02/20/2024 13:15', update_date:'06/18/2025 09:25', update_by:'PRASERT.L',
           conditions:[
             { criteria:[C('ENTITY','=','KA'),C('PROGRAM','=','TOPUP')], expected:C('X_INSTALLMENT','<=','84') },
             { criteria:[C('ENTITY','=','AY'),C('PROGRAM','=','TOPUP')], expected:C('X_INSTALLMENT','<=','72') },
           ] },
         { validation_id:'V00005', validation_name:'Validation ตรวจสอบ Flag Program',
           description:'ทุก Lead ที่ผ่านเกณฑ์ต้องถูก Flag Program เรียบร้อย',
-          create_date:'03/04/2024 15:00', update_date:'09/10/2025 10:10', update_by:'SOMCHAI.P',
+          create_date:'03/04/2024 15:00', update_date:'09/10/2025 10:10', update_by:'PRASERT.L',
           conditions:[
             { criteria:[C('PROGRAM','=','TOPUP'),C('CREDIT_LINE','>','0')], expected:C('FLAG_PROGRAM','=','Y') },
             { criteria:[C('PROGRAM','=','PRE_APPROVE_NU')],                  expected:C('FLAG_PROGRAM','=','Y') },
@@ -254,6 +254,15 @@
           trans_id:'T00003', flow_id:f7.flow_id, flow_name:f7.flow_name,
           create_date:'27/08/2026 05:00', start_date:'27/08/2026 05:00', end_date:'27/08/2026 05:31',
           steps: cloneSteps(f7, {}).map(s => Object.assign(s, { status:'Completed' })),
+        });
+      }
+      /* A finished run of the full production flow — every step Completed, so
+         its three Validation boxes each offer View Result. */
+      if (f5){
+        logs.push({
+          trans_id:'T00004', flow_id:f5.flow_id, flow_name:f5.flow_name,
+          create_date:'27/08/2026 01:00', start_date:'27/08/2026 01:00', end_date:'27/08/2026 02:18',
+          steps: cloneSteps(f5, {}).map(s => Object.assign(s, { status:'Completed' })),
         });
       }
       return logs;
@@ -433,15 +442,18 @@
             { order:12, type:'AUTO', name:'dev-mcrm-program-pre-approve-nu-flat-rate', detail:'Update Loan offer Parameters for flat-rate pre-approve N/U', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'PRE_APPROVE_NU', params:['PA_NU_FLAT_RATE'], status:'Wait' },
             { order:13, type:'AUTO', name:'dev-mcrm-program-pre-approve-mc', detail:'Update Loan offer Parameters for pre-approve MC', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'PRE_APPROVE_MC', params:['PA_MC_OPTION'], status:'Wait' },
             { order:14, type:'AUTO', name:'dev-mcrm-program-pre-approve-mc-flat-rate', detail:'Update Loan offer Parameters for pre-approve MC flag rate', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'PRE_APPROVE_MC', params:['PA_MC_FLAT_RATE'], status:'Wait' },
-            { order:15, type:'AUTO', name:'dev-mcrm-cap-max-special-criteria', detail:'Run special logic of Cap Max Flat Rate and Max LTV for Topup program', category:'PARAMETER', code:'', status:'Wait' },
-            { order:16, type:'AUTO', name:'credit line calculations Top up programs (X Sell Pool)', detail:'calculate credit line and cash offer', category:'PARAMETER', code:'', status:'Wait' },
-            { order:17, type:'AUTO', name:'credit line calculations Revolving Loan programs (X Sell Pool)', detail:'', category:'PARAMETER', code:'', status:'Wait' },
-            { order:18, type:'AUTO', name:'credit line calculations Pre-Approve (R) programs (X Sell Pool)', detail:'', category:'PARAMETER', code:'', status:'Wait' },
-            { order:19, type:'AUTO', name:'credit line calculations Pre-Approve (N/U) programs (X Sell Pool)', detail:'', category:'PARAMETER', code:'', status:'Wait' },
-            { order:20, type:'AUTO', name:'Flag Program Top up', detail:'Flag Program Top up', category:'PARAMETER', code:'', status:'Wait' },
-            { order:21, type:'AUTO', name:'Flag Program Revolving Loan', detail:'Flag Program Revolving Loan', category:'PARAMETER', code:'', status:'Wait' },
-            { order:22, type:'AUTO', name:'Flag Program Pre-Approve (R)', detail:'Flag Program Pre-Approve (R)', category:'PARAMETER', code:'', status:'Wait' },
-            { order:23, type:'AUTO', name:'Flag Program Pre-Approve (N/U) ', detail:'Flag Program Pre-Approve (N/U) ', category:'PARAMETER', code:'', status:'Wait' },
+            { order:15, type:'AUTO', name:'Validate Loan Offer (Interest Rate / Flat Rate)', detail:'ตรวจสอบอัตราดอกเบี้ยและ Max LTV ของทุก program ว่าตรงกับ Expected Result ของแต่ละ Condition', category:'VALIDATION', validations:['V00001','V00002'], status:'Wait' },
+            { order:16, type:'AUTO', name:'dev-mcrm-cap-max-special-criteria', detail:'Run special logic of Cap Max Flat Rate and Max LTV for Topup program', category:'PARAMETER', code:'', status:'Wait' },
+            { order:17, type:'AUTO', name:'credit line calculations Top up programs (X Sell Pool)', detail:'calculate credit line and cash offer', category:'PARAMETER', code:'', status:'Wait' },
+            { order:18, type:'AUTO', name:'credit line calculations Revolving Loan programs (X Sell Pool)', detail:'', category:'PARAMETER', code:'', status:'Wait' },
+            { order:19, type:'AUTO', name:'credit line calculations Pre-Approve (R) programs (X Sell Pool)', detail:'', category:'PARAMETER', code:'', status:'Wait' },
+            { order:20, type:'AUTO', name:'credit line calculations Pre-Approve (N/U) programs (X Sell Pool)', detail:'', category:'PARAMETER', code:'', status:'Wait' },
+            { order:21, type:'AUTO', name:'Validate Credit Line & Installment', detail:'ตรวจสอบ Credit Line / Cash Offer และจำนวนงวดที่เสนอ ให้อยู่ในกรอบของแต่ละ Entity', category:'VALIDATION', validations:['V00003','V00004'], status:'Wait' },
+            { order:22, type:'AUTO', name:'Flag Program Top up', detail:'Flag Program Top up', category:'PARAMETER', code:'', status:'Wait' },
+            { order:23, type:'AUTO', name:'Flag Program Revolving Loan', detail:'Flag Program Revolving Loan', category:'PARAMETER', code:'', status:'Wait' },
+            { order:24, type:'AUTO', name:'Flag Program Pre-Approve (R)', detail:'Flag Program Pre-Approve (R)', category:'PARAMETER', code:'', status:'Wait' },
+            { order:25, type:'AUTO', name:'Flag Program Pre-Approve (N/U) ', detail:'Flag Program Pre-Approve (N/U) ', category:'PARAMETER', code:'', status:'Wait' },
+            { order:26, type:'AUTO', name:'Validate Flag Program', detail:'ตรวจสอบว่า Lead ที่ผ่านเกณฑ์ถูก Flag Program ครบถ้วนทุก program', category:'VALIDATION', validations:['V00005'], status:'Wait' },
           ] },
           { flow_id:'F00006', flow_name:'GEN LEAD INS_PPI', run_type:'MANUAL', schedule:null, steps:[
             { order:1,  type:'AUTO', name:'STEP 0',  detail:'BASE LEAD (No Condition)', category:'ELIGIBLE', code:'EL00001', status:'Wait' },
