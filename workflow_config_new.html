@@ -8,11 +8,13 @@
 .step-box.cat-eligible{ border-top:5px solid #8B5E3C; background:#FAF4EC; }
 .step-box.cat-parameter{ border-top:5px solid #D9A404; background:#FDF9E7; }
 .step-box.cat-profile{ border-top:5px solid #6B7280; background:#F4F5F7; }
+.step-box.cat-validation{ border-top:5px solid #2F9E68; background:#F1FAF5; }
 
 .cat-tag{ display:inline-block;font-size:10px;font-weight:bold; padding:2px 8px;border-radius:10px;color:#fff;vertical-align:middle; }
 .cat-tag.cat-eligible{background:#8B5E3C}
 .cat-tag.cat-parameter{background:#D9A404}
 .cat-tag.cat-profile{background:#6B7280}
+.cat-tag.cat-validation{background:#2F9E68}
 
 .canvas .step-box{padding:8px 12px 10px}
 .canvas .step-box .field-lbl{font-size:10px;color:#6B7280;margin:5px 0 2px}
@@ -125,6 +127,24 @@
 .param-dd .dd-opt:hover{background:#FDF9E7}
 .param-dd .dd-opt input{accent-color:#D9A404;width:13px;height:13px;flex-shrink:0}
 .param-dd .dd-empty{padding:11px;font-size:11.5px;color:#B4ACA5;font-style:italic}
+
+/* ===== Validation box: multi-select Validation Code ===== */
+.valid-tag-field{
+  display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-height:32px;
+  border:1px solid #E4DED7;border-radius:7px;padding:5px 8px;background:#fff;cursor:pointer;
+}
+.valid-tag-field:hover{border-color:#2F9E68}
+.valid-chip{
+  display:inline-flex;align-items:center;gap:4px;background:#E9F7F0;border:1px solid #BDEBD8;
+  border-radius:6px;padding:2px 7px;font-size:11px;color:#187A4E;font-weight:600;max-width:170px;
+}
+.valid-chip span.vctxt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.valid-chip-x{cursor:pointer;color:#8FB7A3;font-size:10px;line-height:1;flex-shrink:0}
+.valid-chip-x:hover{color:#D64C4C}
+.valid-ph{font-size:11.5px;color:#B4ACA5}
+.param-dd.valid-dd .dd-opt:hover{background:#F1FAF5}
+.param-dd.valid-dd .dd-opt input{accent-color:#2F9E68}
+.param-dd.valid-dd .dd-code{font-family:Consolas,'Courier New',monospace;font-size:10.5px;color:#9AA2B1;flex-shrink:0}
 
 /* small confirm / picker modal (same pattern as other pages) */
 .modal-overlay{position:fixed;inset:0;background:rgba(46,42,39,.42);display:flex;align-items:center;justify-content:center;z-index:1100}
@@ -252,11 +272,26 @@ createApp({
        reference another saved workflow — both come straight from store.js. */
     const eligibleList = MCRM.db.eligibility;
     const flows = MCRM.db.workflows;
+    /* Validation steps pick records saved in Validation Setup. */
+    const validationList = MCRM.db.validations;
+    function validationNameOf(code){
+      const v = validationList.find(x => x.validation_id === code);
+      return v ? v.validation_name : code;
+    }
+    function validationCondCount(codes){
+      return (codes||[]).reduce((n,c) => {
+        const v = validationList.find(x => x.validation_id === c);
+        return n + (v ? v.conditions.length : 0);
+      }, 0);
+    }
     const DEFAULT_CATEGORY = 'ELIGIBLE';
     const CATEGORIES = computed(() => ({
       ELIGIBLE:  { label:'Eligible',  css:'cat-eligible',  codeLabel:'Eligible Code', codes: eligibleList.map(e=>e.code), color:'#8B5E3C' },
       PARAMETER: { label:'Parameter', css:'cat-parameter', codeLabel:'Parameter ID',  codes: [], color:'#D9A404' },
       PROFILE:   { label:'Profile',   css:'cat-profile',   codeLabel:'Workflow ID',   codes: flows.filter(f=>f.flow_id!==currentFlow.flow_id).map(f=>f.flow_id), color:'#6B7280' },
+      /* codes stays empty: a Validation box picks many Validation Codes through
+         its own multi-select, not the single-value <select> the others use. */
+      VALIDATION:{ label:'Validation',css:'cat-validation',codeLabel:'Validation Code', codes: [], color:'#2F9E68' },
     }));
 
     /* ---- list / editor navigation ---- */
@@ -278,7 +313,8 @@ createApp({
         leadType: s.leadType || (LEAD_TYPES.value[0] ? LEAD_TYPES.value[0].code : ''),
         entity: s.entity || '',
         program: s.program || '',
-        params: Array.isArray(s.params) ? s.params.slice() : []
+        params: Array.isArray(s.params) ? s.params.slice() : [],
+        validations: Array.isArray(s.validations) ? s.validations.slice() : []
       };
     }
 
@@ -321,14 +357,14 @@ createApp({
       category = CATEGORIES.value[category] ? category : DEFAULT_CATEGORY;
       currentFlow.steps.push({
         id: nextId++, name:`Step${currentFlow.steps.length+1}`, type:'AUTO', status:'Wait', detail:'',
-        category, code:'', leadType: LEAD_TYPES.value[0] ? LEAD_TYPES.value[0].code : '', entity:'', program:'', params:[]
+        category, code:'', leadType: LEAD_TYPES.value[0] ? LEAD_TYPES.value[0].code : '', entity:'', program:'', params:[], validations:[]
       });
       showAddStep.value = false;
     }
     function removeStep(id){ currentFlow.steps = currentFlow.steps.filter(s => s.id !== id); }
     function changeCategory(s){
-      s.code = ''; s.leadType = LEAD_TYPES.value[0] ? LEAD_TYPES.value[0].code : ''; s.entity=''; s.program=''; s.params=[];
-      closeParamPicker();
+      s.code = ''; s.leadType = LEAD_TYPES.value[0] ? LEAD_TYPES.value[0].code : ''; s.entity=''; s.program=''; s.params=[]; s.validations=[];
+      closeParamPicker(); closeValidationPicker();
     }
     function onEntityOrProgramChange(s){ s.params = []; closeParamPicker(); }
 
@@ -353,7 +389,28 @@ createApp({
       if (i >= 0) s.params.splice(i,1); else s.params.push(code);
     }
     function removeParam(s, code){ s.params = s.params.filter(c => c !== code); }
-    onMounted(() => document.addEventListener('click', closeParamPicker));
+
+    /* ---- validation multi-select picker (same floating-panel trick) ---- */
+    const validPickerStepId = ref(null);
+    const validPickerPos = reactive({ left:0, top:0, minWidth:260 });
+    const activeValidStep = computed(() => currentFlow.steps.find(x => x.id === validPickerStepId.value) || null);
+    function toggleValidationPicker(s, event){
+      if (validPickerStepId.value === s.id){ closeValidationPicker(); return; }
+      validPickerStepId.value = s.id;
+      const rect = event.currentTarget.getBoundingClientRect();
+      validPickerPos.left = Math.max(8, rect.left);
+      validPickerPos.top = rect.bottom + 4;
+      validPickerPos.minWidth = Math.max(rect.width, 260);
+    }
+    function closeValidationPicker(){ validPickerStepId.value = null; }
+    function toggleValidationValue(s, code){
+      if (!Array.isArray(s.validations)) s.validations = [];
+      const i = s.validations.indexOf(code);
+      if (i >= 0) s.validations.splice(i,1); else s.validations.push(code);
+    }
+    function removeValidation(s, code){ s.validations = s.validations.filter(c => c !== code); }
+
+    onMounted(() => document.addEventListener('click', () => { closeParamPicker(); closeValidationPicker(); }));
 
     /* ---- canvas layout (columns / row heights measured from the real DOM) ---- */
     const canvasEl = ref(null);
@@ -513,6 +570,7 @@ createApp({
         steps: currentFlow.steps.map((s,i) => {
           const base = { order:i+1, type:s.type, name:s.name, detail:s.detail, category:s.category, status:s.status };
           if (s.category==='PARAMETER'){ base.leadType=s.leadType; base.entity=s.entity; base.program=s.program; base.params=s.params||[]; }
+          else if (s.category==='VALIDATION'){ base.validations = s.validations||[]; }
           else { base.code = s.code; }
           return base;
         })
@@ -585,6 +643,8 @@ createApp({
       pageView, currentFlow, openFlow, backToList, onRunTypeChange, scheduleDesc, scheduleDescFor,
       showAddStep, openAddStepDialog, addStep, removeStep, changeCategory, onEntityOrProgramChange,
       paramPickerStepId, paramPickerPos, activeParamStep, toggleParamPicker, toggleParamValue, removeParam,
+      validationList, validationNameOf, validationCondCount,
+      validPickerPos, activeValidStep, toggleValidationPicker, toggleValidationValue, removeValidation,
       canvasEl, setBoxRef, cols, boxHeights, layout, getPos, makePath, svgW, svgH, addBtnPos,
       draggingId, dragOverId, onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop,
       statusClass, badgeClass,
@@ -724,6 +784,15 @@ createApp({
                   <span v-else class="param-ph">-- Select Parameter --</span>
                 </div>
               </template>
+              <template v-else-if="s.category==='VALIDATION'">
+                <div class="field-lbl">Validation Code (เลือกได้หลายรายการ)</div>
+                <div class="valid-tag-field" @click.stop="toggleValidationPicker(s, $event)">
+                  <template v-if="(s.validations||[]).length">
+                    <span class="valid-chip" v-for="vc in s.validations" :key="vc" :title="vc+' · '+validationNameOf(vc)"><span class="vctxt">{{ vc }}</span><span class="valid-chip-x" @click.stop="removeValidation(s,vc)">&times;</span></span>
+                  </template>
+                  <span v-else class="valid-ph">-- Select Validation Code --</span>
+                </div>
+              </template>
               <template v-else-if="CATEGORIES[s.category].codes.length">
                 <div class="field-lbl">{{ CATEGORIES[s.category].codeLabel }}</div>
                 <select class="step-select box_code" v-model="s.code">
@@ -759,6 +828,16 @@ createApp({
           </div>
           <div class="dd-empty" v-if="!getParamList(activeParamStep.program, activeParamStep.entity).length">ไม่มี Parameter สำหรับ Program/Entity นี้</div>
         </template>
+      </div>
+
+      <!-- floating panel, kept outside the SVG so it isn't clipped by foreignObject -->
+      <div class="param-dd valid-dd" v-if="activeValidStep" :style="{left: validPickerPos.left+'px', top: validPickerPos.top+'px', minWidth: validPickerPos.minWidth+'px'}" @click.stop>
+        <div class="dd-opt" v-for="v in validationList" :key="v.validation_id" @click="toggleValidationValue(activeValidStep, v.validation_id)">
+          <input type="checkbox" :checked="(activeValidStep.validations||[]).includes(v.validation_id)" @click.stop="toggleValidationValue(activeValidStep, v.validation_id)">
+          <span class="dd-code">{{ v.validation_id }}</span>
+          <span>{{ v.validation_name }}</span>
+        </div>
+        <div class="dd-empty" v-if="!validationList.length">ยังไม่มี Validation — สร้างได้ที่เมนู Validation Setup</div>
       </div>
 
       <div class="output-panel" :class="{show: showOutput}" style="height: 600px;">

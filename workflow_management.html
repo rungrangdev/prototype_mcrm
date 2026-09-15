@@ -36,6 +36,7 @@
     .step-box.cat-eligible{ border-top:5px solid #8B5E3C; background:#FAF4EC; }
     .step-box.cat-parameter{ border-top:5px solid #D9A404; background:#FDF9E7; }
     .step-box.cat-profile{ border-top:5px solid #6B7280; background:#F4F5F7; }
+    .step-box.cat-validation{ border-top:5px solid #2F9E68; background:#F1FAF5; }
 
     .cat-tag{
       display:inline-block;font-size:10px;font-weight:bold;
@@ -45,6 +46,7 @@
     .cat-tag.cat-eligible{background:#8B5E3C}
     .cat-tag.cat-parameter{background:#D9A404}
     .cat-tag.cat-profile{background:#6B7280}
+    .cat-tag.cat-validation{background:#2F9E68}
 
     .code-chip{
       display:inline-flex;align-items:center;gap:5px;
@@ -56,6 +58,7 @@
     .code-chip.cat-eligible{border-color:#8B5E3C;color:#8B5E3C;}
     .code-chip.cat-parameter{border-color:#D9A404;color:#A87F03;}
     .code-chip.cat-profile{border-color:#6B7280;color:#6B7280;}
+    .code-chip.cat-validation{border-color:#2F9E68;color:#187A4E;}
 
     .step-head{display:flex;align-items:center;gap:8px;flex-shrink:0;}
     .step-no{font-size:11px;font-weight:700;color:#6B7280;
@@ -96,6 +99,7 @@
     .step-box.cat-eligible .detail-wrap::after{color:#FAF4EC;}
     .step-box.cat-parameter .detail-wrap::after{color:#FDF9E7;}
     .step-box.cat-profile .detail-wrap::after{color:#F4F5F7;}
+    .step-box.cat-validation .detail-wrap::after{color:#F1FAF5;}
     .detail-wrap.no-fade::after{display:none;}
 
     .param-strip{display:flex;align-items:center;flex-wrap:wrap;gap:4px;flex-shrink:0;}
@@ -109,6 +113,22 @@
     .pchip.program{background:#FDF3D3;border-color:#EFD98F;color:#8A6A03;}
     .pchip.count{background:#FFFFFF;border-color:#EFD98F;color:#A87F03;}
     .pchip.none{font-weight:600;color:#9AA2B1;font-style:italic;}
+    .pchip.valid{background:#E9F7F0;border-color:#BDEBD8;color:#187A4E;}
+    .pchip.validcount{background:#FFFFFF;border-color:#BDEBD8;color:#0E9F6E;}
+
+    /* ---- modal : ผลการ Validation ---- */
+    .vr-grp td{background:#F4FBF7;font-weight:700;color:#187A4E;font-size:12px;text-align:left;}
+    .vr-sub{font-size:10.5px;color:#9AA2B1;font-family:Consolas,'Courier New',monospace;font-weight:400;}
+    .vr-cond{font-family:Consolas,'Courier New',monospace;font-size:11.5px;color:#374151;}
+    .vr-exp{font-family:Consolas,'Courier New',monospace;font-size:11.5px;color:#0E9F6E;font-weight:600;}
+    .vr-pass{color:#0E9F6E;font-weight:700;}
+    .vr-fail{color:#EF4444;font-weight:700;}
+    .vr-tag{display:inline-block;font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:999px;}
+    .vr-tag.ok{background:#E4F7EF;color:#0E9F6E;}
+    .vr-tag.ng{background:#FDE8E8;color:#DC2626;}
+    /* step ที่ยังไม่ทำงาน : ไม่มีตัวเลขผล จึงซ่อนคอลัมน์ Checked/Pass/Fail/%Pass/Result */
+    .ftbl.no-result th:nth-child(n+4),
+    .ftbl.no-result td:nth-child(n+4){display:none;}
 
     .pm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
     .pm-card{background:#F7F8FB;border:1px solid #EAEDF4;border-radius:10px;padding:10px 12px;min-width:0;}
@@ -235,6 +255,7 @@
     .sum-lbl{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
       color:#9AA2B1;margin-bottom:4px;}
     .sum-val{font-size:18px;font-weight:700;}
+    .sum-val.ok{color:#10B981;}
     .fmodal-foot{padding:11px 18px;border-top:1px solid #EAEDF4;display:flex;align-items:center;
       justify-content:space-between;flex-shrink:0;}
     .gen-note{font-size:11.5px;color:#9AA2B1;}
@@ -283,7 +304,8 @@ document.addEventListener('click', function() {
 const CATEGORIES = {
   ELIGIBLE:  { label:'Eligible',  css:'cat-eligible',  codeLabel:'Eligible Code', color:'#8B5E3C' },
   PARAMETER: { label:'Parameter', css:'cat-parameter', codeLabel:'Parameter ID',  color:'#D9A404' },
-  PROFILE:   { label:'Profile',   css:'cat-profile',   codeLabel:'Workflow ID',   color:'#6B7280' }
+  PROFILE:   { label:'Profile',   css:'cat-profile',   codeLabel:'Workflow ID',   color:'#6B7280' },
+  VALIDATION:{ label:'Validation',css:'cat-validation',codeLabel:'Validation Code',color:'#2F9E68' }
 };
 const DEFAULT_CATEGORY = 'ELIGIBLE';
 const MAX_COLS=5, BOX_W=260, BOX_H=238, GAP_X=50, GAP_Y=50, PAD=8, TERM_W=128, TERM_H=46;
@@ -313,6 +335,7 @@ createApp({
         detail: s.detail || '', category, code: s.code || s.eligible_code || '',
         leadType: s.leadType || '', entity: s.entity || '', program: s.program || '',
         params: Array.isArray(s.params) ? s.params.slice() : [],
+        validations: Array.isArray(s.validations) ? s.validations.slice() : [],
       };
     }
 
@@ -421,7 +444,7 @@ createApp({
     function badgeClass(st){ return 'b-'+st.toLowerCase(); }
     function codeChipInfo(s){
       const cat = CATEGORIES[s.category] || CATEGORIES[DEFAULT_CATEGORY];
-      if (!s.code && s.category==='PARAMETER') return null;
+      if (!s.code && (s.category==='PARAMETER' || s.category==='VALIDATION')) return null;
       return { cat, val: s.code || '-' };
     }
     function allDone(){ return steps.value.length>0 && steps.value.every(s=>s.status==='Completed'); }
@@ -430,6 +453,77 @@ createApp({
     const paramModal = reactive({ show:false, step:null });
     function openStepParams(i){ paramModal.step = steps.value[i]; paramModal.show = true; }
     function closeStepParams(){ paramModal.show = false; }
+
+    /* ---- validation result modal — reads the REAL Validation Setup records ----
+       Completed : shows Pass / Fail per condition.
+       Otherwise : lists only what *will* be checked (no numbers yet). */
+    const validationList = MCRM.db.validations;
+    function validationNameOf(code){
+      const v = validationList.find(x => x.validation_id === code);
+      return v ? v.validation_name : code;
+    }
+    function validationCondCount(codes){
+      return (codes||[]).reduce((n,c) => {
+        const v = validationList.find(x => x.validation_id === c);
+        return n + (v ? v.conditions.length : 0);
+      }, 0);
+    }
+
+    const validationModal = reactive({ show:false, name:'', meta:'', done:false, rows:[], summary:null, note:'' });
+    function openStepValidation(i){
+      const s = steps.value[i];
+      const done = s.status === 'Completed';
+      const rows = [];
+      (s.validations || []).forEach(code => {
+        const v = validationList.find(x => x.validation_id === code);
+        if (!v){ rows.push({ group:true, code, name:'(ไม่พบ Validation นี้ใน Validation Setup)', nCond:0 }); return; }
+        rows.push({ group:true, code:v.validation_id, name:v.validation_name, nCond:v.conditions.length });
+        v.conditions.forEach((c, idx) => {
+          const r = done ? MCRM.validationResultOf(v.validation_id, idx) : null;
+          rows.push({
+            group:false, no:idx+1,
+            criteria: MCRM.conditionText(c),
+            expected: MCRM.criteriaText(c.expected),
+            checked: r ? r.checked : null, pass: r ? r.pass : null, fail: r ? r.fail : null,
+            pct: r ? ((r.pass / r.checked) * 100).toFixed(2) + '%' : '-',
+            result: !done ? '' : (r.fail === 0 ? 'PASS' : 'FAIL'),
+          });
+        });
+      });
+
+      const det = rows.filter(r => !r.group);
+      const nVal = (s.validations || []).length;
+      let summary = null;
+      if (done && det.length){
+        const checked = det.reduce((a,r) => a + r.checked, 0);
+        const pass = det.reduce((a,r) => a + r.pass, 0);
+        const fail = det.reduce((a,r) => a + r.fail, 0);
+        const condFail = det.filter(r => r.fail > 0).length;
+        summary = { checked, pass, fail, condFail, condTotal: det.length };
+      }
+      Object.assign(validationModal, {
+        show:true, name:s.name, done, rows, summary,
+        meta:`${nVal} validation${nVal>1?'s':''} · ${det.length} condition${det.length>1?'s':''} · Step #${i+1} · ${s.status}`,
+        note: summary
+          ? (summary.condFail ? `พบ ${summary.condFail} condition ที่ผลลัพธ์ไม่ตรงกับ Expected Result` : 'ทุก Condition ผ่านการตรวจสอบ')
+          : 'ขั้นตอนนี้ยังไม่ทำงาน — แสดงเฉพาะรายการที่จะถูกตรวจสอบ',
+      });
+    }
+    function closeStepValidation(){ validationModal.show = false; }
+    function exportStepValidation(){
+      if (!validationModal.rows.length) return;
+      const lines = ['Validation ID,Validation Name,#,Condition,Expected Result,Checked,Pass,Fail,% Pass,Result'];
+      let code='', name='';
+      validationModal.rows.forEach(r => {
+        if (r.group){ code=r.code; name=r.name; return; }
+        lines.push([code, `"${name}"`, r.no, `"${r.criteria}"`, `"${r.expected}"`,
+          r.checked ?? '', r.pass ?? '', r.fail ?? '', validationModal.done ? r.pct.replace('%','') : '', r.result].join(','));
+      });
+      const url = URL.createObjectURL(new Blob(['\ufeff'+lines.join('\n')], { type:'text/csv;charset=utf-8;' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = 'validation_result.csv'; a.click();
+      URL.revokeObjectURL(url);
+    }
 
     /* ---- funnel result modal — reads the REAL eligibility profile's conditions ---- */
     const funnelModal = reactive({ show:false, name:'', code:'', meta:'', rows:[], init:0, red:0, fin:0, pct:'0', note:'' });
@@ -541,6 +635,8 @@ createApp({
       statusClass, badgeClass, codeChipInfo, allDone,
       paramModal, openStepParams, closeStepParams,
       funnelModal, openStepFunnel, closeStepFunnel, exportStepFunnel,
+      validationNameOf, validationCondCount,
+      validationModal, openStepValidation, closeStepValidation, exportStepValidation,
       flowStatus, currentStepLabel,
       manualWarning, runFlow, numberWithCommas, randomMin,
       toast,
@@ -636,6 +732,15 @@ createApp({
                   <span class="pchip none" v-else title="ขั้นตอนนี้ไม่ผูกกับ parameter">no param</span>
                 </div>
 
+                <div class="param-strip" v-if="steps[n-2].category==='VALIDATION'">
+                  <template v-if="(steps[n-2].validations||[]).length">
+                    <span class="pchip valid" v-for="vc in steps[n-2].validations.slice(0,2)" :key="vc" :title="vc+' · '+validationNameOf(vc)">{{ vc }}</span>
+                    <span class="pchip validcount" v-if="steps[n-2].validations.length>2" :title="steps[n-2].validations.join(', ')">+{{ steps[n-2].validations.length-2 }}</span>
+                    <span class="pchip validcount" :title="'รวม '+validationCondCount(steps[n-2].validations)+' condition'">{{ validationCondCount(steps[n-2].validations) }} cond</span>
+                  </template>
+                  <span class="pchip none" v-else title="ขั้นตอนนี้ยังไม่ผูก Validation">no validation</span>
+                </div>
+
                 <div class="step-foot">
                   <div class="foot-line">
                     <span class="code-chip" v-if="codeChipInfo(steps[n-2])" :class="codeChipInfo(steps[n-2]).cat.css" :title="codeChipInfo(steps[n-2]).cat.codeLabel+' '+codeChipInfo(steps[n-2]).val">
@@ -654,6 +759,10 @@ createApp({
                   <button v-else-if="steps[n-2].status==='Wait' && steps[n-2].type==='MANUAL' && (n-2===0 || steps[n-3].status==='Completed')" class="foot-action primary" @click="runFlow(n-2)">
                     <svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M2 1.5l6 3.5-6 3.5V1.5z" fill="currentColor"/></svg>
                     Run step</button>
+                  <button v-else-if="steps[n-2].category==='VALIDATION'" class="foot-action" @click="openStepValidation(n-2)">
+                    <svg v-if="steps[n-2].status==='Completed'" width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M1.6 6.4l3 3 5.8-5.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <svg v-else width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M1.5 3.5h9M1.5 6h9M1.5 8.5h5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                    {{ steps[n-2].status==='Completed' ? 'View Result' : 'View Validations' }}</button>
                   <button v-else-if="steps[n-2].category==='PARAMETER'" class="foot-action" @click="openStepParams(n-2)">
                     <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M1.5 3.5h9M1.5 6h9M1.5 8.5h5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                     View Parameters</button>
@@ -689,6 +798,67 @@ createApp({
         <h3>Manual Step Detected</h3>
         <p>Step {{ manualWarning.stepNo }}: {{ manualWarning.name }} is a manual step. Please complete it manually before proceeding.</p>
         <div class="modal-actions"><button class="btn-run" @click="manualWarning.show=false">OK</button></div>
+      </div>
+    </div>
+
+    <!-- Validation result modal -->
+    <div class="fmodal-bg" :class="{open: validationModal.show}" @click="$event.target===$event.currentTarget && closeStepValidation()">
+      <div class="fmodal" style="width:900px">
+        <div class="fmodal-head">
+          <span class="fmodal-title">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7.4l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Validation Result — {{ validationModal.name }}
+          </span>
+          <button class="fmodal-close" @click="closeStepValidation">&times;</button>
+        </div>
+        <div class="fmodal-body">
+          <div class="sf-meta">{{ validationModal.meta }}</div>
+          <table class="ftbl" :class="{'no-result': !validationModal.done}">
+            <thead>
+              <tr>
+                <th style="width:28px">#</th>
+                <th>Validation / Condition</th>
+                <th style="width:170px">Expected Result</th>
+                <th style="width:80px">Checked</th>
+                <th style="width:70px">Pass</th>
+                <th style="width:70px">Fail</th>
+                <th style="width:80px">% Pass</th>
+                <th style="width:70px">Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="!validationModal.rows.length"><td colspan="8" style="text-align:center;color:#9AA2B1;padding:20px">ขั้นตอนนี้ยังไม่ผูก Validation</td></tr>
+              <template v-for="(r,ri) in validationModal.rows" :key="ri">
+                <tr v-if="r.group" class="vr-grp">
+                  <td colspan="8">{{ r.code }} — {{ r.name }} <span class="vr-sub" v-if="r.nCond">({{ r.nCond }} condition)</span></td>
+                </tr>
+                <tr v-else>
+                  <td>{{ r.no }}</td>
+                  <td class="vr-cond" style="text-align:left">{{ r.criteria }}</td>
+                  <td class="vr-exp" style="text-align:left">{{ r.expected }}</td>
+                  <td>{{ r.checked===null ? '-' : numberWithCommas(r.checked) }}</td>
+                  <td class="vr-pass">{{ r.pass===null ? '-' : numberWithCommas(r.pass) }}</td>
+                  <td :class="{'vr-fail': r.fail}">{{ r.fail===null ? '-' : numberWithCommas(r.fail) }}</td>
+                  <td>{{ r.pct }}</td>
+                  <td style="text-align:center"><span class="vr-tag" :class="r.result==='PASS' ? 'ok' : (r.result==='FAIL' ? 'ng' : '')">{{ r.result || '-' }}</span></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+          <div class="sum-grid" v-if="validationModal.summary">
+            <div class="sum-card"><div class="sum-lbl">Records Checked</div><div class="sum-val">{{ numberWithCommas(validationModal.summary.checked) }}</div></div>
+            <div class="sum-card"><div class="sum-lbl">Pass</div><div class="sum-val ok">{{ numberWithCommas(validationModal.summary.pass) }}</div></div>
+            <div class="sum-card"><div class="sum-lbl">Fail</div><div class="sum-val neg">{{ numberWithCommas(validationModal.summary.fail) }}</div></div>
+            <div class="sum-card"><div class="sum-lbl">Condition Failed</div><div class="sum-val" :class="validationModal.summary.condFail ? 'neg' : 'ok'">{{ validationModal.summary.condFail }} / {{ validationModal.summary.condTotal }}</div></div>
+          </div>
+        </div>
+        <div class="fmodal-foot">
+          <span class="gen-note">{{ validationModal.note }}</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn-ghost" @click="exportStepValidation">Export Results</button>
+            <button class="btn-run" @click="closeStepValidation">Close</button>
+          </div>
+        </div>
       </div>
     </div>
 

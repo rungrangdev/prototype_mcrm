@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Validation Setup</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.31/vue.global.prod.min.js"></script>
+<script src="store.js"></script>
+<style>
+  /* @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap'); */
+
+@font-face {
+    font-family: "Krungsri-med";
+    font-style: normal;
+    font-weight: normal;
+    src: url("./font/krungsri_con-webfont.ttf") format("truetype");
+}
+
+  :root{
+    --bg:#F1F3F6;
+    --surface:#FFFFFF;
+    --surface-alt:#F7F8FA;
+    --primary:#6f5f5e;
+    --primary-dark:#1B3050;
+    --accent:#E6A23D;
+    --accent-soft:#FBEEDA;
+    --text:#1C2333;
+    --text-secondary:#6B7280;
+    --border:#E3E6EC;
+    --success:#2F9E68;
+    --success-soft:#E5F5EC;
+    --danger:#D64545;
+    --danger-soft:#FBEAEA;
+    --violet:#6D5BD0;
+    --violet-soft:#EDEAFB;
+    --radius:10px;
+    --shadow-sm:0 1px 2px rgba(20,30,50,.06);
+    --shadow-md:0 8px 24px rgba(20,30,50,.12);
+  }
+  *{box-sizing:border-box;
+    font-family: 'Krungsri-med';
+}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);font-family:'Krungsri-med', sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;}
+  .mono{font-family:'Krungsri-med', monospace;}
+  #app{min-height:100vh;display:flex;flex-direction:column;background-color: #FFF;}
+
+  .app-header{background:var(--primary);color:#fff;padding:16px 28px 0;box-shadow:var(--shadow-sm);}
+  .app-header-top{display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;}
+  .app-header .brand{display:flex;align-items:center;gap:12px;}
+  .app-header .brand-mark{width:38px;height:38px;border-radius:9px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--primary-dark);font-size:15px;}
+  .app-header h1{font-size:17px;margin:0;font-weight:600;letter-spacing:.2px;}
+  .app-header p{margin:2px 0 0;font-size:12.5px;color:#C9D5E6;}
+  .admin-chip{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);padding:6px 12px;border-radius:20px;font-size:13px;}
+  .admin-chip .dot{width:8px;height:8px;border-radius:50%;background:#6FE3A6;}
+
+  .tabbar{display:flex;gap:4px;max-width:1360px;margin:0 auto;padding:0;}
+  .tab-btn{background:transparent;border:none;color:#B8C6DC;font-family:'Krungsri-med';font-size:13.5px;font-weight:600;padding:12px 18px;cursor:pointer;border-bottom:3px solid transparent;display:flex;align-items:center;gap:8px;transition:.12s;}
+  .tab-btn .num{width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.12);font-size:10.5px;display:flex;align-items:center;justify-content:center;}
+  .tab-btn:hover{color:#fff;}
+  .tab-btn.active{color:#fff;border-bottom-color:var(--accent);}
+  .tab-btn.active .num{background:var(--accent);color:var(--primary-dark);}
+
+  .cabinet{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;height:fit-content;}
+  .cabinet h2{font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);margin:4px 8px 12px;font-weight:600;}
+  .drawer{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:11px 12px;border-radius:8px;border:1px solid transparent;background:transparent;cursor:pointer;margin-bottom:4px;font-family:'Krungsri-med';font-size:14px;color:var(--text);position:relative;transition:transform .12s ease, background .12s ease;}
+  .drawer:hover{background:var(--surface-alt);}
+  .drawer.active{background:var(--primary);color:#fff;transform:translateX(4px);box-shadow:var(--shadow-sm);}
+  .drawer.active::before{content:'';position:absolute;left:-4px;top:8px;bottom:8px;width:4px;background:var(--accent);border-radius:2px;}
+  .drawer-icon{width:26px;height:20px;flex:none;border:1.6px solid currentColor;border-radius:3px;position:relative;opacity:.85;}
+  .drawer-icon::after{content:'';position:absolute;left:50%;top:50%;width:8px;height:2px;background:currentColor;transform:translate(-50%,-50%);border-radius:2px;}
+  .drawer-label{flex:1;min-width:0;}
+  .drawer-name{font-weight:500;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .drawer-code{font-size:11px;opacity:.75;}
+  .drawer-count{font-size:11.5px;background:rgba(0,0,0,.08);padding:2px 8px;border-radius:20px;font-weight:600;}
+  .drawer.active .drawer-count{background:rgba(255,255,255,.18);}
+  .drawer-inactive-tag{font-size:10px;background:var(--danger-soft);color:var(--danger);padding:1px 6px;border-radius:10px;margin-left:4px;}
+  .add-drawer-btn{width:100%;margin-top:8px;padding:11px 12px;border-radius:8px;border:1.5px dashed #C7CEDA;background:transparent;color:var(--text-secondary);font-family:'Krungsri-med';font-size:13.5px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:.12s;}
+  .add-drawer-btn:hover{border-color:var(--primary);color:var(--primary);background:var(--surface-alt);}
+
+  .panel-head{padding:20px 24px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;}
+  .panel-title-row{display:flex;align-items:center;gap:10px;}
+  .panel-head h2{margin:0;font-size:19px;font-weight:700;}
+  .type-badge{font-family:'IBM Plex Mono',monospace;font-size:11.5px;background:var(--accent-soft);color:#9A6316;padding:3px 9px;border-radius:6px;font-weight:600;}
+  .type-badge.violet{background:var(--violet-soft);color:var(--violet);}
+  .panel-head .desc{margin:4px 0 0;color:var(--text-secondary);font-size:13.5px;}
+
+  .toolbar{padding:16px 24px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+  .search-box{flex:1;min-width:200px;display:flex;align-items:center;gap:8px;background:var(--surface-alt);border:1px solid var(--border);border-radius:8px;padding:9px 12px;}
+  .search-box input{border:none;background:transparent;outline:none;font-family:'Krungsri-med';font-size:13.5px;width:100%;color:var(--text);}
+
+  .filter-row{padding:16px 24px 0;display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;}
+  .filter-field{display:flex;flex-direction:column;gap:6px;min-width:200px;}
+  .filter-field label{font-size:11.5px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.3px;}
+  .filter-field select{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:'Krungsri-med';font-size:13.5px;background:var(--surface-alt);color:var(--text);}
+  .filter-hint{font-size:12px;color:var(--text-secondary);padding:8px 24px 0;}
+  .filter-hint a{color:var(--primary);cursor:pointer;font-weight:600;}
+
+  .btn{font-family:'Krungsri-med';font-size:13.5px;font-weight:600;padding:10px 16px;border-radius:8px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.12s;white-space:nowrap;}
+  .btn-primary{background:var(--primary);color:#fff;}
+  .btn-primary:hover{background:var(--primary-dark);}
+  .btn-ghost{background:transparent;color:var(--text-secondary);border:1px solid var(--border);}
+  .btn-ghost:hover{background:var(--surface-alt);}
+  .btn-danger{background:var(--danger);color:#fff;}
+  .btn-danger:hover{background:#B93636;}
+  .btn-sm{padding:7px 12px;font-size:12.5px;}
+  .btn-icon-sm{width:36px;height:36px;padding:0;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;}
+  .btn-icon-sm:hover{background:var(--surface-alt);color:var(--primary);}
+
+  .table-wrap{padding:16px 24px 24px;flex:1;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{text-align:left;color:var(--text-secondary);font-weight:600;font-size:11.5px;letter-spacing:.4px;padding:10px 12px;border-bottom:1.5px solid var(--border);white-space:nowrap;}
+  td{padding:12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+  tr:hover td{background:var(--surface-alt);}
+  .code-pill{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12.5px;background:#EEF1F6;padding:3px 9px;border-radius:6px;color:var(--primary-dark);}
+  .order-pill{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-secondary);}
+  .name-cell strong{display:block;}
+  .name-cell span{color:var(--text-secondary);font-size:12.5px;}
+  .depend-tag{font-size:11.5px;color:var(--text-secondary);background:var(--surface-alt);padding:2px 8px;border-radius:6px;}
+
+  .switch{position:relative;display:inline-block;width:38px;height:22px;cursor:pointer;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider{position:absolute;inset:0;background:#D8DCE4;border-radius:22px;transition:.15s;}
+  .slider::before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s;box-shadow:var(--shadow-sm);}
+  .switch input:checked + .slider{background:var(--success);}
+  .switch input:checked + .slider::before{transform:translateX(16px);}
+
+  .row-actions{display:flex;gap:6px;}
+  .icon-btn{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);transition:.12s;}
+  .icon-btn:hover{background:var(--surface-alt);color:var(--text);}
+  .icon-btn.danger:hover{background:var(--danger-soft);color:var(--danger);border-color:#F3C6C6;}
+
+  .empty-state{text-align:center;padding:64px 20px;color:var(--text-secondary);}
+  .empty-state .glyph{width:56px;height:44px;margin:0 auto 16px;border:2px solid #C7CEDA;border-radius:6px;position:relative;}
+  .empty-state .glyph::after{content:'';position:absolute;left:50%;top:50%;width:18px;height:3px;background:#C7CEDA;transform:translate(-50%,-50%);border-radius:2px;}
+  .empty-state h3{color:var(--text);margin:0 0 4px;font-size:15px;}
+
+  .key-chip-row{display:flex;flex-wrap:wrap;gap:6px;max-width:340px;}
+  .key-chip{display:flex;align-items:center;gap:5px;background:var(--violet-soft);color:var(--violet);font-size:11.5px;font-weight:600;padding:3px 8px 3px 6px;border-radius:20px;}
+  .key-chip .idx{background:var(--violet);color:#fff;width:15px;height:15px;border-radius:50%;font-size:9.5px;display:flex;align-items:center;justify-content:center;font-weight:700;}
+
+  .keybuilder{display:flex;flex-wrap:wrap;gap:8px;}
+  .key-option{padding:8px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-alt);font-size:12.5px;cursor:pointer;transition:.12s;display:flex;align-items:center;gap:6px;}
+  .key-option:hover{border-color:var(--violet);}
+  .key-option.selected{background:var(--violet);border-color:var(--violet);color:#fff;}
+  .key-option .n{font-family:'IBM Plex Mono',monospace;font-size:10.5px;opacity:.75;}
+  .selected-keys-box{margin-top:12px;padding:12px;background:var(--surface-alt);border-radius:8px;min-height:44px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+  .selected-keys-box .placeholder{color:var(--text-secondary);font-size:12.5px;}
+  .sel-chip{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--border);padding:5px 6px 5px 10px;border-radius:20px;font-size:12.5px;}
+  .sel-chip .idx{background:var(--violet);color:#fff;width:16px;height:16px;border-radius:50%;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:700;}
+  .sel-chip button{border:none;background:none;color:var(--text-secondary);cursor:pointer;font-size:13px;line-height:1;padding:2px;}
+  .preview-line{margin-top:10px;font-size:12px;color:var(--text-secondary);background:var(--surface-alt);padding:8px 10px;border-radius:6px;}
+  .preview-line b{color:var(--text);}
+
+  .overlay{position:fixed;inset:0;background:rgba(20,26,40,.42);display:flex;justify-content:flex-start;z-index:50;}
+  .side-drawer{width:440px;max-width:92vw;background:var(--surface);box-shadow:var(--shadow-md);display:flex;flex-direction:column;animation:slideIn .18s ease;
+    top:20px;
+    margin-bottom:70px;
+    left: 33%;
+   position: relative;
+}
+  @keyframes slideIn{from{transform:translateX(24px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  .side-drawer-head{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+  .side-drawer-head h3{margin:0;font-size:16px;}
+  .close-x{background:none;border:none;font-size:20px;color:var(--text-secondary);cursor:pointer;line-height:1;}
+  .side-drawer-body{padding:20px 24px;overflow-y:auto;flex:1;}
+  .field{margin-bottom:18px;}
+  .field label{display:block;font-size:12.5px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;}
+  .field .hint{font-size:11.5px;color:var(--text-secondary);margin-top:5px;}
+  .field-inline{display:flex;gap:8px;align-items:flex-end;}
+  .field-inline .field{flex:1;margin-bottom:0;}
+  .field input[type=text], .field input[type=number], .field textarea, .field select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-family:'Krungsri-med';font-size:13.5px;color:var(--text);background:var(--surface-alt);outline:none;}
+  .field input:focus, .field textarea:focus, .field select:focus{border-color:var(--primary);background:#fff;}
+  .field textarea{resize:vertical;min-height:64px;}
+  .active-toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface-alt);padding:12px 14px;border-radius:8px;}
+  .active-toggle-row .lab strong{display:block;font-size:13.5px;}
+  .active-toggle-row .lab span{font-size:12px;color:var(--text-secondary);}
+  .meta-box{margin-top:6px;padding:12px 14px;background:var(--surface-alt);border-radius:8px;font-size:12px;color:var(--text-secondary);line-height:1.7;}
+  .side-drawer-foot{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;}
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(20,26,40,.42);display:flex;align-items:center;justify-content:center;z-index:60;}
+  .modal-box{background:#fff;border-radius:12px;padding:24px;width:400px;max-width:92vw;box-shadow:var(--shadow-md);animation:pop .15s ease;}
+  @keyframes pop{from{transform:scale(.96);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .modal-box h3{margin:0 0 8px;font-size:16px;}
+  .modal-box p{margin:0 0 20px;color:var(--text-secondary);font-size:13.5px;line-height:1.6;}
+  .modal-box .warn-box{background:var(--danger-soft);color:#9A3131;border-radius:8px;padding:10px 12px;font-size:12.5px;margin-bottom:18px;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--primary-dark);color:#fff;padding:12px 20px;border-radius:8px;font-size:13.5px;box-shadow:var(--shadow-md);z-index:80;display:flex;align-items:center;gap:10px;}
+  .toast .tick{color:#6FE3A6;font-weight:700;}
+
+  table.data-table{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin-bottom: 0;
+  }
+  table.data-table thead th{
+    text-align: left;
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #FFF;
+    letter-spacing: .02em;
+    background: #6f5f5e;
+    padding: 13px 18px;
+    border : 1px solid #dedede;
+  }
+  table.data-table tbody td{
+    padding: 14px 18px;
+    border : 1px solid #dedede;
+    vertical-align: middle;
+    color: var(--text);
+  }
+  table.data-table tbody tr:hover{ background: var(--brown-lighter); }
+
+  /* กล่องครอบ */
+.dropdown-container {
+    position: relative;
+    display: inline-block;
+  }
+
+  /* ปุ่ม 3 จุด */
+  .btn-dots {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 8px;
+    color: #6b7280; /* สีเทา */
+    transition: color 0.2s;
+  }
+
+  .btn-dots:hover {
+    color: #000000; /* เปลี่ยนสีเมื่อเอาเมาส์วาง */
+  }
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: max-content;
+    min-width: 100px;
+    padding: 6px;
+    background-color: #ffffff;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    z-index: 10;
+
+    button {
+        display: block;
+        width: 100%;
+        font-size: 16px;
+        padding: 6px 12px;
+        border: none;
+        background-color: transparent;
+        cursor: pointer;
+        text-align: left;
+        color: #1f2937;
+        white-space: nowrap;
+    }
+
+    button:hover {
+        background-color: #F3F4F6;
+        border-radius: 4px;
+        color: #000000;
+    }
+}
+
+  .dropdown-menu.show {
+    display: block;
+  }
+
+  .modal-overlay{
+    z-index:99999;
+  }
+
+  input[readonly]{
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+  }
+</style>
+<style>
+  /* ===== Validation Setup — เพิ่มจาก design system กลางของหน้า master ===== */
+  .v-id{font-family:Consolas,'Courier New',monospace;font-weight:700;color:var(--primary);}
+  .v-count-pill{display:inline-block;font-size:11.5px;font-weight:700;color:var(--success);
+    background:var(--success-soft);border:1px solid #BDEBD8;border-radius:999px;padding:2px 10px;}
+
+  /* ---- แถบหัวของหน้าแก้ไข ---- */
+  .v-editbar{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;padding:0 24px 4px;}
+  .v-editbar .filter-field{min-width:0;}
+  .v-editbar .grow{flex:1;min-width:220px;}
+  .v-editbar .right{margin-left:auto;display:flex;gap:10px;padding-bottom:1px;}
+
+  /* ---- การ์ด Condition ---- */
+  .cond-sec-head{display:flex;align-items:baseline;gap:10px;padding:18px 24px 8px;flex-wrap:wrap;}
+  .cond-sec-head h3{margin:0;font-size:14.5px;}
+  .cond-sec-head span{font-size:12px;color:var(--text-secondary);}
+
+  .cond-wrap{padding:0 24px 24px;}
+  .cond-card{background:var(--surface);border:1px solid var(--border);border-left:4px solid #8B5E3C;
+    border-radius:var(--radius);padding:12px 14px;margin-bottom:10px;box-shadow:var(--shadow-sm);}
+  .cond-card-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+  .cond-no{font-size:11.5px;font-weight:700;color:var(--text-secondary);background:var(--surface-alt);
+    border-radius:6px;padding:3px 10px;flex-shrink:0;}
+  .cond-summary{font-size:12px;color:var(--text-secondary);font-family:Consolas,'Courier New',monospace;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;}
+  .btn-x{border:none;background:none;cursor:pointer;color:#B4ACA5;font-size:18px;line-height:1;
+    padding:0 6px;border-radius:6px;flex-shrink:0;}
+  .btn-x:hover{background:var(--danger-soft);color:var(--danger);}
+
+  .cond-block{border:1px solid var(--border);border-radius:8px;padding:9px 10px;background:var(--surface-alt);}
+  .cond-block + .cond-block{margin-top:8px;}
+  .cond-block-lbl{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+    color:var(--text-secondary);margin-bottom:7px;}
+  .cond-block.expect{background:var(--success-soft);border-color:#CFEADD;}
+  .cond-block.expect .cond-block-lbl{color:var(--success);}
+
+  .crit-row{display:flex;align-items:center;gap:7px;margin-bottom:6px;max-width:900px;}
+  .crit-row:last-child{margin-bottom:0;}
+  .crit-and{font-size:10px;font-weight:700;color:#8B5E3C;background:#FAF4EC;border:1px solid #E7D7C4;
+    border-radius:5px;padding:3px 7px;width:44px;text-align:center;flex-shrink:0;}
+  .crit-and.blank{background:transparent;border-color:transparent;color:transparent;}
+  .v-sel,.v-val{border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12.5px;
+    background:#fff;color:var(--text);font-family:'Krungsri-med';outline:none;height:33px;}
+  .v-sel:focus,.v-val:focus{border-color:var(--primary);}
+  .v-sel.field{flex:2;min-width:130px;}
+  .v-sel.op{width:88px;flex-shrink:0;}
+  .v-val{flex:2;min-width:110px;}
+  .btn-mini{border:1px dashed #C7CEDA;background:#fff;color:var(--text-secondary);border-radius:6px;
+    font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;font-family:'Krungsri-med';}
+  .btn-mini:hover{border-color:#8B5E3C;color:#8B5E3C;background:#FAF4EC;}
+  .btn-add-cond{width:100%;border:1.5px dashed #C7CEDA;background:transparent;color:var(--text-secondary);
+    border-radius:9px;padding:12px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:'Krungsri-med';}
+  .btn-add-cond:hover{border-color:#8B5E3C;color:#8B5E3C;background:#FAF4EC;}
+
+  /* ---- modal ดู Conditions จากหน้า list ---- */
+  .modal-box.wide{width:760px;max-height:86vh;display:flex;flex-direction:column;}
+  .modal-box.wide .modal-scroll{overflow-y:auto;margin:0 -4px 18px;padding:0 4px;}
+  .vtbl{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .vtbl th{font-size:12px;font-weight:700;color:#fff;background:var(--primary);padding:10px 12px;
+    text-align:left;border:1px solid #dedede;}
+  .vtbl td{padding:10px 12px;border:1px solid #dedede;vertical-align:top;color:var(--text);}
+  .vtbl td.no{text-align:center;color:var(--text-secondary);width:36px;}
+  .cond-code{font-family:Consolas,'Courier New',monospace;font-size:12px;}
+  .op-tag{color:#8B5E3C;font-weight:700;padding:0 2px;}
+  .expect-code{font-family:Consolas,'Courier New',monospace;font-size:12px;color:var(--success);font-weight:600;}
+  .modal-meta{font-size:12px;color:var(--text-secondary);margin:-8px 0 14px;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const { createApp, ref, reactive, computed } = Vue;
+
+function toggleDropdown(event, button) {
+  event.stopPropagation();
+  const currentMenu = button.nextElementSibling;
+  document.querySelectorAll('.dropdown-menu').forEach(menu => { if (menu !== currentMenu) menu.classList.remove('show'); });
+  currentMenu.classList.toggle('show');
+}
+document.addEventListener('click', function () {
+  document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.remove('show'));
+});
+
+createApp({
+  setup(){
+    /* Validation records live in the shared store, so a validation added here
+       is immediately selectable from a Workflow Config "Validation" box. */
+    const validations = MCRM.db.validations;
+    const FIELDS = MCRM.VALIDATION_FIELDS;
+    const OPS = MCRM.VALIDATION_OPS;
+    const valuesOf = code => MCRM.validationFieldValues(code);
+
+    /* ---- list / editor navigation ---- */
+    const pageView = ref('list');
+    const cur = reactive({ validation_id:'', validation_name:'', description:'', create_date:'', update_date:'', update_by:'', conditions:[] });
+    const isNew = ref(false);
+
+    function nextValidationId(){
+      const nums = validations.map(v => parseInt(String(v.validation_id).replace(/\D/g,''), 10)).filter(n => !isNaN(n));
+      return 'V' + String((nums.length ? Math.max(...nums) : 0) + 1).padStart(5,'0');
+    }
+    function openEditor(id){
+      const src = validations.find(v => v.validation_id === id);
+      isNew.value = !src;
+      const base = src
+        ? JSON.parse(JSON.stringify(src))
+        : { validation_id: nextValidationId(), validation_name:'', description:'',
+            create_date: MCRM.nowStr(), update_date: MCRM.nowStr(), update_by:'PRASERT.L', conditions:[] };
+      Object.assign(cur, base);
+      pageView.value = 'editor';
+    }
+    function backToList(){ pageView.value = 'list'; }
+
+    /* ---- condition / criteria editing ---- */
+    const blankCriteria = () => ({ field: FIELDS[0].code, op:'=', value:'' });
+    const blankCondition = () => ({ criteria:[blankCriteria()], expected:{ field:'SOL_INT_RATE', op:'=', value:'' } });
+
+    function addCondition(){ cur.conditions.push(blankCondition()); }
+    function removeCondition(ci){ cur.conditions.splice(ci,1); }
+    function duplicateCondition(ci){ cur.conditions.splice(ci+1, 0, JSON.parse(JSON.stringify(cur.conditions[ci]))); }
+    function addCriteria(cond){ cond.criteria.push(blankCriteria()); }
+    function removeCriteria(cond, ki){
+      cond.criteria.splice(ki,1);
+      if (!cond.criteria.length) cond.criteria.push(blankCriteria());
+    }
+    /* field เปลี่ยน -> ชุดค่าที่เลือกได้เปลี่ยนตาม ค่าเดิมจึงใช้ไม่ได้แล้ว */
+    function onFieldChange(c){ c.value = ''; }
+
+    const conditionText = cond => MCRM.conditionText(cond);
+    function condSummary(cond){
+      const e = cond.expected || {};
+      return `${MCRM.conditionText(cond)}  →  Expected ${e.field||'-'} ${e.op||''} ${e.value||''}`;
+    }
+
+    /* ---- save ---- */
+    function saveValidation(){
+      if (!cur.validation_name.trim()){ showToast('กรุณาระบุชื่อ Validation', false); return; }
+      if (!cur.conditions.length){ showToast('กรุณาเพิ่ม Condition อย่างน้อย 1 รายการ', false); return; }
+      const bad = cur.conditions.findIndex(c => !c.expected.field || c.expected.value === '');
+      if (bad >= 0){ showToast(`Condition #${bad+1} ยังไม่ได้ระบุ Expected Result`, false); return; }
+
+      cur.update_date = MCRM.nowStr();
+      cur.update_by = 'PRASERT.L';
+      if (isNew.value) cur.create_date = MCRM.nowStr();
+
+      const record = JSON.parse(JSON.stringify(cur));
+      const idx = validations.findIndex(v => v.validation_id === cur.validation_id);
+      if (idx >= 0) validations[idx] = record; else validations.push(record);
+      isNew.value = false;
+      showToast(`บันทึก ${cur.validation_id} เรียบร้อย`);
+      pageView.value = 'list';
+    }
+
+    /* ---- view / delete from the list ---- */
+    const viewModal = ref(null);
+    function viewValidation(v){ viewModal.value = v; }
+    const confirmDelete = ref(null);
+    function askDelete(v){ confirmDelete.value = v; }
+    function confirmDeleteYes(){
+      const v = confirmDelete.value;
+      validations.splice(validations.findIndex(x => x === v), 1);
+      confirmDelete.value = null;
+      showToast(`ลบ ${v.validation_id} แล้ว`);
+    }
+
+    const toast = reactive({ show:false, msg:'', ok:true });
+    let toastTimer = null;
+    function showToast(msg, ok=true){ toast.msg=msg; toast.ok=ok; toast.show=true; clearTimeout(toastTimer); toastTimer=setTimeout(()=>toast.show=false,2600); }
+
+    return {
+      validations, FIELDS, OPS, valuesOf,
+      pageView, cur, isNew, openEditor, backToList,
+      addCondition, removeCondition, duplicateCondition, addCriteria, removeCriteria, onFieldChange,
+      conditionText, condSummary, saveValidation,
+      viewModal, viewValidation, confirmDelete, askDelete, confirmDeleteYes,
+      toast,
+    };
+  },
+  template: `
+  <div id="app">
+
+    <!-- ================= LIST ================= -->
+    <div class="layout single" v-if="pageView==='list'">
+      <section class="panel">
+        <div class="panel-head">
+          <div><div class="panel-title-row"><h2>Validation Setup</h2></div>
+            <p class="desc">1 Validation เก็บได้หลาย Condition — แต่ละ Condition มี Expected Result ของตัวเอง</p>
+          </div>
+          <button class="btn btn-primary" @click="openEditor('')">+ New Validation</button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table" v-if="validations.length">
+            <thead>
+              <tr>
+                <th style="width:130px">Validation ID</th>
+                <th>Validation Name</th>
+                <th style="width:130px">Conditions</th>
+                <th style="width:165px">Create Date</th>
+                <th style="width:165px">Update Date</th>
+                <th style="width:130px">Update By</th>
+                <th style="width:70px"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="v in validations" :key="v.validation_id">
+                <td><span class="v-id">{{ v.validation_id }}</span></td>
+                <td class="name-cell"><strong>{{ v.validation_name }}</strong><span>{{ v.description }}</span></td>
+                <td><span class="v-count-pill">{{ v.conditions.length }} condition{{ v.conditions.length>1?'s':'' }}</span></td>
+                <td>{{ v.create_date }}</td>
+                <td>{{ v.update_date }}</td>
+                <td>{{ v.update_by }}</td>
+                <td>
+                  <div class="dropdown-container">
+                    <button class="btn-dots" onclick="toggleDropdown(event, this)">⋮</button>
+                    <div class="dropdown-menu">
+                      <button @click="viewValidation(v)">View</button>
+                      <button @click="openEditor(v.validation_id)">Edit</button>
+                      <button @click="askDelete(v)">Delete</button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div v-else class="empty-state">
+            <div class="glyph"></div>
+            <h3>ยังไม่มี Validation ในระบบ</h3>
+            <p>สร้าง Validation แรกเพื่อใช้ตรวจสอบผลลัพธ์ใน Workflow</p>
+            <button class="btn btn-primary" style="margin-top:12px" @click="openEditor('')">+ New Validation</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ================= EDITOR ================= -->
+    <div class="layout single" v-else>
+      <section class="panel">
+        <div class="panel-head">
+          <div><div class="panel-title-row">
+            <h2>{{ isNew ? 'New Validation' : 'Edit Validation' }}</h2>
+            <span class="type-badge">{{ cur.validation_id }}</span>
+          </div>
+          <p class="desc" v-if="!isNew">Update ล่าสุด {{ cur.update_date }} โดย {{ cur.update_by }}</p>
+          </div>
+        </div>
+
+        <div class="v-editbar">
+          <div class="filter-field grow">
+            <label>Validation Name</label>
+            <input type="text" v-model="cur.validation_name" placeholder="เช่น Validation ตรวจสอบดอกเบี้ย">
+          </div>
+          <div class="filter-field grow">
+            <label>Description</label>
+            <input type="text" v-model="cur.description" placeholder="คำอธิบายเพิ่มเติม">
+          </div>
+          <span class="right">
+            <button class="btn btn-ghost" @click="backToList">Back</button>
+            <button class="btn btn-primary" @click="saveValidation">Save</button>
+          </span>
+        </div>
+
+        <div class="cond-sec-head">
+          <h3>Conditions</h3>
+          <span>แต่ละ Condition = เงื่อนไข (IF) ที่ต้องเป็นจริงทุกข้อ + ผลลัพธ์ที่คาดหวัง (THEN)</span>
+        </div>
+
+        <div class="cond-wrap">
+          <div class="cond-card" v-for="(cond,ci) in cur.conditions" :key="ci">
+            <div class="cond-card-head">
+              <span class="cond-no">Condition #{{ ci+1 }}</span>
+              <span class="cond-summary" :title="condSummary(cond)">{{ condSummary(cond) }}</span>
+              <button class="btn-mini" @click="duplicateCondition(ci)">Duplicate</button>
+              <button class="btn-x" title="ลบ Condition" @click="removeCondition(ci)">&times;</button>
+            </div>
+
+            <div class="cond-block">
+              <div class="cond-block-lbl">IF — เงื่อนไข (ทุกข้อต้องเป็นจริง)</div>
+              <div class="crit-row" v-for="(c,ki) in cond.criteria" :key="ki">
+                <span class="crit-and" :class="{blank: ki===0}">{{ ki ? 'และ' : 'IF' }}</span>
+                <select class="v-sel field" v-model="c.field" @change="onFieldChange(c)">
+                  <option v-for="f in FIELDS" :key="f.code" :value="f.code">{{ f.code }}</option>
+                </select>
+                <select class="v-sel op" v-model="c.op">
+                  <option v-for="o in OPS" :key="o" :value="o">{{ o }}</option>
+                </select>
+                <select class="v-sel v-val" v-if="valuesOf(c.field).length" v-model="c.value">
+                  <option value="">-- Select Value --</option>
+                  <option v-for="val in valuesOf(c.field)" :key="val" :value="val">{{ val }}</option>
+                  <option v-if="c.value && !valuesOf(c.field).includes(c.value)" :value="c.value">{{ c.value }}</option>
+                </select>
+                <input class="v-val" v-else v-model="c.value" placeholder="Value">
+                <button class="btn-x" title="ลบเงื่อนไข" @click="removeCriteria(cond,ki)">&times;</button>
+              </div>
+              <button class="btn-mini" style="margin-top:6px" @click="addCriteria(cond)">+ Add Criteria</button>
+            </div>
+
+            <div class="cond-block expect">
+              <div class="cond-block-lbl">THEN — Expected Result</div>
+              <div class="crit-row">
+                <span class="crit-and blank">.</span>
+                <select class="v-sel field" v-model="cond.expected.field" @change="onFieldChange(cond.expected)">
+                  <option v-for="f in FIELDS" :key="f.code" :value="f.code">{{ f.code }}</option>
+                </select>
+                <select class="v-sel op" v-model="cond.expected.op">
+                  <option v-for="o in OPS" :key="o" :value="o">{{ o }}</option>
+                </select>
+                <select class="v-sel v-val" v-if="valuesOf(cond.expected.field).length" v-model="cond.expected.value">
+                  <option value="">-- Select Value --</option>
+                  <option v-for="val in valuesOf(cond.expected.field)" :key="val" :value="val">{{ val }}</option>
+                  <option v-if="cond.expected.value && !valuesOf(cond.expected.field).includes(cond.expected.value)" :value="cond.expected.value">{{ cond.expected.value }}</option>
+                </select>
+                <input class="v-val" v-else v-model="cond.expected.value" placeholder="Value">
+                <span style="width:30px"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="empty-state" v-if="!cur.conditions.length" style="padding:36px 20px">
+            <div class="glyph"></div>
+            <h3>ยังไม่มี Condition</h3>
+            <p>กด "+ Add Condition" เพื่อเพิ่มเงื่อนไขแรก</p>
+          </div>
+
+          <button class="btn-add-cond" @click="addCondition">+ Add Condition</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- ================= VIEW MODAL ================= -->
+    <div class="modal-overlay" v-if="viewModal" @click.self="viewModal=null">
+      <div class="modal-box wide">
+        <h3>{{ viewModal.validation_name }}</h3>
+        <div class="modal-meta">
+          <b class="v-id">{{ viewModal.validation_id }}</b> · {{ viewModal.description || '-' }}
+          · Update {{ viewModal.update_date }} by {{ viewModal.update_by }}
+        </div>
+        <div class="modal-scroll">
+          <table class="vtbl">
+            <thead><tr><th style="width:36px">#</th><th>Condition</th><th style="width:210px">Expected Result</th></tr></thead>
+            <tbody>
+              <tr v-for="(c,i) in viewModal.conditions" :key="i">
+                <td class="no">{{ i+1 }}</td>
+                <td class="cond-code">
+                  <template v-for="(x,k) in c.criteria" :key="k"><span class="op-tag" v-if="k"> และ </span>{{ x.field }} <span class="op-tag">{{ x.op }}</span> {{ x.value }}</template>
+                </td>
+                <td class="expect-code">{{ c.expected.field }} {{ c.expected.op }} {{ c.expected.value }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-actions"><button class="btn btn-primary" @click="viewModal=null">Close</button></div>
+      </div>
+    </div>
+
+    <!-- ================= DELETE CONFIRM ================= -->
+    <div class="modal-overlay" v-if="confirmDelete" @click.self="confirmDelete=null">
+      <div class="modal-box">
+        <h3>ลบ Validation นี้ใช่หรือไม่?</h3>
+        <p>คุณกำลังจะลบ <strong>{{ confirmDelete.validation_name }}</strong> ({{ confirmDelete.validation_id }}) พร้อม {{ confirmDelete.conditions.length }} condition</p>
+        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmDelete=null">ยกเลิก</button><button class="btn btn-danger" @click="confirmDeleteYes">ยืนยันลบ</button></div>
+      </div>
+    </div>
+
+    <div class="toast" v-if="toast.show"><span class="tick">{{ toast.ok ? '✓' : '!' }}</span> {{ toast.msg }}</div>
+  </div>
+  `
+}).mount('#app');
+
+</script>
+</body>
+</html>
