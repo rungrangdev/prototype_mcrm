@@ -1,0 +1,588 @@
+<link rel="stylesheet" href="main.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+/* ===================== Validation Setup ===================== */
+@font-face{
+  font-family:"Krungsri-med";
+  font-style:normal;font-weight:normal;
+  src:url("./font/krungsri_con-webfont.ttf") format("truetype");
+}
+
+.vpage{padding:20px}
+.vpage h3{margin:0 0 14px}
+
+/* ---- ตารางรายการ Validation ---- */
+.v-count-pill{
+  display:inline-block;font-size:11px;font-weight:700;color:#0E9F6E;
+  background:#E4F7EF;border:1px solid #BDEBD8;border-radius:999px;padding:2px 10px;
+}
+.v-id{font-family:Consolas,'Courier New',monospace;font-weight:700;color:#5B4F4B}
+
+/* ---- topbar ของหน้าแก้ไข ---- */
+.v-topbar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:#FFFFFF;border:1px solid #E4E7EF;border-radius:10px;
+  padding:12px 16px;margin-bottom:14px;
+}
+.v-topbar label{font-size:12px;font-weight:700;color:#6B7280;letter-spacing:.3px}
+.v-input{
+  border:1px solid #E4DED7;border-radius:7px;padding:0 12px;font-size:13px;
+  color:#3D3835;background:#FFFFFF;height:36px;font-family:inherit;outline:none;
+}
+.v-input:focus{border-color:#8B5E3C}
+.v-input[readonly]{background:#F4F5F7;color:#6B7280}
+.v-topbar .v-right{margin-left:auto;display:flex;gap:8px}
+
+.btn-back{
+  background:#FFFFFF;color:#374151;border:1px solid #E4E7EF;border-radius:7px;
+  padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;
+}
+.btn-back:hover{background:#F0F2F8}
+
+/* ---- การ์ด Condition ---- */
+.cond-head-row{
+  display:flex;align-items:center;gap:10px;margin:18px 0 10px;
+}
+.cond-head-row .sec-title{font-size:14px;font-weight:700;color:#1E2433}
+.cond-head-row .sec-sub{font-size:11.5px;color:#9AA2B1}
+
+.cond-card{
+  background:#FFFFFF;border:1px solid #E4E7EF;border-left:4px solid #8B5E3C;
+  border-radius:10px;padding:12px 14px;margin-bottom:10px;
+  box-shadow:0 1px 3px rgba(20,30,60,.06);
+}
+.cond-card-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.cond-no{
+  font-size:11px;font-weight:700;color:#6B7280;background:#F0F2F8;
+  border-radius:6px;padding:2px 9px;
+}
+.cond-summary{
+  font-size:11.5px;color:#6B7280;font-family:Consolas,'Courier New',monospace;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;
+}
+.btn-x{
+  border:none;background:none;cursor:pointer;color:#B4ACA5;font-size:18px;
+  line-height:1;padding:0 6px;border-radius:6px;flex-shrink:0;
+}
+.btn-x:hover{background:#FDE8E8;color:#DC2626}
+
+.cond-block{border:1px solid #EAEDF4;border-radius:8px;padding:9px 10px;background:#FBFCFE}
+.cond-block + .cond-block{margin-top:8px}
+.cond-block-lbl{
+  font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+  color:#9AA2B1;margin-bottom:7px;display:flex;align-items:center;gap:6px;
+}
+.cond-block.expect{background:#F4FBF7;border-color:#CFEADD}
+.cond-block.expect .cond-block-lbl{color:#0E9F6E}
+
+.crit-row{display:flex;align-items:center;gap:7px;margin-bottom:6px;max-width:900px}
+.crit-row:last-child{margin-bottom:0}
+.crit-and{
+  font-size:10px;font-weight:700;color:#8B5E3C;background:#FAF4EC;border:1px solid #E7D7C4;
+  border-radius:5px;padding:2px 7px;width:44px;text-align:center;flex-shrink:0;
+}
+.crit-and.blank{background:transparent;border-color:transparent;color:transparent}
+.v-sel,.v-val{
+  border:1px solid #E4DED7 !important;border-radius:6px;padding:5px 8px;font-size:12px;
+  background:#FFFFFF;color:#3D3835;font-family:inherit;outline:none;height:32px;
+}
+.v-sel.field{flex:2;min-width:120px}
+.v-sel.op{width:82px;flex-shrink:0}
+.v-val{flex:2;min-width:100px}
+.btn-mini{
+  border:1px dashed #C7CEDA;background:#FFFFFF;color:#6B7280;border-radius:6px;
+  font-size:11.5px;font-weight:600;padding:5px 11px;cursor:pointer;font-family:inherit;
+}
+.btn-mini:hover{border-color:#8B5E3C;color:#8B5E3C;background:#FAF4EC}
+.btn-add-cond{
+  width:100%;border:1.5px dashed #C7CEDA;background:transparent;color:#6B7280;
+  border-radius:9px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;
+}
+.btn-add-cond:hover{border-color:#8B5E3C;color:#8B5E3C;background:#FAF4EC}
+
+.v-empty{
+  padding:26px 12px;font-size:12.5px;color:#9AA2B1;text-align:center;
+  border:1px dashed #E4E7EF;border-radius:10px;background:#FBFCFE;margin-bottom:10px;
+}
+
+/* ---- modal ดู Conditions จากหน้า list ---- */
+.vmodal-bg{position:fixed;inset:0;background:rgba(30,36,51,.55);display:none;
+  align-items:center;justify-content:center;z-index:2000}
+.vmodal-bg.open{display:flex}
+.vmodal{background:#fff;border-radius:10px;border:1px solid #E4E7EF;width:760px;max-width:96%;
+  max-height:88%;display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 12px 40px rgba(20,30,60,.22);font-family:'Krungsri-med',sans-serif;font-size:13px;color:#1E2433}
+.vmodal-head{padding:14px 18px;border-bottom:1px solid #EAEDF4;display:flex;
+  align-items:center;justify-content:space-between;flex-shrink:0}
+.vmodal-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:7px}
+.vmodal-close{border:none;background:none;cursor:pointer;font-size:22px;color:#9AA2B1;padding:0 4px;border-radius:6px;line-height:1}
+.vmodal-close:hover{background:#F0F2F8;color:#1E2433}
+.vmodal-body{padding:16px 18px;overflow-y:auto}
+.vmodal-foot{padding:11px 18px;border-top:1px solid #EAEDF4;display:flex;justify-content:flex-end;gap:8px;flex-shrink:0}
+
+.vtbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.vtbl th{font-size:11.5px;font-weight:600;color:#fff;background:#6B7280;padding:9px 10px;
+  border-right:1px solid rgba(255,255,255,.14);text-align:left}
+.vtbl th:last-child{border-right:none}
+.vtbl td{padding:9px 10px;border-bottom:1px solid #F0F2F8;color:#1E2433;vertical-align:top}
+.vtbl td:nth-child(1){text-align:center;color:#9AA2B1;font-size:11px;width:34px}
+.vtbl tr:last-child td{border-bottom:none}
+.cond-code{font-family:Consolas,'Courier New',monospace;font-size:12px}
+.op-tag{color:#8B5E3C;font-weight:700;padding:0 2px}
+.expect-code{font-family:Consolas,'Courier New',monospace;font-size:12px;color:#0E9F6E;font-weight:600}
+
+.output-panel2{
+  background:#1F2937;border-radius:10px;padding:14px 16px;margin-top:16px;display:none;
+}
+.output-panel2.show{display:block}
+.output-panel2 h3{margin:0 0 8px;color:#E5E7EB;font-size:13px}
+.output-panel2 pre{margin:0;color:#A7F3D0;font-size:11.5px;max-height:320px;overflow:auto;white-space:pre-wrap}
+</style>
+
+<!-- ================= LIST ================= -->
+<div id="validation_table" class="vpage" style="display:block">
+  <h3>Validation Setup</h3>
+  <div align="right" style="margin-bottom:10px">
+    <button class="btn-run" onclick="openEditor('')">+ New Validation</button>
+  </div>
+  <table id="list_flow_table" width="100%">
+    <thead>
+      <tr>
+        <th>Validation ID</th>
+        <th>Validation Name</th>
+        <th>Conditions</th>
+        <th>Create Date</th>
+        <th>Update Date</th>
+        <th>Update By</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- ================= EDITOR ================= -->
+<div id="validation_area" class="vpage" style="display:none">
+  <div class="v-topbar">
+    <label>Validation ID</label>
+    <input class="v-input v-id" id="vId" style="width:120px" readonly>
+    <label>Validation Name</label>
+    <input class="v-input" id="vName" style="width:320px" placeholder="เช่น Validation ตรวจสอบดอกเบี้ย">
+    <label>Description</label>
+    <input class="v-input" id="vDesc" style="width:280px" placeholder="คำอธิบายเพิ่มเติม">
+    <span class="v-right">
+      <button class="btn-back" onclick="backToList()">Back</button>
+      <button class="btn-submit" onclick="saveValidation()">Save</button>
+    </span>
+  </div>
+
+  <div class="cond-head-row">
+    <span class="sec-title">Conditions</span>
+    <span class="sec-sub">1 Validation เก็บได้หลาย Condition — แต่ละ Condition มี Expected Result ของตัวเอง</span>
+  </div>
+
+  <div id="condWrap"></div>
+  <button class="btn-add-cond" onclick="addCondition()">+ Add Condition</button>
+
+  <div class="output-panel2" id="outputPanel">
+    <h3>Payload</h3>
+    <pre id="outputPre"></pre>
+  </div>
+</div>
+
+<!-- ================= VIEW MODAL ================= -->
+<div class="vmodal-bg" id="vView" onclick="if(event.target===this)closeView()">
+  <div class="vmodal">
+    <div class="vmodal-head">
+      <span class="vmodal-title">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7.4l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Validation Detail — <span id="vvName">-</span>
+      </span>
+      <button class="vmodal-close" onclick="closeView()">&times;</button>
+    </div>
+    <div class="vmodal-body" id="vvBody"></div>
+    <div class="vmodal-foot">
+      <button class="btn-run" onclick="closeView()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   Validation Setup — เพิ่ม / ลบ / แก้ไข Validation List
+   1 Validation เก็บได้หลาย Condition, แต่ละ Condition มี Expected Result
+   ========================================================= */
+
+/* ---- พจนานุกรม field ที่ใช้ประกอบเงื่อนไข ---- */
+const V_FIELDS = [
+  { code:'TYPE_PA_PU',       values:['PA','PU'] },
+  { code:'B_SCORE',          values:['A','B','C','D','E'] },
+  { code:'ENTITY',           values:['KA','AY'] },
+  { code:'PROGRAM',          values:['TOPUP','REVOLVING_LOAN','PRE_APPROVE_R','PRE_APPROVE_NU','PRE_APPROVE_MC'] },
+  { code:'PRODUCT_BASE',     values:['New','Used','Refin Topup','Refin Non Topup','AL'] },
+  { code:'REGION',           values:['BKK','UPC'] },
+  { code:'MODEL_TYPE_GROUP', values:['PAL','PU','PUPA','PAM','PAS','SUV'] },
+  { code:'CAR_AGE',          values:[] },
+  { code:'SOL_INT_RATE',     values:[] },
+  { code:'MAX_LTV',          values:[] },
+  { code:'CREDIT_LINE',      values:[] },
+  { code:'CASH_OFFER',       values:[] },
+  { code:'X_INSTALLMENT',    values:[] },
+  { code:'FLAT_RATE',        values:[] },
+  { code:'FLAG_PROGRAM',     values:['Y','N'] }
+];
+const V_OPS = ['=','!=','>','>=','<','<=','IN','NOT IN'];
+const fieldOf = code => V_FIELDS.find(f=>f.code===code);
+
+/* ---- ข้อมูลตัวอย่าง ---- */
+let VALIDATIONS = [
+  {
+    validation_id:'V00001',
+    validation_name:'Validation ตรวจสอบดอกเบี้ย',
+    description:'ตรวจสอบอัตราดอกเบี้ยที่ระบบคำนวณให้ตรงกับตาราง TYPE_PA_PU x B_SCORE',
+    create_date:'01/10/2024 09:00', update_date:'08/22/2025 14:20', update_by:'PRASERT.L',
+    conditions:[
+      { criteria:[{field:'TYPE_PA_PU',op:'=',value:'PA'},{field:'B_SCORE',op:'=',value:'A'}], expected:{field:'SOL_INT_RATE',op:'=',value:'6.5'} },
+      { criteria:[{field:'TYPE_PA_PU',op:'=',value:'PA'},{field:'B_SCORE',op:'=',value:'B'}], expected:{field:'SOL_INT_RATE',op:'=',value:'6.5'} },
+      { criteria:[{field:'TYPE_PA_PU',op:'=',value:'PA'},{field:'B_SCORE',op:'=',value:'C'}], expected:{field:'SOL_INT_RATE',op:'=',value:'8'} },
+      { criteria:[{field:'TYPE_PA_PU',op:'=',value:'PU'},{field:'B_SCORE',op:'=',value:'A'}], expected:{field:'SOL_INT_RATE',op:'=',value:'7.5'} },
+      { criteria:[{field:'TYPE_PA_PU',op:'=',value:'PU'},{field:'B_SCORE',op:'=',value:'B'}], expected:{field:'SOL_INT_RATE',op:'=',value:'7.5'} }
+    ]
+  },
+  {
+    validation_id:'V00002',
+    validation_name:'Validation ตรวจสอบวงเงิน Max LTV',
+    description:'ตรวจสอบ Max LTV ตามกลุ่มรุ่นรถและอายุรถ',
+    create_date:'01/15/2024 10:30', update_date:'07/05/2025 11:05', update_by:'SOMCHAI.P',
+    conditions:[
+      { criteria:[{field:'MODEL_TYPE_GROUP',op:'=',value:'PAL'},{field:'CAR_AGE',op:'<=',value:'5'}], expected:{field:'MAX_LTV',op:'=',value:'100'} },
+      { criteria:[{field:'MODEL_TYPE_GROUP',op:'=',value:'PAL'},{field:'CAR_AGE',op:'>',value:'5'}],  expected:{field:'MAX_LTV',op:'=',value:'90'} },
+      { criteria:[{field:'MODEL_TYPE_GROUP',op:'=',value:'PU'},{field:'CAR_AGE',op:'<=',value:'5'}],  expected:{field:'MAX_LTV',op:'=',value:'95'} },
+      { criteria:[{field:'MODEL_TYPE_GROUP',op:'=',value:'SUV'}],                                     expected:{field:'MAX_LTV',op:'<=',value:'90'} }
+    ]
+  },
+  {
+    validation_id:'V00003',
+    validation_name:'Validation ตรวจสอบ Credit Line / Cash Offer',
+    description:'วงเงินที่เสนอต้องไม่เกิน Credit Line และต้องมากกว่าขั้นต่ำ',
+    create_date:'02/01/2024 08:45', update_date:'09/01/2025 16:40', update_by:'PRASERT.L',
+    conditions:[
+      { criteria:[{field:'PROGRAM',op:'=',value:'TOPUP'},{field:'B_SCORE',op:'IN',value:'A,B'}], expected:{field:'CREDIT_LINE',op:'>=',value:'50000'} },
+      { criteria:[{field:'PROGRAM',op:'=',value:'TOPUP'},{field:'B_SCORE',op:'=',value:'C'}],    expected:{field:'CREDIT_LINE',op:'>=',value:'30000'} },
+      { criteria:[{field:'PROGRAM',op:'=',value:'REVOLVING_LOAN'}],                              expected:{field:'CASH_OFFER',op:'>',value:'0'} }
+    ]
+  },
+  {
+    validation_id:'V00004',
+    validation_name:'Validation ตรวจสอบจำนวนงวด (X Installment)',
+    description:'จำนวนงวดที่เสนอต้องอยู่ในกรอบของแต่ละ Entity',
+    create_date:'02/20/2024 13:15', update_date:'06/18/2025 09:25', update_by:'WARUNEE.T',
+    conditions:[
+      { criteria:[{field:'ENTITY',op:'=',value:'KA'},{field:'PROGRAM',op:'=',value:'TOPUP'}], expected:{field:'X_INSTALLMENT',op:'<=',value:'84'} },
+      { criteria:[{field:'ENTITY',op:'=',value:'AY'},{field:'PROGRAM',op:'=',value:'TOPUP'}], expected:{field:'X_INSTALLMENT',op:'<=',value:'72'} }
+    ]
+  },
+  {
+    validation_id:'V00005',
+    validation_name:'Validation ตรวจสอบ Flag Program',
+    description:'ทุก Lead ที่ผ่านเกณฑ์ต้องถูก Flag Program เรียบร้อย',
+    create_date:'03/04/2024 15:00', update_date:'09/10/2025 10:10', update_by:'SOMCHAI.P',
+    conditions:[
+      { criteria:[{field:'PROGRAM',op:'=',value:'TOPUP'},{field:'CREDIT_LINE',op:'>',value:'0'}], expected:{field:'FLAG_PROGRAM',op:'=',value:'Y'} },
+      { criteria:[{field:'PROGRAM',op:'=',value:'PRE_APPROVE_NU'}],                                expected:{field:'FLAG_PROGRAM',op:'=',value:'Y'} }
+    ]
+  }
+];
+
+/* ---- state ของหน้าแก้ไข ---- */
+let cur = null;      // validation ที่กำลังแก้ไข (copy)
+let curIsNew = false;
+
+/* ============ helper ============ */
+function nowText(){
+  const d = new Date();
+  return d.toLocaleDateString('en-US') + ' ' + d.toTimeString().slice(0,5);
+}
+function nextValidationId(){
+  let max = 0;
+  VALIDATIONS.forEach(v=>{
+    const n = parseInt(String(v.validation_id).replace(/\D/g,''),10);
+    if(!isNaN(n) && n>max) max = n;
+  });
+  return 'V' + String(max+1).padStart(5,'0');
+}
+function esc(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function critText(c){ return `${c.field} ${c.op} ${c.value}`; }
+function condSummary(cond){
+  const left = (cond.criteria||[]).map(critText).join(' และ ') || '(ไม่มีเงื่อนไข)';
+  const e = cond.expected || {};
+  return `${left}  →  Expected ${e.field||'-'} ${e.op||''} ${e.value||''}`;
+}
+
+/* ============ LIST ============ */
+function showList(){
+  const tbody = document.querySelector('#list_flow_table tbody');
+  if(!VALIDATIONS.length){
+    tbody.innerHTML = `<tr><td colspan="7" align="center" style="padding:24px;color:#9AA2B1">ยังไม่มี Validation — กด "+ New Validation" เพื่อเริ่มสร้าง</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = VALIDATIONS.map(v=>`
+    <tr>
+      <td align="center"><span class="v-id">${esc(v.validation_id)}</span></td>
+      <td>${esc(v.validation_name)}<div style="font-size:11px;color:#9AA2B1">${esc(v.description)}</div></td>
+      <td align="center"><span class="v-count-pill">${v.conditions.length} condition${v.conditions.length>1?'s':''}</span></td>
+      <td align="center">${esc(v.create_date)}</td>
+      <td align="center">${esc(v.update_date)}</td>
+      <td align="center">${esc(v.update_by)}</td>
+      <td align="center">
+        <div class="dropdown-container">
+          <button class="btn-dots" onclick="toggleDropdown(event,this)">⋮</button>
+          <div class="dropdown-menu">
+            <button onclick="viewValidation('${v.validation_id}')">View</button>
+            <button onclick="openEditor('${v.validation_id}')">Edit</button>
+            <button onclick="deleteValidation('${v.validation_id}')">Delete</button>
+          </div>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function deleteValidation(id){
+  const v = VALIDATIONS.find(x=>x.validation_id===id);
+  if(!v) return;
+  Swal.fire({
+    title:'Delete Validation',
+    text:`ต้องการลบ "${v.validation_name}" ใช่หรือไม่ ?`,
+    icon:'warning', showCancelButton:true,
+    confirmButtonText:'Yes, delete it!', cancelButtonText:'Cancel'
+  }).then(r=>{
+    if(r.isConfirmed){
+      VALIDATIONS = VALIDATIONS.filter(x=>x.validation_id!==id);
+      showList();
+      Swal.fire('Deleted', 'ลบ Validation เรียบร้อย', 'success');
+    }
+  });
+}
+
+/* ============ VIEW MODAL ============ */
+function viewValidation(id){
+  const v = VALIDATIONS.find(x=>x.validation_id===id);
+  if(!v) return;
+  document.getElementById('vvName').textContent = v.validation_name;
+  document.getElementById('vvBody').innerHTML = `
+    <div style="font-size:11.5px;color:#6B7280;margin-bottom:10px">
+      <b class="v-id">${esc(v.validation_id)}</b> · ${esc(v.description||'-')}
+      · Update ${esc(v.update_date)} by ${esc(v.update_by)}
+    </div>
+    <table class="vtbl">
+      <thead><tr><th>#</th><th>Condition</th><th style="width:210px">Expected Result</th></tr></thead>
+      <tbody>
+        ${v.conditions.map((c,i)=>`
+          <tr>
+            <td>${i+1}</td>
+            <td class="cond-code">${(c.criteria||[]).map((x,k)=>
+                `${k?'<span class="op-tag"> และ </span>':''}${esc(x.field)} <span class="op-tag">${esc(x.op)}</span> ${esc(x.value)}`
+              ).join('') || '-'}</td>
+            <td class="expect-code">${esc(c.expected.field)} ${esc(c.expected.op)} ${esc(c.expected.value)}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+  document.getElementById('vView').classList.add('open');
+}
+function closeView(){ document.getElementById('vView').classList.remove('open'); }
+
+/* ============ EDITOR ============ */
+function openEditor(id){
+  const src = VALIDATIONS.find(x=>x.validation_id===id);
+  curIsNew = !src;
+  cur = src
+    ? JSON.parse(JSON.stringify(src))
+    : { validation_id: nextValidationId(), validation_name:'', description:'',
+        create_date: nowText(), update_date: nowText(), update_by:'PRASERT.L', conditions:[] };
+
+  document.getElementById('vId').value   = cur.validation_id;
+  document.getElementById('vName').value = cur.validation_name;
+  document.getElementById('vDesc').value = cur.description;
+  document.getElementById('outputPanel').classList.remove('show');
+
+  $('#validation_table').hide();
+  $('#validation_area').show();
+  renderConds();
+}
+
+function backToList(){
+  $('#validation_area').hide();
+  $('#validation_table').show();
+  showList();
+}
+
+function blankCriteria(){ return { field:V_FIELDS[0].code, op:'=', value:'' }; }
+function blankCondition(){
+  return { criteria:[blankCriteria()], expected:{ field:'SOL_INT_RATE', op:'=', value:'' } };
+}
+
+function addCondition(){
+  captureEditorHeader();
+  cur.conditions.push(blankCondition());
+  renderConds();
+}
+function removeCondition(ci){
+  captureEditorHeader();
+  cur.conditions.splice(ci,1);
+  renderConds();
+}
+function addCriteria(ci){
+  captureEditorHeader();
+  cur.conditions[ci].criteria.push(blankCriteria());
+  renderConds();
+}
+function removeCriteria(ci,ki){
+  captureEditorHeader();
+  cur.conditions[ci].criteria.splice(ki,1);
+  if(!cur.conditions[ci].criteria.length) cur.conditions[ci].criteria.push(blankCriteria());
+  renderConds();
+}
+function copyCondition(ci){
+  captureEditorHeader();
+  cur.conditions.splice(ci+1,0,JSON.parse(JSON.stringify(cur.conditions[ci])));
+  renderConds();
+}
+
+/* เก็บค่าที่พิมพ์ค้างไว้บน topbar ก่อน re-render */
+function captureEditorHeader(){
+  if(!cur) return;
+  cur.validation_name = document.getElementById('vName').value;
+  cur.description     = document.getElementById('vDesc').value;
+}
+
+/* onchange ของ field/op/value */
+function setCrit(ci,ki,key,val){
+  const c = cur.conditions[ci].criteria[ki];
+  c[key] = val;
+  if(key==='field') c.value = '';   // เปลี่ยน field -> ชุดค่าเปลี่ยน
+  renderConds();
+}
+function setExpect(ci,key,val){
+  const e = cur.conditions[ci].expected;
+  e[key] = val;
+  if(key==='field') e.value = '';
+  renderConds();
+}
+
+/* control สำหรับ value : ถ้า field มีชุดค่าให้เลือก -> select, ไม่งั้นพิมพ์เอง */
+function valueControlHTML(field, value, onchangeJs){
+  const f = fieldOf(field);
+  if(f && f.values.length){
+    return `<select class="v-sel v-val" onchange="${onchangeJs}">
+              <option value="">-- Select Value --</option>
+              ${f.values.map(v=>`<option value="${esc(v)}"${v===value?' selected':''}>${esc(v)}</option>`).join('')}
+              ${(value && !f.values.includes(value)) ? `<option value="${esc(value)}" selected>${esc(value)}</option>` : ''}
+            </select>`;
+  }
+  return `<input class="v-val" value="${esc(value)}" placeholder="Value" onchange="${onchangeJs}">`;
+}
+
+function fieldSelectHTML(selected, onchangeJs){
+  return `<select class="v-sel field" onchange="${onchangeJs}">
+            ${V_FIELDS.map(f=>`<option value="${f.code}"${f.code===selected?' selected':''}>${f.code}</option>`).join('')}
+          </select>`;
+}
+function opSelectHTML(selected, onchangeJs){
+  return `<select class="v-sel op" onchange="${onchangeJs}">
+            ${V_OPS.map(o=>`<option value="${esc(o)}"${o===selected?' selected':''}>${esc(o)}</option>`).join('')}
+          </select>`;
+}
+
+function renderConds(){
+  const wrap = document.getElementById('condWrap');
+  if(!cur.conditions.length){
+    wrap.innerHTML = `<div class="v-empty">ยังไม่มี Condition — กด "+ Add Condition" เพื่อเพิ่มเงื่อนไขแรก</div>`;
+    return;
+  }
+  wrap.innerHTML = cur.conditions.map((cond,ci)=>`
+    <div class="cond-card">
+      <div class="cond-card-head">
+        <span class="cond-no">Condition #${ci+1}</span>
+        <span class="cond-summary" title="${esc(condSummary(cond))}">${esc(condSummary(cond))}</span>
+        <button class="btn-mini" onclick="copyCondition(${ci})">Duplicate</button>
+        <button class="btn-x" title="ลบ Condition" onclick="removeCondition(${ci})">&times;</button>
+      </div>
+
+      <div class="cond-block">
+        <div class="cond-block-lbl">IF — เงื่อนไข (ทุกข้อต้องเป็นจริง)</div>
+        ${cond.criteria.map((c,ki)=>`
+          <div class="crit-row">
+            <span class="crit-and ${ki?'':'blank'}">${ki?'และ':'IF'}</span>
+            ${fieldSelectHTML(c.field, `setCrit(${ci},${ki},'field',this.value)`)}
+            ${opSelectHTML(c.op, `setCrit(${ci},${ki},'op',this.value)`)}
+            ${valueControlHTML(c.field, c.value, `setCrit(${ci},${ki},'value',this.value)`)}
+            <button class="btn-x" title="ลบเงื่อนไข" onclick="removeCriteria(${ci},${ki})">&times;</button>
+          </div>`).join('')}
+        <button class="btn-mini" style="margin-top:6px" onclick="addCriteria(${ci})">+ Add Criteria</button>
+      </div>
+
+      <div class="cond-block expect">
+        <div class="cond-block-lbl">THEN — Expected Result</div>
+        <div class="crit-row">
+          <span class="crit-and blank">.</span>
+          ${fieldSelectHTML(cond.expected.field, `setExpect(${ci},'field',this.value)`)}
+          ${opSelectHTML(cond.expected.op, `setExpect(${ci},'op',this.value)`)}
+          ${valueControlHTML(cond.expected.field, cond.expected.value, `setExpect(${ci},'value',this.value)`)}
+          <span style="width:30px"></span>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+/* ============ SAVE ============ */
+function saveValidation(){
+  captureEditorHeader();
+
+  if(!cur.validation_name.trim()){
+    return Swal.fire('Validation Name required','กรุณาระบุชื่อ Validation','warning');
+  }
+  if(!cur.conditions.length){
+    return Swal.fire('Condition required','กรุณาเพิ่ม Condition อย่างน้อย 1 รายการ','warning');
+  }
+  const bad = cur.conditions.findIndex(c=>!c.expected.field || c.expected.value==='');
+  if(bad>=0){
+    return Swal.fire('Expected Result required',`Condition #${bad+1} ยังไม่ได้ระบุ Expected Result`,'warning');
+  }
+
+  cur.update_date = nowText();
+  cur.update_by   = 'PRASERT.L';
+  if(curIsNew){
+    cur.create_date = nowText();
+    VALIDATIONS.push(JSON.parse(JSON.stringify(cur)));
+  }else{
+    const i = VALIDATIONS.findIndex(x=>x.validation_id===cur.validation_id);
+    if(i>=0) VALIDATIONS[i] = JSON.parse(JSON.stringify(cur));
+  }
+  curIsNew = false;
+
+  document.getElementById('outputPre').textContent = JSON.stringify(cur,null,4);
+  document.getElementById('outputPanel').classList.add('show');
+
+  Swal.fire({icon:'success',title:'Saved',text:`บันทึก ${cur.validation_id} เรียบร้อย`,timer:1400,showConfirmButton:false})
+    .then(()=>backToList());
+}
+
+/* ============ dropdown ⋮ ============ */
+function toggleDropdown(event, button){
+  event.stopPropagation();
+  const currentMenu = button.nextElementSibling;
+  document.querySelectorAll('.dropdown-menu').forEach(m=>{ if(m!==currentMenu) m.classList.remove('show'); });
+  currentMenu.classList.toggle('show');
+}
+document.addEventListener('click', function(){
+  document.querySelectorAll('.dropdown-menu').forEach(m=>m.classList.remove('show'));
+});
+
+/* ready */
+showList();
+</script>

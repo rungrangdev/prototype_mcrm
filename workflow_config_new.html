@@ -18,6 +18,10 @@
   border-top:5px solid #6B7280;   /* เทา */
   background:#F4F5F7;
 }
+.step-box.cat-validation{
+  border-top:5px solid #2F9E68;   /* เขียว */
+  background:#F1FAF5;
+}
 
 /* ป้ายบอก Category มุมกล่อง */
 .cat-tag{
@@ -27,6 +31,7 @@
 .cat-tag.cat-eligible{background:#8B5E3C}
 .cat-tag.cat-parameter{background:#D9A404}
 .cat-tag.cat-profile{background:#6B7280}
+.cat-tag.cat-validation{background:#2F9E68}
 
 /* ===== ทำให้กล่อง step กระชับขึ้น ===== */
 .canvas .step-box{padding:8px 12px 10px}
@@ -151,6 +156,24 @@
 .param-dd .dd-opt:hover{background:#FDF9E7}
 .param-dd .dd-opt input{accent-color:#D9A404;width:13px;height:13px;flex-shrink:0}
 .param-dd .dd-empty{padding:11px;font-size:11.5px;color:#B4ACA5;font-style:italic}
+
+/* ===== Validation box: multi-select Validation Code ===== */
+.valid-tag-field{
+  display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-height:32px;
+  border:1px solid #E4DED7;border-radius:7px;padding:5px 8px;background:#fff;cursor:pointer;
+}
+.valid-tag-field:hover{border-color:#2F9E68}
+.valid-chip{
+  display:inline-flex;align-items:center;gap:4px;background:#E9F7F0;border:1px solid #BDEBD8;
+  border-radius:6px;padding:2px 7px;font-size:11px;color:#187A4E;font-weight:600;max-width:170px;
+}
+.valid-chip span.vctxt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.valid-chip-x{cursor:pointer;color:#8FB7A3;font-size:10px;line-height:1;flex-shrink:0}
+.valid-chip-x:hover{color:#D64C4C}
+.valid-ph{font-size:11.5px;color:#B4ACA5}
+.valid-dd .dd-opt:hover{background:#F1FAF5}
+.valid-dd .dd-opt input{accent-color:#2F9E68}
+.valid-dd .dd-code{font-family:Consolas,'Courier New',monospace;font-size:10.5px;color:#9AA2B1;flex-shrink:0}
 </style>
 
 <div id="flow_table" class="page_all" style="padding:20px;display:block;">
@@ -208,6 +231,7 @@
 </div>
 
 <div class="param-dd" id="global-param-dd"></div>
+<div class="param-dd valid-dd" id="global-valid-dd"></div>
 
   <script>
   const TYPES=['AUTO','MANUAL'];
@@ -259,9 +283,24 @@
     PARAMETER: { label:'Parameter', css:'cat-parameter', codeLabel:'Parameter ID',  codes:PARAMS,
                  color:'#D9A404' },   // เหลือง
     PROFILE  : { label:'Profile',   css:'cat-profile',   codeLabel:'Workflow ID',    codes:PROFILES,
-                 color:'#6B7280' }    // เทา
+                 color:'#6B7280' },   // เทา
+    VALIDATION:{ label:'Validation',css:'cat-validation',codeLabel:'Validation Code',codes:[],
+                 color:'#2F9E68' }    // เขียว (เลือก Validation Code ได้หลายรายการ)
   };
   const DEFAULT_CATEGORY='ELIGIBLE';
+
+  // ===== Master ของ Validation (โครงเดียวกับหน้า Validation Setup) =====
+  const VALIDATION_MASTER = [
+    { code:'V00001', name:'Validation ตรวจสอบดอกเบี้ย',                conditions:5 },
+    { code:'V00002', name:'Validation ตรวจสอบวงเงิน Max LTV',           conditions:4 },
+    { code:'V00003', name:'Validation ตรวจสอบ Credit Line / Cash Offer', conditions:3 },
+    { code:'V00004', name:'Validation ตรวจสอบจำนวนงวด (X Installment)',  conditions:2 },
+    { code:'V00005', name:'Validation ตรวจสอบ Flag Program',             conditions:2 }
+  ];
+  function validationNameOf(code){
+    const v = VALIDATION_MASTER.find(x=>x.code===code);
+    return v ? v.name : code;
+  }
 
   // ============================================================
   // ===== Parameter box: master ของ Lead Type / Entity / Program / Parameter =====
@@ -871,6 +910,92 @@
             "status": "Wait"
         }
     ]
+},
+{
+    "flow_id": "F00007",
+    "flow_name": "Gen X_SELL_POOL + Validation",
+    "run_type": "AUTO",
+    "schedule": "0 5 * * *",
+    "steps": [
+        {
+            "order": 1,
+            "type": "AUTO",
+            "name": "Inquiry Data X Sell Pool",
+            "detail": "Retain all condition columns defined in the proposal that filter basic conditions",
+            "category": "ELIGIBLE",
+            "code": "E00001",
+            "status": "Wait"
+        },
+        {
+            "order": 2,
+            "type": "AUTO",
+            "name": "Update data of Topup program per parameter",
+            "detail": "update Loan offer Parameters for Topup, parameter:all(exclude: Flat rate%)",
+            "category": "PARAMETER",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "TOPUP",
+            "params": ["TOPUP_OPTION","MAX_LTV","RECEIPT_TERM","X_INSTALLMENT_OPT1","NCB"],
+            "status": "Wait"
+        },
+        {
+            "order": 3,
+            "type": "AUTO",
+            "name": "dev-mcrm-program-topup-flat-rate1",
+            "detail": "update Loan offer Parameters for Topup, parameter:Flat rate option 1",
+            "category": "PARAMETER",
+            "leadType": "CRM_X_SELL_POOL",
+            "entity": "KA",
+            "program": "TOPUP",
+            "params": ["FLAT_RATE_OPT1"],
+            "status": "Wait"
+        },
+        {
+            "order": 4,
+            "type": "AUTO",
+            "name": "Validate Loan Offer (Interest Rate / LTV)",
+            "detail": "ตรวจสอบดอกเบี้ยและวงเงินที่ระบบคำนวณ ว่าตรงกับ Expected Result ของแต่ละ Condition",
+            "category": "VALIDATION",
+            "validations": ["V00001","V00002"],
+            "status": "Wait"
+        },
+        {
+            "order": 5,
+            "type": "AUTO",
+            "name": "credit line calculations Top up programs (X Sell Pool)",
+            "detail": "calculate credit line and cash offer",
+            "category": "PARAMETER",
+            "code": "",
+            "status": "Wait"
+        },
+        {
+            "order": 6,
+            "type": "AUTO",
+            "name": "Validate Credit Line & Installment",
+            "detail": "ตรวจสอบ Credit Line / Cash Offer และจำนวนงวดที่เสนอ",
+            "category": "VALIDATION",
+            "validations": ["V00003","V00004"],
+            "status": "Wait"
+        },
+        {
+            "order": 7,
+            "type": "AUTO",
+            "name": "Flag Program Top up",
+            "detail": "Flag Program Top up",
+            "category": "PARAMETER",
+            "code": "",
+            "status": "Wait"
+        },
+        {
+            "order": 8,
+            "type": "AUTO",
+            "name": "Validate Flag Program",
+            "detail": "ตรวจสอบว่า Lead ที่ผ่านเกณฑ์ถูก Flag Program ครบถ้วน",
+            "category": "VALIDATION",
+            "validations": ["V00005"],
+            "status": "Wait"
+        }
+    ]
 }
     ];
 
@@ -892,7 +1017,8 @@
       leadType: s.leadType || (LEAD_TYPES[0] ? LEAD_TYPES[0].code : ''),
       entity: s.entity || '',
       program: s.program || '',
-      params: Array.isArray(s.params) ? s.params.slice() : []
+      params: Array.isArray(s.params) ? s.params.slice() : [],
+      validations: Array.isArray(s.validations) ? s.validations.slice() : []
     };
   }
 
@@ -930,7 +1056,8 @@
       leadType: LEAD_TYPES[0] ? LEAD_TYPES[0].code : '',
       entity:'',
       program:'',
-      params:[]
+      params:[],
+      validations:[]
     });
     render();
   }
@@ -956,8 +1083,10 @@
       s.entity='';
       s.program='';
       s.params=[];
+      s.validations=[];
     }
     closeParamPicker();
+    closeValidationPicker();
     render();
   }
 
@@ -1066,6 +1195,19 @@
         </div>`;
   }
 
+  // ===== HTML ของ multi-select Validation Code (เฉพาะ category = VALIDATION) =====
+  function validationFieldsHTML(s){
+    const selected = s.validations || [];
+    const chipsHTML = selected.length
+      ? selected.map(vc=>`<span class="valid-chip" title="${vc} · ${validationNameOf(vc)}"><span class="vctxt">${vc}</span><span class="valid-chip-x" onclick="event.stopPropagation();removeValidation(${s.id},'${vc}')">&times;</span></span>`).join('')
+      : '<span class="valid-ph">-- Select Validation Code --</span>';
+    return `
+        <div class="field-lbl">Validation Code (เลือกได้หลายรายการ)</div>
+        <div class="valid-tag-field" id="validField_${s.id}" onclick="event.stopPropagation();toggleValidationPicker(${s.id})">
+          ${chipsHTML}
+        </div>`;
+  }
+
   // ===== HTML ภายในกล่อง (ใช้ทั้งตอนวัดความสูงและตอน render จริง) =====
   function boxInnerHTML(s,i,status_box_before){
     const cat=CATEGORIES[s.category];
@@ -1095,7 +1237,9 @@
             </select>
           </div>
         </div>
-        ${s.category==='PARAMETER' ? parameterFieldsHTML(s) : codeSelectHTML(s)}
+        ${s.category==='PARAMETER' ? parameterFieldsHTML(s)
+          : s.category==='VALIDATION' ? validationFieldsHTML(s)
+          : codeSelectHTML(s)}
         <div class="field-lbl" style="display:none">Status</div>
         <select style="display:none" class="step-select box_status" id="status_${s.id}" onchange="syncStep(${s.id})" disabled>
           ${STATUSES.map(st=>`<option${st===s.status?' selected':''}>${st}</option>`).join('')}
@@ -1331,6 +1475,7 @@
       if(s.entity===undefined)s.entity='';
       if(s.program===undefined)s.program='';
       if(!Array.isArray(s.params))s.params=[];
+      if(!Array.isArray(s.validations))s.validations=[];
       if(!CATEGORIES[s.category])s.category=DEFAULT_CATEGORY;
       const cat=CATEGORIES[s.category];
 
@@ -1374,6 +1519,7 @@
 
     canvas.appendChild(svg);
     closeParamPicker(); // canvas วาดใหม่ทุกครั้ง -> ปิด picker เดิมกันชี้ผิดตำแหน่ง
+    closeValidationPicker();
   }
 
   // ============================================================
@@ -1450,6 +1596,76 @@
   document.getElementById('global-param-dd').addEventListener('click', e=>e.stopPropagation());
   document.addEventListener('click', closeParamPicker);
 
+  // ============================================================
+  // ===== Validation multi-select picker (dropdown ลอย) =====
+  // ============================================================
+  let openValidStepId = null;
+
+  function renderValidationPicker(s){
+    const panel = document.getElementById('global-valid-dd');
+    panel.innerHTML = VALIDATION_MASTER.length
+      ? VALIDATION_MASTER.map(v=>{
+          const checked = (s.validations||[]).includes(v.code);
+          return `<div class="dd-opt" onclick="event.stopPropagation();toggleValidationValue(${s.id},'${v.code}')">
+                    <input type="checkbox" ${checked?'checked':''} onclick="event.stopPropagation();toggleValidationValue(${s.id},'${v.code}')">
+                    <span class="dd-code">${v.code}</span>
+                    <span>${v.name}</span>
+                  </div>`;
+        }).join('')
+      : '<div class="dd-empty">ยังไม่มี Validation ในระบบ</div>';
+  }
+
+  function toggleValidationPicker(id){
+    const panel = document.getElementById('global-valid-dd');
+    if(openValidStepId === id){ closeValidationPicker(); return; }
+    const s = steps.find(x=>x.id===id);
+    if(!s) return;
+    openValidStepId = id;
+    renderValidationPicker(s);
+
+    const anchor = document.getElementById('validField_'+id);
+    if(anchor){
+      const rect = anchor.getBoundingClientRect();
+      panel.style.left = Math.max(8,rect.left)+'px';
+      panel.style.top  = (rect.bottom+4)+'px';
+      panel.style.minWidth = Math.max(rect.width,260)+'px';
+    }
+    panel.classList.add('open');
+  }
+
+  function toggleValidationValue(id, code){
+    const s = steps.find(x=>x.id===id); if(!s) return;
+    s.validations = s.validations || [];
+    const i = s.validations.indexOf(code);
+    if(i>=0) s.validations.splice(i,1); else s.validations.push(code);
+    renderValidationPicker(s);
+    updateValidationFieldDisplay(id);
+  }
+
+  function removeValidation(id, code){
+    const s = steps.find(x=>x.id===id); if(!s) return;
+    s.validations = (s.validations||[]).filter(c=>c!==code);
+    updateValidationFieldDisplay(id);
+    if(openValidStepId===id) renderValidationPicker(s);
+  }
+
+  function updateValidationFieldDisplay(id){
+    const s = steps.find(x=>x.id===id); if(!s) return;
+    const field = document.getElementById('validField_'+id);
+    if(!field) return;
+    field.innerHTML = (s.validations&&s.validations.length)
+      ? s.validations.map(vc=>`<span class="valid-chip" title="${vc} · ${validationNameOf(vc)}"><span class="vctxt">${vc}</span><span class="valid-chip-x" onclick="event.stopPropagation();removeValidation(${id},'${vc}')">&times;</span></span>`).join('')
+      : '<span class="valid-ph">-- Select Validation Code --</span>';
+  }
+
+  function closeValidationPicker(){
+    openValidStepId = null;
+    const panel = document.getElementById('global-valid-dd');
+    if(panel) panel.classList.remove('open');
+  }
+  document.getElementById('global-valid-dd').addEventListener('click', e=>e.stopPropagation());
+  document.addEventListener('click', closeValidationPicker);
+
   function submitFlow(){
     steps.forEach(s=>{['name','type','status','detail','code'].forEach(f=>{const el=document.getElementById(`${f}_${s.id}`);if(el)s[f]=el.value})});
     flowRunType=document.getElementById('flowRunType').value;
@@ -1465,6 +1681,8 @@
           base.entity=s.entity;
           base.program=s.program;
           base.params=s.params||[];
+        }else if(s.category==='VALIDATION'){
+          base.validations=s.validations||[];
         }else{
           base.code=s.code;
         }
