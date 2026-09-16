@@ -167,7 +167,7 @@
       const C = (field, op, value) => ({ field, op, value });
       const cond = (n, criteria, expected) => ({ code: code(n), criteria, expected });
       return [
-        { validation_id:'V00001', validation_name:'Validation ตรวจสอบดอกเบี้ย',
+        { validation_id:'V00001', lead_data_set:'X Sell Pool', validation_name:'Validation ตรวจสอบดอกเบี้ย',
           description:'ตรวจสอบอัตราดอกเบี้ยที่ระบบคำนวณให้ตรงกับตาราง TYPE_PA_PU x B_SCORE',
           create_date:'01/10/2024 09:00', update_date:'08/22/2025 14:20', update_by:'PRASERT.L',
           conditions:[
@@ -177,7 +177,7 @@
             cond(4, [C('TYPE_PA_PU','=','PU'), C('B_SCORE','=','A')], C('SOL_INT_RATE','=','7.5')),
             cond(5, [C('TYPE_PA_PU','=','PU'), C('B_SCORE','=','B')], C('SOL_INT_RATE','=','7.5')),
           ] },
-        { validation_id:'V00002', validation_name:'Validation ตรวจสอบวงเงิน Max LTV',
+        { validation_id:'V00002', lead_data_set:'X Sell Pool', validation_name:'Validation ตรวจสอบวงเงิน Max LTV',
           description:'ตรวจสอบ Max LTV ตามกลุ่มรุ่นรถและอายุรถ',
           create_date:'01/15/2024 10:30', update_date:'07/05/2025 11:05', update_by:'PRASERT.L',
           conditions:[
@@ -186,7 +186,7 @@
             cond(3, [C('model_type_group','=','PU'),  C('car_age','<=','5')], C('MAX_LTV','=','95')),
             cond(4, [C('model_type_group','=','SUV')],                        C('MAX_LTV','<=','90')),
           ] },
-        { validation_id:'V00003', validation_name:'Validation ตรวจสอบวงเงิน Cash Offer',
+        { validation_id:'V00003', lead_data_set:'X Sell Pool', validation_name:'Validation ตรวจสอบวงเงิน Cash Offer',
           description:'วงเงินที่เสนอต้องไม่ต่ำกว่าขั้นต่ำของแต่ละเกรดลูกค้า',
           create_date:'02/01/2024 08:45', update_date:'09/01/2025 16:40', update_by:'PRASERT.L',
           conditions:[
@@ -194,14 +194,14 @@
             cond(2, [C('b_score_customer','=','C')],          C('cash_offer','>=','30000')),
             cond(3, [C('product_base','=','Refin Topup')],    C('cash_offer','>','0')),
           ] },
-        { validation_id:'V00004', validation_name:'Validation ตรวจสอบจำนวนงวด (X Installment)',
+        { validation_id:'V00004', lead_data_set:'X Sell Pool', validation_name:'Validation ตรวจสอบจำนวนงวด (X Installment)',
           description:'จำนวนงวดที่เสนอต้องอยู่ในกรอบของแต่ละ product base',
           create_date:'02/20/2024 13:15', update_date:'06/18/2025 09:25', update_by:'PRASERT.L',
           conditions:[
             cond(1, [C('product_base','=','New')],  C('X_INSTALLMENT_OPT1','<=','84')),
             cond(2, [C('product_base','=','Used')], C('X_INSTALLMENT_OPT1','<=','72')),
           ] },
-        { validation_id:'V00005', validation_name:'Validation ตรวจสอบ Receipt Term / NCB',
+        { validation_id:'V00005', lead_data_set:'Insurance PPI', validation_name:'Validation ตรวจสอบ Receipt Term / NCB',
           description:'ตรวจสอบงวดการรับเอกสารและผล NCB ของ Lead ที่ผ่านเกณฑ์',
           create_date:'03/04/2024 15:00', update_date:'09/10/2025 10:10', update_by:'PRASERT.L',
           conditions:[
