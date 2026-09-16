@@ -81,6 +81,11 @@
       recently_apply:             { label:'recently_apply',             dataType:NUM, values:[], hint:'days e.g. 105' },
       debt_re_status:             { label:'debt_re_status',             dataType:TXT, values:S('RCL,BR,RE,RC,NULL') },
   
+      /* used by Validation Setup (loan offer result columns) */
+      TYPE_PA_PU:   { label:'TYPE_PA_PU',   dataType:TXT, values:S('PA,PU') },
+      B_SCORE:      { label:'B_SCORE',      dataType:TXT, values:S('A,B,C,D,E') },
+      SOL_INT_RATE: { label:'SOL_INT_RATE', dataType:NUM, values:[], hint:'e.g. 6.5' },
+
       cash_offer: { label:'cash_offer', dataType:NUM, values:[] },
       iir:        { label:'iir',        dataType:NUM, values:[] },
       auto_group: { label:'auto_group', dataType:TXT, values:[] },
@@ -162,15 +167,15 @@
       const C = (field, op, value) => ({ field, op, value });
       const cond = (n, criteria, expected) => ({ code: code(n), criteria, expected });
       return [
-        { validation_id:'V00001', validation_name:'Validation ตรวจสอบดอกเบี้ย (Flat Rate)',
-          description:'ตรวจสอบอัตราดอกเบี้ยที่ระบบคำนวณให้ตรงกับตาราง product_base x b_score_customer',
+        { validation_id:'V00001', validation_name:'Validation ตรวจสอบดอกเบี้ย',
+          description:'ตรวจสอบอัตราดอกเบี้ยที่ระบบคำนวณให้ตรงกับตาราง TYPE_PA_PU x B_SCORE',
           create_date:'01/10/2024 09:00', update_date:'08/22/2025 14:20', update_by:'PRASERT.L',
           conditions:[
-            cond(1, [C('product_base','=','New'), C('b_score_customer','=','A')],  C('FLAT_RATE_OPT1','=','6.5')),
-            cond(2, [C('product_base','=','New'), C('b_score_customer','=','B')],  C('FLAT_RATE_OPT1','=','6.5')),
-            cond(3, [C('product_base','=','New'), C('b_score_customer','=','C')],  C('FLAT_RATE_OPT1','=','8')),
-            cond(4, [C('product_base','=','Used'),C('b_score_customer','=','A')],  C('FLAT_RATE_OPT1','=','7.5')),
-            cond(5, [C('product_base','=','Used'),C('b_score_customer','=','B')],  C('FLAT_RATE_OPT1','=','7.5')),
+            cond(1, [C('TYPE_PA_PU','=','PA'), C('B_SCORE','=','A')], C('SOL_INT_RATE','=','6.5')),
+            cond(2, [C('TYPE_PA_PU','=','PA'), C('B_SCORE','=','B')], C('SOL_INT_RATE','=','6.5')),
+            cond(3, [C('TYPE_PA_PU','=','PA'), C('B_SCORE','=','C')], C('SOL_INT_RATE','=','8')),
+            cond(4, [C('TYPE_PA_PU','=','PU'), C('B_SCORE','=','A')], C('SOL_INT_RATE','=','7.5')),
+            cond(5, [C('TYPE_PA_PU','=','PU'), C('B_SCORE','=','B')], C('SOL_INT_RATE','=','7.5')),
           ] },
         { validation_id:'V00002', validation_name:'Validation ตรวจสอบวงเงิน Max LTV',
           description:'ตรวจสอบ Max LTV ตามกลุ่มรุ่นรถและอายุรถ',
@@ -297,6 +302,9 @@
           { TYPE:'PARAMETER', CODE:'receipt_term',       NAME:'receipt_term',          DESCRIPTION:'งวดการรับเอกสาร',              ORDER:'12', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
           { TYPE:'PARAMETER', CODE:'region',             NAME:'region',                DESCRIPTION:'ภูมิภาค',                      ORDER:'13', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
           { TYPE:'PARAMETER', CODE:'remaining_term',     NAME:'remaining_term',        DESCRIPTION:'งวดคงเหลือ',                  ORDER:'14', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
+          { TYPE:'PARAMETER', CODE:'TYPE_PA_PU',         NAME:'TYPE_PA_PU',            DESCRIPTION:'ประเภท PA / PU',               ORDER:'15', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
+          { TYPE:'PARAMETER', CODE:'B_SCORE',            NAME:'B_SCORE',               DESCRIPTION:'B-Score ที่ใช้ตัดเกรดข้อเสนอ',  ORDER:'16', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
+          { TYPE:'PARAMETER', CODE:'SOL_INT_RATE',       NAME:'SOL_INT_RATE',          DESCRIPTION:'อัตราดอกเบี้ยที่เสนอ',          ORDER:'17', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
         ],
   
         assignments: [
@@ -431,7 +439,7 @@
             { order:12, type:'AUTO', name:'dev-mcrm-program-pre-approve-nu-flat-rate', detail:'Update Loan offer Parameters for flat-rate pre-approve N/U', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'PRE_APPROVE_NU', params:['PA_NU_FLAT_RATE'], status:'Wait' },
             { order:13, type:'AUTO', name:'dev-mcrm-program-pre-approve-mc', detail:'Update Loan offer Parameters for pre-approve MC', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'PRE_APPROVE_MC', params:['PA_MC_OPTION'], status:'Wait' },
             { order:14, type:'AUTO', name:'dev-mcrm-program-pre-approve-mc-flat-rate', detail:'Update Loan offer Parameters for pre-approve MC flag rate', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'PRE_APPROVE_MC', params:['PA_MC_FLAT_RATE'], status:'Wait' },
-            { order:15, type:'AUTO', name:'Validate Flat Rate & Max LTV', detail:'ตรวจสอบอัตราดอกเบี้ย (Flat Rate) และ Max LTV ว่าตรงกับ Expected Result ของแต่ละ Condition', category:'VALIDATION', validations:['V00001','V00002'], status:'Wait' },
+            { order:15, type:'AUTO', name:'Validate Interest Rate & Max LTV', detail:'ตรวจสอบอัตราดอกเบี้ย (SOL_INT_RATE) และ Max LTV ว่าตรงกับ Expected Result ของแต่ละ Condition', category:'VALIDATION', validations:['V00001','V00002'], status:'Wait' },
             { order:16, type:'AUTO', name:'dev-mcrm-cap-max-special-criteria', detail:'Run special logic of Cap Max Flat Rate and Max LTV for Topup program', category:'PARAMETER', code:'', status:'Wait' },
             { order:17, type:'AUTO', name:'credit line calculations Top up programs (X Sell Pool)', detail:'calculate credit line and cash offer', category:'PARAMETER', code:'', status:'Wait' },
             { order:18, type:'AUTO', name:'credit line calculations Revolving Loan programs (X Sell Pool)', detail:'', category:'PARAMETER', code:'', status:'Wait' },
