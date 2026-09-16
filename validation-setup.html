@@ -328,7 +328,7 @@
   .v-sel,.v-val{border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12.5px;
     background:#fff;color:var(--text);font-family:'Krungsri-med';outline:none;height:33px;}
   .v-sel:focus,.v-val:focus{border-color:var(--primary);}
-  .v-sel.field{flex:2;min-width:130px;}
+  .v-sel.v-field{flex:2;min-width:130px;}
   .v-sel.op{width:88px;flex-shrink:0;}
   .v-val{flex:2;min-width:110px;}
   .btn-mini{border:1px dashed #C7CEDA;background:#fff;color:var(--text-secondary);border-radius:6px;
@@ -572,7 +572,7 @@ createApp({
               <div class="cond-block-lbl">IF</div>
               <div class="crit-row" v-for="(c,ki) in cond.criteria" :key="ki">
                 <span class="crit-and" :class="{blank: ki===0}">{{ ki ? 'AND' : 'IF' }}</span>
-                <select class="v-sel field" v-model="c.field" @change="onFieldChange(c)">
+                <select class="v-sel v-field" v-model="c.field" @change="onFieldChange(c)">
                   <optgroup v-for="g in FIELD_GROUPS" :key="g.group" :label="g.group">
                     <option v-for="f in g.fields" :key="f.code" :value="f.code">{{ f.code }}</option>
                   </optgroup>
@@ -596,7 +596,7 @@ createApp({
               <div class="cond-block-lbl">THEN — Expected Result</div>
               <div class="crit-row">
                 <span class="crit-and blank">.</span>
-                <select class="v-sel field" v-model="cond.expected.field" @change="onFieldChange(cond.expected)">
+                <select class="v-sel v-field" v-model="cond.expected.field" @change="onFieldChange(cond.expected)">
                   <optgroup v-for="g in FIELD_GROUPS" :key="g.group" :label="g.group">
                     <option v-for="f in g.fields" :key="f.code" :value="f.code">{{ f.code }}</option>
                   </optgroup>
