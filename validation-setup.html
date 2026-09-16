@@ -331,6 +331,25 @@
   .v-sel.v-field{flex:2;min-width:130px;}
   .v-sel.op{width:88px;flex-shrink:0;}
   .v-val{flex:2;min-width:110px;}
+  /* ---- ช่องค่าแบบเลือกได้หลายค่า (ใช้เมื่อ operator เป็น IN / NOT IN) ---- */
+  .v-multi{position:relative;flex:2;min-width:110px;}
+  .v-tagfield{display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-height:33px;
+    border:1px solid var(--border);border-radius:6px;padding:4px 8px;background:#fff;cursor:pointer;}
+  .v-tagfield:hover{border-color:var(--primary);}
+  .v-tag{display:inline-flex;align-items:center;gap:5px;background:var(--surface-alt);
+    border:1px solid var(--border);border-radius:5px;padding:1px 7px;
+    font-size:11.5px;font-weight:600;color:var(--text);}
+  .v-tag-x{cursor:pointer;color:var(--text-secondary);font-size:11px;line-height:1;}
+  .v-tag-x:hover{color:var(--danger);}
+  .v-tag-ph{font-size:12px;color:#B4ACA5;}
+  .v-dd{position:absolute;left:0;top:calc(100% + 4px);z-index:40;min-width:100%;
+    max-height:220px;overflow-y:auto;background:#fff;border:1px solid var(--border);
+    border-radius:8px;box-shadow:var(--shadow-md);padding:4px 0;}
+  .v-dd-opt{display:flex;align-items:center;gap:8px;padding:7px 11px;font-size:12.5px;
+    cursor:pointer;color:var(--text);}
+  .v-dd-opt:hover{background:var(--surface-alt);}
+  .v-dd-opt input{accent-color:var(--primary);width:13px;height:13px;flex-shrink:0;cursor:pointer;}
+
   .btn-mini{border:1px dashed #C7CEDA;background:#fff;color:var(--text-secondary);border-radius:6px;
     font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;font-family:'Krungsri-med';}
   .btn-mini:hover{border-color:#8B5E3C;color:#8B5E3C;background:#FAF4EC;}
@@ -356,7 +375,7 @@
 <div id="app"></div>
 
 <script>
-const { createApp, ref, reactive, computed } = Vue;
+const { createApp, ref, reactive, computed, onMounted, onUnmounted } = Vue;
 
 function toggleDropdown(event, button) {
   event.stopPropagation();
@@ -368,7 +387,64 @@ document.addEventListener('click', function () {
   document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.remove('show'));
 });
 
+/* ---------------------------------------------------------------
+   ValueField — the value cell of one criteria / expected result.
+   IN and NOT IN take several values, so for those the cell becomes a
+   chip field with a checkbox dropdown. The value stays a single
+   comma-separated string, which is how conditions are already stored.
+   --------------------------------------------------------------- */
+const MULTI_OPS = ['IN','NOT IN'];
+
+const ValueField = {
+  props: { model: { type: Object, required: true } },
+  setup(props){
+    const open = ref(false);
+    const rootEl = ref(null);
+    const options = computed(() => MCRM.validationFieldValues(props.model.field));
+    const multi   = computed(() => MULTI_OPS.includes(props.model.op));
+    const list    = computed(() => String(props.model.value || '').split(',').map(v => v.trim()).filter(Boolean));
+
+    function toggle(val){
+      const l = list.value.slice();
+      const i = l.indexOf(val);
+      if (i >= 0) l.splice(i,1); else l.push(val);
+      props.model.value = l.join(',');
+    }
+    function remove(val){ props.model.value = list.value.filter(v => v !== val).join(','); }
+
+    const onDocClick = e => { if (rootEl.value && !rootEl.value.contains(e.target)) open.value = false; };
+    onMounted(() => document.addEventListener('click', onDocClick));
+    onUnmounted(() => document.removeEventListener('click', onDocClick));
+
+    return { open, rootEl, options, multi, list, toggle, remove };
+  },
+  template: `
+    <div v-if="multi && options.length" class="v-multi" ref="rootEl">
+      <div class="v-tagfield" @click="open = !open">
+        <template v-if="list.length">
+          <span class="v-tag" v-for="val in list" :key="val">{{ val }}<span class="v-tag-x" @click.stop="remove(val)">&times;</span></span>
+        </template>
+        <span v-else class="v-tag-ph">-- Select Values --</span>
+      </div>
+      <div class="v-dd" v-if="open" @click.stop>
+        <div class="v-dd-opt" v-for="val in options" :key="val" @click="toggle(val)">
+          <input type="checkbox" :checked="list.includes(val)" @click.stop="toggle(val)">
+          <span>{{ val }}</span>
+        </div>
+      </div>
+    </div>
+    <input v-else-if="multi" class="v-val" v-model="model.value" placeholder="Value1, Value2, ...">
+    <select v-else-if="options.length" class="v-sel v-val" v-model="model.value">
+      <option value="">-- Select Value --</option>
+      <option v-for="val in options" :key="val" :value="val">{{ val }}</option>
+      <option v-if="model.value && !options.includes(model.value)" :value="model.value">{{ model.value }}</option>
+    </select>
+    <input v-else class="v-val" v-model="model.value" placeholder="Value">
+  `
+};
+
 createApp({
+  components: { ValueField },
   setup(){
     /* Validation records live in the shared store, so a validation added here
        is immediately selectable from a Workflow Config "Validation" box. */
@@ -423,6 +499,11 @@ createApp({
     }
     /* field เปลี่ยน -> ชุดค่าที่เลือกได้เปลี่ยนตาม ค่าเดิมจึงใช้ไม่ได้แล้ว */
     function onFieldChange(c){ c.value = ''; }
+    /* เปลี่ยนจาก IN / NOT IN ไปเป็นตัวดำเนินการค่าเดียว -> เก็บไว้ค่าแรก */
+    function onOpChange(c){
+      if (MULTI_OPS.includes(c.op)) return;
+      c.value = String(c.value || '').split(',').map(v => v.trim()).filter(Boolean)[0] || '';
+    }
 
     const conditionText = cond => MCRM.conditionText(cond);
     function condSummary(cond){
@@ -468,7 +549,7 @@ createApp({
     return {
       validations, FIELD_GROUPS, OPS, valuesOf, isKnownField,
       pageView, cur, isNew, openEditor, backToList,
-      addCondition, removeCondition, addCriteria, removeCriteria, onFieldChange,
+      addCondition, removeCondition, addCriteria, removeCriteria, onFieldChange, onOpChange,
       conditionText, condSummary, saveValidation,
       viewModal, viewValidation, confirmDelete, askDelete, confirmDeleteYes,
       toast,
@@ -578,15 +659,10 @@ createApp({
                   </optgroup>
                   <option v-if="c.field && !isKnownField(c.field)" :value="c.field">{{ c.field }}</option>
                 </select>
-                <select class="v-sel op" v-model="c.op">
+                <select class="v-sel op" v-model="c.op" @change="onOpChange(c)">
                   <option v-for="o in OPS" :key="o" :value="o">{{ o }}</option>
                 </select>
-                <select class="v-sel v-val" v-if="valuesOf(c.field).length" v-model="c.value">
-                  <option value="">-- Select Value --</option>
-                  <option v-for="val in valuesOf(c.field)" :key="val" :value="val">{{ val }}</option>
-                  <option v-if="c.value && !valuesOf(c.field).includes(c.value)" :value="c.value">{{ c.value }}</option>
-                </select>
-                <input class="v-val" v-else v-model="c.value" placeholder="Value">
+                <value-field :model="c"></value-field>
                 <button class="btn-x" title="Remove criteria" @click="removeCriteria(cond,ki)">&times;</button>
               </div>
               <button class="btn-mini" style="margin-top:6px" @click="addCriteria(cond)">+ Add Criteria</button>
@@ -602,15 +678,10 @@ createApp({
                   </optgroup>
                   <option v-if="cond.expected.field && !isKnownField(cond.expected.field)" :value="cond.expected.field">{{ cond.expected.field }}</option>
                 </select>
-                <select class="v-sel op" v-model="cond.expected.op">
+                <select class="v-sel op" v-model="cond.expected.op" @change="onOpChange(cond.expected)">
                   <option v-for="o in OPS" :key="o" :value="o">{{ o }}</option>
                 </select>
-                <select class="v-sel v-val" v-if="valuesOf(cond.expected.field).length" v-model="cond.expected.value">
-                  <option value="">-- Select Value --</option>
-                  <option v-for="val in valuesOf(cond.expected.field)" :key="val" :value="val">{{ val }}</option>
-                  <option v-if="cond.expected.value && !valuesOf(cond.expected.field).includes(cond.expected.value)" :value="cond.expected.value">{{ cond.expected.value }}</option>
-                </select>
-                <input class="v-val" v-else v-model="cond.expected.value" placeholder="Value">
+                <value-field :model="cond.expected"></value-field>
                 <span style="width:30px"></span>
               </div>
             </div>
