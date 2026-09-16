@@ -126,9 +126,13 @@
     .vr-tag{display:inline-block;font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:999px;}
     .vr-tag.ok{background:#E4F7EF;color:#0E9F6E;}
     .vr-tag.ng{background:#FDE8E8;color:#DC2626;}
+    .vr-code{font-family:Consolas,'Courier New',monospace;font-size:11px;font-weight:700;color:#6B7280;
+      background:#F7F8FB;border:1px solid #EAEDF4;border-radius:5px;padding:2px 7px;white-space:nowrap;}
     /* step ที่ยังไม่ทำงาน : ไม่มีตัวเลขผล จึงซ่อนคอลัมน์ Checked/Pass/Fail/%Pass/Result */
-    .ftbl.no-result th:nth-child(n+4),
-    .ftbl.no-result td:nth-child(n+4){display:none;}
+    .ftbl.no-result th:nth-child(n+5),
+    .ftbl.no-result td:nth-child(n+5){display:none;}
+    /* ตารางผล Validation มีคอลัมน์ Condition Code เพิ่มมา ทำให้คอลัมน์ข้อความเลื่อนไป 1 */
+    .ftbl.vtbl-val th:nth-child(3),.ftbl.vtbl-val td:nth-child(3){text-align:left;}
 
     .pm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
     .pm-card{background:#F7F8FB;border:1px solid #EAEDF4;border-radius:10px;padding:10px 12px;min-width:0;}
@@ -481,7 +485,7 @@ createApp({
         v.conditions.forEach((c, idx) => {
           const r = done ? MCRM.validationResultOf(v.validation_id, idx) : null;
           rows.push({
-            group:false, no:idx+1,
+            group:false, no:idx+1, code: c.code || '-',
             criteria: MCRM.conditionText(c),
             expected: MCRM.criteriaText(c.expected),
             checked: r ? r.checked : null, pass: r ? r.pass : null, fail: r ? r.fail : null,
@@ -512,11 +516,11 @@ createApp({
     function closeStepValidation(){ validationModal.show = false; }
     function exportStepValidation(){
       if (!validationModal.rows.length) return;
-      const lines = ['Validation ID,Validation Name,#,Condition,Expected Result,Checked,Pass,Fail,% Pass,Result'];
+      const lines = ['Validation ID,Validation Name,#,Condition Code,Condition,Expected Result,Checked,Pass,Fail,% Pass,Result'];
       let code='', name='';
       validationModal.rows.forEach(r => {
         if (r.group){ code=r.code; name=r.name; return; }
-        lines.push([code, `"${name}"`, r.no, `"${r.criteria}"`, `"${r.expected}"`,
+        lines.push([code, `"${name}"`, r.no, r.code, `"${r.criteria}"`, `"${r.expected}"`,
           r.checked ?? '', r.pass ?? '', r.fail ?? '', validationModal.done ? r.pct.replace('%','') : '', r.result].join(','));
       });
       const url = URL.createObjectURL(new Blob(['\ufeff'+lines.join('\n')], { type:'text/csv;charset=utf-8;' }));
@@ -813,10 +817,11 @@ createApp({
         </div>
         <div class="fmodal-body">
           <div class="sf-meta">{{ validationModal.meta }}</div>
-          <table class="ftbl" :class="{'no-result': !validationModal.done}">
+          <table class="ftbl vtbl-val" :class="{'no-result': !validationModal.done}">
             <thead>
               <tr>
                 <th style="width:28px">#</th>
+                <th style="width:105px">Condition Code</th>
                 <th>Validation / Condition</th>
                 <th style="width:170px">Expected Result</th>
                 <th style="width:80px">Checked</th>
@@ -827,13 +832,14 @@ createApp({
               </tr>
             </thead>
             <tbody>
-              <tr v-if="!validationModal.rows.length"><td colspan="8" style="text-align:center;color:#9AA2B1;padding:20px">ขั้นตอนนี้ยังไม่ผูก Validation</td></tr>
+              <tr v-if="!validationModal.rows.length"><td colspan="9" style="text-align:center;color:#9AA2B1;padding:20px">ขั้นตอนนี้ยังไม่ผูก Validation</td></tr>
               <template v-for="(r,ri) in validationModal.rows" :key="ri">
                 <tr v-if="r.group" class="vr-grp">
-                  <td colspan="8">{{ r.code }} — {{ r.name }} <span class="vr-sub" v-if="r.nCond">({{ r.nCond }} condition)</span></td>
+                  <td colspan="9">{{ r.code }} — {{ r.name }} <span class="vr-sub" v-if="r.nCond">({{ r.nCond }} condition)</span></td>
                 </tr>
                 <tr v-else>
                   <td>{{ r.no }}</td>
+                  <td><span class="vr-code">{{ r.code }}</span></td>
                   <td class="vr-cond" style="text-align:left">{{ r.criteria }}</td>
                   <td class="vr-exp" style="text-align:left">{{ r.expected }}</td>
                   <td>{{ r.checked===null ? '-' : numberWithCommas(r.checked) }}</td>

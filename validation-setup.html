@@ -304,6 +304,9 @@
   .cond-card-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
   .cond-no{font-size:11.5px;font-weight:700;color:var(--text-secondary);background:var(--surface-alt);
     border-radius:6px;padding:3px 10px;flex-shrink:0;}
+  .cond-code-chip{font-family:Consolas,'Courier New',monospace;font-size:11.5px;font-weight:700;
+    color:var(--primary);background:var(--surface-alt);border:1px solid var(--border);
+    border-radius:6px;padding:3px 9px;flex-shrink:0;}
   .cond-summary{font-size:12px;color:var(--text-secondary);font-family:Consolas,'Courier New',monospace;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;}
   .btn-x{border:none;background:none;cursor:pointer;color:#B4ACA5;font-size:18px;line-height:1;
@@ -370,9 +373,17 @@ createApp({
     /* Validation records live in the shared store, so a validation added here
        is immediately selectable from a Workflow Config "Validation" box. */
     const validations = MCRM.db.validations;
-    const FIELDS = MCRM.VALIDATION_FIELDS;
+    /* Condition fields are the real parameters kept in Master Data Manager /
+       Parameter Master Setup — read live so the picker can never drift. */
+    const FIELD_GROUPS = computed(() => MCRM.validationFieldGroups());
+    const firstField = () => {
+      const g = FIELD_GROUPS.value.find(g => g.fields.length);
+      return g ? g.fields[0].code : '';
+    };
     const OPS = MCRM.VALIDATION_OPS;
     const valuesOf = code => MCRM.validationFieldValues(code);
+    /* a field saved earlier but no longer in the master must still render */
+    const isKnownField = code => FIELD_GROUPS.value.some(g => g.fields.some(f => f.code === code));
 
     /* ---- list / editor navigation ---- */
     const pageView = ref('list');
@@ -396,12 +407,15 @@ createApp({
     function backToList(){ pageView.value = 'list'; }
 
     /* ---- condition / criteria editing ---- */
-    const blankCriteria = () => ({ field: FIELDS[0].code, op:'=', value:'' });
-    const blankCondition = () => ({ criteria:[blankCriteria()], expected:{ field:'SOL_INT_RATE', op:'=', value:'' } });
+    const blankCriteria = () => ({ field: firstField(), op:'=', value:'' });
+    const blankCondition = () => ({
+      code: MCRM.nextConditionCode(cur),
+      criteria:[blankCriteria()],
+      expected:{ field: firstField(), op:'=', value:'' },
+    });
 
     function addCondition(){ cur.conditions.push(blankCondition()); }
     function removeCondition(ci){ cur.conditions.splice(ci,1); }
-    function duplicateCondition(ci){ cur.conditions.splice(ci+1, 0, JSON.parse(JSON.stringify(cur.conditions[ci]))); }
     function addCriteria(cond){ cond.criteria.push(blankCriteria()); }
     function removeCriteria(cond, ki){
       cond.criteria.splice(ki,1);
@@ -418,10 +432,10 @@ createApp({
 
     /* ---- save ---- */
     function saveValidation(){
-      if (!cur.validation_name.trim()){ showToast('กรุณาระบุชื่อ Validation', false); return; }
-      if (!cur.conditions.length){ showToast('กรุณาเพิ่ม Condition อย่างน้อย 1 รายการ', false); return; }
+      if (!cur.validation_name.trim()){ showToast('Validation Name is required', false); return; }
+      if (!cur.conditions.length){ showToast('At least one Condition is required', false); return; }
       const bad = cur.conditions.findIndex(c => !c.expected.field || c.expected.value === '');
-      if (bad >= 0){ showToast(`Condition #${bad+1} ยังไม่ได้ระบุ Expected Result`, false); return; }
+      if (bad >= 0){ showToast(`Condition #${bad+1}: Expected Result is required`, false); return; }
 
       cur.update_date = MCRM.nowStr();
       cur.update_by = 'PRASERT.L';
@@ -431,7 +445,7 @@ createApp({
       const idx = validations.findIndex(v => v.validation_id === cur.validation_id);
       if (idx >= 0) validations[idx] = record; else validations.push(record);
       isNew.value = false;
-      showToast(`บันทึก ${cur.validation_id} เรียบร้อย`);
+      showToast(`${cur.validation_id} saved`);
       pageView.value = 'list';
     }
 
@@ -444,7 +458,7 @@ createApp({
       const v = confirmDelete.value;
       validations.splice(validations.findIndex(x => x === v), 1);
       confirmDelete.value = null;
-      showToast(`ลบ ${v.validation_id} แล้ว`);
+      showToast(`${v.validation_id} deleted`);
     }
 
     const toast = reactive({ show:false, msg:'', ok:true });
@@ -452,9 +466,9 @@ createApp({
     function showToast(msg, ok=true){ toast.msg=msg; toast.ok=ok; toast.show=true; clearTimeout(toastTimer); toastTimer=setTimeout(()=>toast.show=false,2600); }
 
     return {
-      validations, FIELDS, OPS, valuesOf,
+      validations, FIELD_GROUPS, OPS, valuesOf, isKnownField,
       pageView, cur, isNew, openEditor, backToList,
-      addCondition, removeCondition, duplicateCondition, addCriteria, removeCriteria, onFieldChange,
+      addCondition, removeCondition, addCriteria, removeCriteria, onFieldChange,
       conditionText, condSummary, saveValidation,
       viewModal, viewValidation, confirmDelete, askDelete, confirmDeleteYes,
       toast,
@@ -467,9 +481,7 @@ createApp({
     <div class="layout single" v-if="pageView==='list'">
       <section class="panel">
         <div class="panel-head">
-          <div><div class="panel-title-row"><h2>Validation Setup</h2></div>
-            <p class="desc">1 Validation เก็บได้หลาย Condition — แต่ละ Condition มี Expected Result ของตัวเอง</p>
-          </div>
+          <div><div class="panel-title-row"><h2>Validation Setup</h2></div></div>
           <button class="btn btn-primary" @click="openEditor('')">+ New Validation</button>
         </div>
 
@@ -509,8 +521,7 @@ createApp({
           </table>
           <div v-else class="empty-state">
             <div class="glyph"></div>
-            <h3>ยังไม่มี Validation ในระบบ</h3>
-            <p>สร้าง Validation แรกเพื่อใช้ตรวจสอบผลลัพธ์ใน Workflow</p>
+            <h3>No validation yet</h3>
             <button class="btn btn-primary" style="margin-top:12px" @click="openEditor('')">+ New Validation</button>
           </div>
         </div>
@@ -525,18 +536,18 @@ createApp({
             <h2>{{ isNew ? 'New Validation' : 'Edit Validation' }}</h2>
             <span class="type-badge">{{ cur.validation_id }}</span>
           </div>
-          <p class="desc" v-if="!isNew">Update ล่าสุด {{ cur.update_date }} โดย {{ cur.update_by }}</p>
+          <p class="desc" v-if="!isNew">Last update {{ cur.update_date }} by {{ cur.update_by }}</p>
           </div>
         </div>
 
         <div class="v-editbar">
           <div class="filter-field grow">
             <label>Validation Name</label>
-            <input type="text" v-model="cur.validation_name" placeholder="เช่น Validation ตรวจสอบดอกเบี้ย">
+            <input type="text" v-model="cur.validation_name" placeholder="Validation name">
           </div>
           <div class="filter-field grow">
             <label>Description</label>
-            <input type="text" v-model="cur.description" placeholder="คำอธิบายเพิ่มเติม">
+            <input type="text" v-model="cur.description" placeholder="Description">
           </div>
           <span class="right">
             <button class="btn btn-ghost" @click="backToList">Back</button>
@@ -546,24 +557,26 @@ createApp({
 
         <div class="cond-sec-head">
           <h3>Conditions</h3>
-          <span>แต่ละ Condition = เงื่อนไข (IF) ที่ต้องเป็นจริงทุกข้อ + ผลลัพธ์ที่คาดหวัง (THEN)</span>
         </div>
 
         <div class="cond-wrap">
           <div class="cond-card" v-for="(cond,ci) in cur.conditions" :key="ci">
             <div class="cond-card-head">
-              <span class="cond-no">Condition #{{ ci+1 }}</span>
+              <span class="cond-no">#{{ ci+1 }}</span>
+              <span class="cond-code-chip">{{ cond.code }}</span>
               <span class="cond-summary" :title="condSummary(cond)">{{ condSummary(cond) }}</span>
-              <button class="btn-mini" @click="duplicateCondition(ci)">Duplicate</button>
-              <button class="btn-x" title="ลบ Condition" @click="removeCondition(ci)">&times;</button>
+              <button class="btn-x" title="Remove condition" @click="removeCondition(ci)">&times;</button>
             </div>
 
             <div class="cond-block">
-              <div class="cond-block-lbl">IF — เงื่อนไข (ทุกข้อต้องเป็นจริง)</div>
+              <div class="cond-block-lbl">IF</div>
               <div class="crit-row" v-for="(c,ki) in cond.criteria" :key="ki">
-                <span class="crit-and" :class="{blank: ki===0}">{{ ki ? 'และ' : 'IF' }}</span>
+                <span class="crit-and" :class="{blank: ki===0}">{{ ki ? 'AND' : 'IF' }}</span>
                 <select class="v-sel field" v-model="c.field" @change="onFieldChange(c)">
-                  <option v-for="f in FIELDS" :key="f.code" :value="f.code">{{ f.code }}</option>
+                  <optgroup v-for="g in FIELD_GROUPS" :key="g.group" :label="g.group">
+                    <option v-for="f in g.fields" :key="f.code" :value="f.code">{{ f.code }}</option>
+                  </optgroup>
+                  <option v-if="c.field && !isKnownField(c.field)" :value="c.field">{{ c.field }}</option>
                 </select>
                 <select class="v-sel op" v-model="c.op">
                   <option v-for="o in OPS" :key="o" :value="o">{{ o }}</option>
@@ -574,7 +587,7 @@ createApp({
                   <option v-if="c.value && !valuesOf(c.field).includes(c.value)" :value="c.value">{{ c.value }}</option>
                 </select>
                 <input class="v-val" v-else v-model="c.value" placeholder="Value">
-                <button class="btn-x" title="ลบเงื่อนไข" @click="removeCriteria(cond,ki)">&times;</button>
+                <button class="btn-x" title="Remove criteria" @click="removeCriteria(cond,ki)">&times;</button>
               </div>
               <button class="btn-mini" style="margin-top:6px" @click="addCriteria(cond)">+ Add Criteria</button>
             </div>
@@ -584,7 +597,10 @@ createApp({
               <div class="crit-row">
                 <span class="crit-and blank">.</span>
                 <select class="v-sel field" v-model="cond.expected.field" @change="onFieldChange(cond.expected)">
-                  <option v-for="f in FIELDS" :key="f.code" :value="f.code">{{ f.code }}</option>
+                  <optgroup v-for="g in FIELD_GROUPS" :key="g.group" :label="g.group">
+                    <option v-for="f in g.fields" :key="f.code" :value="f.code">{{ f.code }}</option>
+                  </optgroup>
+                  <option v-if="cond.expected.field && !isKnownField(cond.expected.field)" :value="cond.expected.field">{{ cond.expected.field }}</option>
                 </select>
                 <select class="v-sel op" v-model="cond.expected.op">
                   <option v-for="o in OPS" :key="o" :value="o">{{ o }}</option>
@@ -602,8 +618,7 @@ createApp({
 
           <div class="empty-state" v-if="!cur.conditions.length" style="padding:36px 20px">
             <div class="glyph"></div>
-            <h3>ยังไม่มี Condition</h3>
-            <p>กด "+ Add Condition" เพื่อเพิ่มเงื่อนไขแรก</p>
+            <h3>No condition yet</h3>
           </div>
 
           <button class="btn-add-cond" @click="addCondition">+ Add Condition</button>
@@ -621,12 +636,13 @@ createApp({
         </div>
         <div class="modal-scroll">
           <table class="vtbl">
-            <thead><tr><th style="width:36px">#</th><th>Condition</th><th style="width:210px">Expected Result</th></tr></thead>
+            <thead><tr><th style="width:36px">#</th><th style="width:110px">Condition Code</th><th>Condition</th><th style="width:210px">Expected Result</th></tr></thead>
             <tbody>
               <tr v-for="(c,i) in viewModal.conditions" :key="i">
                 <td class="no">{{ i+1 }}</td>
+                <td><span class="cond-code-chip">{{ c.code }}</span></td>
                 <td class="cond-code">
-                  <template v-for="(x,k) in c.criteria" :key="k"><span class="op-tag" v-if="k"> และ </span>{{ x.field }} <span class="op-tag">{{ x.op }}</span> {{ x.value }}</template>
+                  <template v-for="(x,k) in c.criteria" :key="k"><span class="op-tag" v-if="k"> AND </span>{{ x.field }} <span class="op-tag">{{ x.op }}</span> {{ x.value }}</template>
                 </td>
                 <td class="expect-code">{{ c.expected.field }} {{ c.expected.op }} {{ c.expected.value }}</td>
               </tr>
@@ -640,9 +656,9 @@ createApp({
     <!-- ================= DELETE CONFIRM ================= -->
     <div class="modal-overlay" v-if="confirmDelete" @click.self="confirmDelete=null">
       <div class="modal-box">
-        <h3>ลบ Validation นี้ใช่หรือไม่?</h3>
-        <p>คุณกำลังจะลบ <strong>{{ confirmDelete.validation_name }}</strong> ({{ confirmDelete.validation_id }}) พร้อม {{ confirmDelete.conditions.length }} condition</p>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmDelete=null">ยกเลิก</button><button class="btn btn-danger" @click="confirmDeleteYes">ยืนยันลบ</button></div>
+        <h3>Delete this validation?</h3>
+        <p>You are about to delete <strong>{{ confirmDelete.validation_name }}</strong> ({{ confirmDelete.validation_id }}) with {{ confirmDelete.conditions.length }} condition(s).</p>
+        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmDelete=null">Cancel</button><button class="btn btn-danger" @click="confirmDeleteYes">Delete</button></div>
       </div>
     </div>
 

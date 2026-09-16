@@ -145,74 +145,63 @@
       ];
     }
   
-    /* ---- Validation Setup: field dictionary used to build conditions ----
-       Shared by validation-setup.html (the condition builder) and the pages
-       that display a validation's conditions (Workflow Execution Log). */
-    const VALIDATION_FIELDS = [
-      { code:'TYPE_PA_PU',       values:S('PA,PU') },
-      { code:'B_SCORE',          values:S('A,B,C,D,E') },
-      { code:'ENTITY',           values:[] },   // filled from rows at read time
-      { code:'PROGRAM',          values:[] },   // filled from rows at read time
-      { code:'PRODUCT_BASE',     values:S('New,Refin Non Topup,Used,Refin Topup,AL') },
-      { code:'REGION',           values:S('BKK,UPC') },
-      { code:'MODEL_TYPE_GROUP', values:S('PAL,PU,PUPA,PAM,PAS,SUV') },
-      { code:'CAR_AGE',          values:[] },
-      { code:'SOL_INT_RATE',     values:[] },
-      { code:'MAX_LTV',          values:[] },
-      { code:'CREDIT_LINE',      values:[] },
-      { code:'CASH_OFFER',       values:[] },
-      { code:'X_INSTALLMENT',    values:[] },
-      { code:'FLAT_RATE',        values:[] },
-      { code:'FLAG_PROGRAM',     values:S('Y,N') },
-    ];
+    /* ---- Validation Setup ----
+       Conditions are built from the SAME parameters the rest of the app uses:
+         Base Key            -> rows where TYPE = 'PARAMETER' (Master Data Manager)
+         Loan Offer Parameter -> paramConfigs (Parameter Master Setup)
+       so the picker never drifts from what is actually configured. */
     const VALIDATION_OPS = ['=','!=','>','>=','<','<=','IN','NOT IN'];
 
     /* ---- default Validation Setup records ----
-       One validation holds many conditions; each condition is a list of
-       criteria (all must be true) plus the Expected Result for that case. */
+       One validation holds many conditions; every condition has its own
+       Condition Code, a list of criteria (all must be true) and an
+       Expected Result. */
     function defaultValidations(){
+      /* c(n) -> condition code, C(field,op,value) -> one criteria */
+      const code = n => 'C' + String(n).padStart(5,'0');
       const C = (field, op, value) => ({ field, op, value });
+      const cond = (n, criteria, expected) => ({ code: code(n), criteria, expected });
       return [
-        { validation_id:'V00001', validation_name:'Validation ตรวจสอบดอกเบี้ย',
-          description:'ตรวจสอบอัตราดอกเบี้ยที่ระบบคำนวณให้ตรงกับตาราง TYPE_PA_PU x B_SCORE',
+        { validation_id:'V00001', validation_name:'Validation ตรวจสอบดอกเบี้ย (Flat Rate)',
+          description:'ตรวจสอบอัตราดอกเบี้ยที่ระบบคำนวณให้ตรงกับตาราง product_base x b_score_customer',
           create_date:'01/10/2024 09:00', update_date:'08/22/2025 14:20', update_by:'PRASERT.L',
           conditions:[
-            { criteria:[C('TYPE_PA_PU','=','PA'),C('B_SCORE','=','A')], expected:C('SOL_INT_RATE','=','6.5') },
-            { criteria:[C('TYPE_PA_PU','=','PA'),C('B_SCORE','=','B')], expected:C('SOL_INT_RATE','=','6.5') },
-            { criteria:[C('TYPE_PA_PU','=','PA'),C('B_SCORE','=','C')], expected:C('SOL_INT_RATE','=','8') },
-            { criteria:[C('TYPE_PA_PU','=','PU'),C('B_SCORE','=','A')], expected:C('SOL_INT_RATE','=','7.5') },
-            { criteria:[C('TYPE_PA_PU','=','PU'),C('B_SCORE','=','B')], expected:C('SOL_INT_RATE','=','7.5') },
+            cond(1, [C('product_base','=','New'), C('b_score_customer','=','A')],  C('FLAT_RATE_OPT1','=','6.5')),
+            cond(2, [C('product_base','=','New'), C('b_score_customer','=','B')],  C('FLAT_RATE_OPT1','=','6.5')),
+            cond(3, [C('product_base','=','New'), C('b_score_customer','=','C')],  C('FLAT_RATE_OPT1','=','8')),
+            cond(4, [C('product_base','=','Used'),C('b_score_customer','=','A')],  C('FLAT_RATE_OPT1','=','7.5')),
+            cond(5, [C('product_base','=','Used'),C('b_score_customer','=','B')],  C('FLAT_RATE_OPT1','=','7.5')),
           ] },
         { validation_id:'V00002', validation_name:'Validation ตรวจสอบวงเงิน Max LTV',
           description:'ตรวจสอบ Max LTV ตามกลุ่มรุ่นรถและอายุรถ',
           create_date:'01/15/2024 10:30', update_date:'07/05/2025 11:05', update_by:'PRASERT.L',
           conditions:[
-            { criteria:[C('MODEL_TYPE_GROUP','=','PAL'),C('CAR_AGE','<=','5')], expected:C('MAX_LTV','=','100') },
-            { criteria:[C('MODEL_TYPE_GROUP','=','PAL'),C('CAR_AGE','>','5')],  expected:C('MAX_LTV','=','90') },
-            { criteria:[C('MODEL_TYPE_GROUP','=','PU'),C('CAR_AGE','<=','5')],  expected:C('MAX_LTV','=','95') },
-            { criteria:[C('MODEL_TYPE_GROUP','=','SUV')],                        expected:C('MAX_LTV','<=','90') },
+            cond(1, [C('model_type_group','=','PAL'), C('car_age','<=','5')], C('MAX_LTV','=','100')),
+            cond(2, [C('model_type_group','=','PAL'), C('car_age','>','5')],  C('MAX_LTV','=','90')),
+            cond(3, [C('model_type_group','=','PU'),  C('car_age','<=','5')], C('MAX_LTV','=','95')),
+            cond(4, [C('model_type_group','=','SUV')],                        C('MAX_LTV','<=','90')),
           ] },
-        { validation_id:'V00003', validation_name:'Validation ตรวจสอบ Credit Line / Cash Offer',
-          description:'วงเงินที่เสนอต้องไม่เกิน Credit Line และต้องมากกว่าขั้นต่ำ',
+        { validation_id:'V00003', validation_name:'Validation ตรวจสอบวงเงิน Cash Offer',
+          description:'วงเงินที่เสนอต้องไม่ต่ำกว่าขั้นต่ำของแต่ละเกรดลูกค้า',
           create_date:'02/01/2024 08:45', update_date:'09/01/2025 16:40', update_by:'PRASERT.L',
           conditions:[
-            { criteria:[C('PROGRAM','=','TOPUP'),C('B_SCORE','IN','A,B')], expected:C('CREDIT_LINE','>=','50000') },
-            { criteria:[C('PROGRAM','=','TOPUP'),C('B_SCORE','=','C')],    expected:C('CREDIT_LINE','>=','30000') },
-            { criteria:[C('PROGRAM','=','REVOLVING_LOAN')],                expected:C('CASH_OFFER','>','0') },
+            cond(1, [C('b_score_customer','IN','A,B')],      C('cash_offer','>=','50000')),
+            cond(2, [C('b_score_customer','=','C')],          C('cash_offer','>=','30000')),
+            cond(3, [C('product_base','=','Refin Topup')],    C('cash_offer','>','0')),
           ] },
         { validation_id:'V00004', validation_name:'Validation ตรวจสอบจำนวนงวด (X Installment)',
-          description:'จำนวนงวดที่เสนอต้องอยู่ในกรอบของแต่ละ Entity',
+          description:'จำนวนงวดที่เสนอต้องอยู่ในกรอบของแต่ละ product base',
           create_date:'02/20/2024 13:15', update_date:'06/18/2025 09:25', update_by:'PRASERT.L',
           conditions:[
-            { criteria:[C('ENTITY','=','KA'),C('PROGRAM','=','TOPUP')], expected:C('X_INSTALLMENT','<=','84') },
-            { criteria:[C('ENTITY','=','AY'),C('PROGRAM','=','TOPUP')], expected:C('X_INSTALLMENT','<=','72') },
+            cond(1, [C('product_base','=','New')],  C('X_INSTALLMENT_OPT1','<=','84')),
+            cond(2, [C('product_base','=','Used')], C('X_INSTALLMENT_OPT1','<=','72')),
           ] },
-        { validation_id:'V00005', validation_name:'Validation ตรวจสอบ Flag Program',
-          description:'ทุก Lead ที่ผ่านเกณฑ์ต้องถูก Flag Program เรียบร้อย',
+        { validation_id:'V00005', validation_name:'Validation ตรวจสอบ Receipt Term / NCB',
+          description:'ตรวจสอบงวดการรับเอกสารและผล NCB ของ Lead ที่ผ่านเกณฑ์',
           create_date:'03/04/2024 15:00', update_date:'09/10/2025 10:10', update_by:'PRASERT.L',
           conditions:[
-            { criteria:[C('PROGRAM','=','TOPUP'),C('CREDIT_LINE','>','0')], expected:C('FLAG_PROGRAM','=','Y') },
-            { criteria:[C('PROGRAM','=','PRE_APPROVE_NU')],                  expected:C('FLAG_PROGRAM','=','Y') },
+            cond(1, [C('product_base','=','New'), C('b_score_customer','IN','A,B')], C('RECEIPT_TERM','<=','12')),
+            cond(2, [C('account_type','=','ACTIVE')],                                 C('NCB','=','Y')),
           ] },
       ];
     }
@@ -442,18 +431,18 @@
             { order:12, type:'AUTO', name:'dev-mcrm-program-pre-approve-nu-flat-rate', detail:'Update Loan offer Parameters for flat-rate pre-approve N/U', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'PRE_APPROVE_NU', params:['PA_NU_FLAT_RATE'], status:'Wait' },
             { order:13, type:'AUTO', name:'dev-mcrm-program-pre-approve-mc', detail:'Update Loan offer Parameters for pre-approve MC', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'PRE_APPROVE_MC', params:['PA_MC_OPTION'], status:'Wait' },
             { order:14, type:'AUTO', name:'dev-mcrm-program-pre-approve-mc-flat-rate', detail:'Update Loan offer Parameters for pre-approve MC flag rate', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'PRE_APPROVE_MC', params:['PA_MC_FLAT_RATE'], status:'Wait' },
-            { order:15, type:'AUTO', name:'Validate Loan Offer (Interest Rate / Flat Rate)', detail:'ตรวจสอบอัตราดอกเบี้ยและ Max LTV ของทุก program ว่าตรงกับ Expected Result ของแต่ละ Condition', category:'VALIDATION', validations:['V00001','V00002'], status:'Wait' },
+            { order:15, type:'AUTO', name:'Validate Flat Rate & Max LTV', detail:'ตรวจสอบอัตราดอกเบี้ย (Flat Rate) และ Max LTV ว่าตรงกับ Expected Result ของแต่ละ Condition', category:'VALIDATION', validations:['V00001','V00002'], status:'Wait' },
             { order:16, type:'AUTO', name:'dev-mcrm-cap-max-special-criteria', detail:'Run special logic of Cap Max Flat Rate and Max LTV for Topup program', category:'PARAMETER', code:'', status:'Wait' },
             { order:17, type:'AUTO', name:'credit line calculations Top up programs (X Sell Pool)', detail:'calculate credit line and cash offer', category:'PARAMETER', code:'', status:'Wait' },
             { order:18, type:'AUTO', name:'credit line calculations Revolving Loan programs (X Sell Pool)', detail:'', category:'PARAMETER', code:'', status:'Wait' },
             { order:19, type:'AUTO', name:'credit line calculations Pre-Approve (R) programs (X Sell Pool)', detail:'', category:'PARAMETER', code:'', status:'Wait' },
             { order:20, type:'AUTO', name:'credit line calculations Pre-Approve (N/U) programs (X Sell Pool)', detail:'', category:'PARAMETER', code:'', status:'Wait' },
-            { order:21, type:'AUTO', name:'Validate Credit Line & Installment', detail:'ตรวจสอบ Credit Line / Cash Offer และจำนวนงวดที่เสนอ ให้อยู่ในกรอบของแต่ละ Entity', category:'VALIDATION', validations:['V00003','V00004'], status:'Wait' },
+            { order:21, type:'AUTO', name:'Validate Cash Offer & Installment', detail:'ตรวจสอบวงเงิน Cash Offer และจำนวนงวดที่เสนอ ให้อยู่ในกรอบของแต่ละ product base', category:'VALIDATION', validations:['V00003','V00004'], status:'Wait' },
             { order:22, type:'AUTO', name:'Flag Program Top up', detail:'Flag Program Top up', category:'PARAMETER', code:'', status:'Wait' },
             { order:23, type:'AUTO', name:'Flag Program Revolving Loan', detail:'Flag Program Revolving Loan', category:'PARAMETER', code:'', status:'Wait' },
             { order:24, type:'AUTO', name:'Flag Program Pre-Approve (R)', detail:'Flag Program Pre-Approve (R)', category:'PARAMETER', code:'', status:'Wait' },
             { order:25, type:'AUTO', name:'Flag Program Pre-Approve (N/U) ', detail:'Flag Program Pre-Approve (N/U) ', category:'PARAMETER', code:'', status:'Wait' },
-            { order:26, type:'AUTO', name:'Validate Flag Program', detail:'ตรวจสอบว่า Lead ที่ผ่านเกณฑ์ถูก Flag Program ครบถ้วนทุก program', category:'VALIDATION', validations:['V00005'], status:'Wait' },
+            { order:26, type:'AUTO', name:'Validate Receipt Term & NCB', detail:'ตรวจสอบงวดการรับเอกสารและผล NCB ของ Lead ที่ผ่านเกณฑ์', category:'VALIDATION', validations:['V00005'], status:'Wait' },
           ] },
           { flow_id:'F00006', flow_name:'GEN LEAD INS_PPI', run_type:'MANUAL', schedule:null, steps:[
             { order:1,  type:'AUTO', name:'STEP 0',  detail:'BASE LEAD (No Condition)', category:'ELIGIBLE', code:'EL00001', status:'Wait' },
@@ -470,21 +459,29 @@
             { order:12, type:'AUTO', name:'STEP 11', detail:'SUPPRESS ADVANCE PERIOD', category:'ELIGIBLE', code:'EL00002', status:'Wait' },
             { order:13, type:'AUTO', name:'STEP 12', detail:'PREPARE FOR REGISTER INS PPI', category:'ELIGIBLE', code:'EL00003', status:'Wait' },
           ] },
-          { flow_id:'F00007', flow_name:'Gen X_SELL_POOL + Validation', run_type:'AUTO', schedule:'0 5 * * *', steps:[
-            { order:1, type:'AUTO', name:'Inquiry Data X Sell Pool', detail:'Retain all condition columns defined in the proposal that filter basic conditions', category:'ELIGIBLE', code:'EL00001', status:'Wait' },
-            { order:2, type:'AUTO', name:'Update data of Topup program per parameter', detail:'update Loan offer Parameters for Topup, parameter:all(exclude: Flat rate%)', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:['TOPUP_OPTION','MAX_LTV','RECEIPT_TERM','X_INSTALLMENT_OPT1','NCB'], status:'Wait' },
-            { order:3, type:'AUTO', name:'dev-mcrm-program-topup-flat-rate1', detail:'update Loan offer Parameters for Topup, parameter:Flat rate option 1', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:['FLAT_RATE_OPT1'], status:'Wait' },
-            { order:4, type:'AUTO', name:'Validate Loan Offer (Interest Rate / LTV)', detail:'ตรวจสอบดอกเบี้ยและวงเงินที่ระบบคำนวณ ว่าตรงกับ Expected Result ของแต่ละ Condition', category:'VALIDATION', validations:['V00001','V00002'], status:'Wait' },
-            { order:5, type:'AUTO', name:'credit line calculations Top up programs (X Sell Pool)', detail:'calculate credit line and cash offer', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:[], status:'Wait' },
-            { order:6, type:'AUTO', name:'Validate Credit Line & Installment', detail:'ตรวจสอบ Credit Line / Cash Offer และจำนวนงวดที่เสนอ', category:'VALIDATION', validations:['V00003','V00004'], status:'Wait' },
-            { order:7, type:'AUTO', name:'Flag Program Top up', detail:'Flag Program Top up', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:[], status:'Wait' },
-            { order:8, type:'AUTO', name:'Validate Flag Program', detail:'ตรวจสอบว่า Lead ที่ผ่านเกณฑ์ถูก Flag Program ครบถ้วน', category:'VALIDATION', validations:['V00005'], status:'Wait' },
-          ] },
+          { flow_id:'F00007', flow_name:'Gen X_SELL_POOL + Validation', run_type:'AUTO', schedule:'0 5 * * *', steps:[] },
         ],
         validations: defaultValidations(),
         worklist: [],
         executionLogs: [],
       };
+      /* F00007 is F00005 plus one closing Validation box that re-checks every
+         validation end-to-end before the lead is registered. Built by copying
+         F00005's steps so the two flows never drift apart. */
+      const f5src = db.workflows.find(f => f.flow_id === 'F00005');
+      const f7dst = db.workflows.find(f => f.flow_id === 'F00007');
+      if (f5src && f7dst){
+        f7dst.steps = f5src.steps.map(s => JSON.parse(JSON.stringify(s)));
+        f7dst.steps.push({
+          order: f7dst.steps.length + 1, type:'AUTO',
+          name:'Validate Final Lead Output',
+          detail:'ตรวจสอบผลลัพธ์สุดท้ายของ Lead ซ้ำทุก Validation ก่อนส่งไป Register',
+          category:'VALIDATION',
+          validations: db.validations.map(v => v.validation_id),
+          status:'Wait',
+        });
+      }
+
       db.executionLogs = buildExecutionLogsSeed(db.workflows);
       return db;
     }
@@ -540,21 +537,52 @@
       TXT, NUM,
       FIELD_META,
       FIELD_GROUP_LAYOUT,
-      VALIDATION_FIELDS,
       VALIDATION_OPS,
-      /* Values a validation field can take. ENTITY / PROGRAM are not a fixed
-         list — they follow whatever Master Data Manager currently holds. */
+      /* Parameters a validation condition can be built from, grouped by where
+         they are maintained. Read live from the store, so anything added in
+         Master Data Manager / Parameter Master Setup shows up here too. */
+      validationFieldGroups(){
+        const base = db.rows
+          .filter(r => r.TYPE === 'PARAMETER' && r.ACTIVE === 'Y')
+          .sort((a,b) => Number(a.ORDER) - Number(b.ORDER))
+          .map(r => ({ code:r.CODE, name:r.NAME }));
+        const seen = new Set();
+        const loan = [];
+        db.paramConfigs
+          .filter(c => c.ACTIVE === 'Y')
+          .forEach(c => {
+            if (seen.has(c.PARAMETER_CODE)) return;
+            seen.add(c.PARAMETER_CODE);
+            loan.push({ code:c.PARAMETER_CODE, name:c.PARAMETER_NAME });
+          });
+        loan.sort((a,b) => a.code.localeCompare(b.code));
+        return [
+          { group:'Base Key (Master Data)',   fields: base },
+          { group:'Loan Offer Parameter',     fields: loan },
+        ];
+      },
+      validationFields(){ return this.validationFieldGroups().flatMap(g => g.fields); },
+      validationFieldName(code){
+        const f = this.validationFields().find(x => x.code === code);
+        return f ? f.name : code;
+      },
+      /* Example values for a base key come from the shared field dictionary.
+         Loan-offer parameters are free-form numbers, so they get a text box. */
       validationFieldValues(code){
-        const f = VALIDATION_FIELDS.find(x => x.code === code);
-        if (!f) return [];
-        if (code === 'ENTITY')  return db.rows.filter(r=>r.TYPE==='ENTITY'  && r.ACTIVE==='Y').map(r=>r.CODE);
-        if (code === 'PROGRAM') return db.rows.filter(r=>r.TYPE==='PROGRAM' && r.ACTIVE==='Y').map(r=>r.CODE);
-        return f.values;
+        const meta = FIELD_META[code];
+        return meta ? (meta.values || []) : [];
       },
       validationOf(id){ return db.validations.find(v => v.validation_id === id) || null; },
+      /* Next free Condition Code inside one validation (C00001, C00002, ...) */
+      nextConditionCode(validation){
+        const nums = (validation.conditions || [])
+          .map(c => parseInt(String(c.code || '').replace(/\D/g,''), 10))
+          .filter(n => !isNaN(n));
+        return 'C' + String((nums.length ? Math.max(...nums) : 0) + 1).padStart(5,'0');
+      },
       /* Readable form of one condition / its expected result */
       criteriaText(c){ return `${c.field} ${c.op} ${c.value}`; },
-      conditionText(cond){ return (cond.criteria||[]).map(c => `${c.field} ${c.op} ${c.value}`).join(' และ ') || '-'; },
+      conditionText(cond){ return (cond.criteria||[]).map(c => `${c.field} ${c.op} ${c.value}`).join(' AND ') || '-'; },
       /* Mock Pass/Fail counts for a condition — deterministic, so re-opening a
          result shows the same numbers instead of reshuffling every render. */
       validationResultOf(id, idx){
