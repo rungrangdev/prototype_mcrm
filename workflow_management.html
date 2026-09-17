@@ -174,6 +174,16 @@
 
     .step-box .btn-run{padding:4px 12px;font-size:11px;border-radius:6px;}
 
+    /* ปุ่ม Run all เล็ก ๆ บน topbar ของหน้า View */
+    .btn-run-sm{
+      display:inline-flex;align-items:center;gap:5px;
+      padding:5px 11px;border-radius:7px;cursor:pointer;font-family:inherit;
+      font-size:11.5px;font-weight:600;letter-spacing:.2px;
+      background:#FFFFFF;border:1px solid #E4E7EF;color:#374151;margin-left:8px;
+      transition:background .15s,border-color .15s;
+    }
+    .btn-run-sm:hover{background:#F0F2F8;border-color:#CBD2E0;color:#1E2433;}
+
     .term-node{
       box-sizing:border-box;width:100%;height:100%;
       display:flex;align-items:center;justify-content:center;gap:8px;
@@ -614,6 +624,12 @@ createApp({
       }
     }
     function runFlow(i){ processRunFlow(i); }
+    /* ปุ่มลัดตอนดู transaction : ดันทุก step เป็น Completed ทีเดียว
+       (ไว้เปิดดูผลลัพธ์ของกล่องที่ต้องรันจบก่อนถึงจะกดดูได้) */
+    function completeAllSteps(){
+      steps.value.forEach(s => s.status = 'Completed');
+      showToast('ทุกขั้นตอนถูกตั้งเป็น Completed แล้ว');
+    }
 
     const toast = reactive({ show:false, msg:'', ok:true });
     let toastTimer = null;
@@ -642,7 +658,7 @@ createApp({
       validationNameOf, validationCondCount,
       validationModal, openStepValidation, closeStepValidation, exportStepValidation,
       flowStatus, currentStepLabel,
-      manualWarning, runFlow, numberWithCommas, randomMin,
+      manualWarning, runFlow, completeAllSteps, numberWithCommas, randomMin,
       toast,
     };
   },
@@ -687,6 +703,10 @@ createApp({
         <label>Transaction ID</label><input :value="currentTrans.trans_id" readonly>
         <label>Flow ID</label><input :value="currentTrans.flow_id" readonly>
         <label>Flow Name</label><input :value="currentTrans.flow_name" readonly style="width:300px">
+        <button class="btn-run-sm" title="ตั้งให้ทุกกล่องเป็น Completed" @click="completeAllSteps">
+          <svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M2 1.5l6 3.5-6 3.5V1.5z" fill="currentColor"/></svg>
+          Run all
+        </button>
         <button class="btn-run" @click="backToList">« Back</button>
       </div>
 
