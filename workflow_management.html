@@ -128,7 +128,7 @@
     .vr-tag.ng{background:#FDE8E8;color:#DC2626;}
     .vr-code{font-family:Consolas,'Courier New',monospace;font-size:11px;font-weight:700;color:#6B7280;
       background:#F7F8FB;border:1px solid #EAEDF4;border-radius:5px;padding:2px 7px;white-space:nowrap;}
-    /* step ที่ยังไม่ทำงาน : ไม่มีตัวเลขผล จึงซ่อนคอลัมน์ Checked/Pass/Fail/%Pass/Result */
+    /* step ที่ยังไม่ทำงาน : ไม่มีตัวเลขผล จึงซ่อนคอลัมน์ Totals/Match/Not match/%/Result */
     .ftbl.no-result th:nth-child(n+5),
     .ftbl.no-result td:nth-child(n+5){display:none;}
     /* ตารางผล Validation มีคอลัมน์ Condition Code เพิ่มมา ทำให้คอลัมน์ข้อความเลื่อนไป 1 */
@@ -516,7 +516,7 @@ createApp({
     function closeStepValidation(){ validationModal.show = false; }
     function exportStepValidation(){
       if (!validationModal.rows.length) return;
-      const lines = ['Validation ID,Validation Name,#,Condition Code,Condition,Expected Result,Checked,Pass,Fail,% Pass,Result'];
+      const lines = ['Validation ID,Validation Name,#,Condition Code,Condition,Expected Result,Totals,Match,Not match,%,Result'];
       let code='', name='';
       validationModal.rows.forEach(r => {
         if (r.group){ code=r.code; name=r.name; return; }
@@ -824,10 +824,10 @@ createApp({
                 <th style="width:105px">Condition Code</th>
                 <th>Validation / Condition</th>
                 <th style="width:170px">Expected Result</th>
-                <th style="width:80px">Checked</th>
-                <th style="width:70px">Pass</th>
-                <th style="width:70px">Fail</th>
-                <th style="width:80px">% Pass</th>
+                <th style="width:80px">Totals</th>
+                <th style="width:70px">Match</th>
+                <th style="width:90px">Not match</th>
+                <th style="width:70px">%</th>
                 <th style="width:70px">Result</th>
               </tr>
             </thead>
