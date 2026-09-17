@@ -85,6 +85,10 @@
       TYPE_PA_PU:   { label:'TYPE_PA_PU',   dataType:TXT, values:S('PA,PU') },
       sub_product_base: { label:'sub_product_base', dataType:TXT, values:S('New,Refin Non Topup,Used,Refin Topup,AL') },
       TOP_UP_FLAG:      { label:'TOP_UP_FLAG',      dataType:TXT, values:S('Y,N') },
+      OPTION_1:         { label:'OPTION_1',         dataType:TXT, values:S('Y,N') },
+      OPTION_2:         { label:'OPTION_2',         dataType:TXT, values:S('Y,N') },
+      OPTION_3:         { label:'OPTION_3',         dataType:TXT, values:S('Y,N') },
+      OPTION_4:         { label:'OPTION_4',         dataType:TXT, values:S('Y,N') },
       B_SCORE:      { label:'B_SCORE',      dataType:TXT, values:S('A,B,C,D,E') },
       SOL_INT_RATE: { label:'SOL_INT_RATE', dataType:NUM, values:[], hint:'e.g. 6.5' },
 
@@ -278,6 +282,10 @@
           { TYPE:'PARAMETER', CODE:'SOL_INT_RATE',       NAME:'SOL_INT_RATE',          DESCRIPTION:'อัตราดอกเบี้ยที่เสนอ',          ORDER:'17', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
           { TYPE:'PARAMETER', CODE:'sub_product_base',  NAME:'sub_product_base',      DESCRIPTION:'ผลิตภัณฑ์ย่อย',                ORDER:'18', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
           { TYPE:'PARAMETER', CODE:'TOP_UP_FLAG',       NAME:'TOP_UP_FLAG',           DESCRIPTION:'ธงบอกว่าเป็นเคส Topup',        ORDER:'19', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
+          { TYPE:'PARAMETER', CODE:'OPTION_1',          NAME:'OPTION_1',             DESCRIPTION:'ตัวเลือกข้อเสนอที่ 1',           ORDER:'20', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
+          { TYPE:'PARAMETER', CODE:'OPTION_2',          NAME:'OPTION_2',             DESCRIPTION:'ตัวเลือกข้อเสนอที่ 2',           ORDER:'21', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
+          { TYPE:'PARAMETER', CODE:'OPTION_3',          NAME:'OPTION_3',             DESCRIPTION:'ตัวเลือกข้อเสนอที่ 3',           ORDER:'22', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
+          { TYPE:'PARAMETER', CODE:'OPTION_4',          NAME:'OPTION_4',             DESCRIPTION:'ตัวเลือกข้อเสนอที่ 4',           ORDER:'23', ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
         ],
   
         assignments: [
