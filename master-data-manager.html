@@ -272,6 +272,13 @@
   }
   table.data-table tbody tr:hover{ background: var(--brown-lighter); }
 
+  .status-text{
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .status-text.is-active{ color: var(--success); }
+  .status-text.is-inactive{ color: var(--text-muted); }
+
   .code-pill{
     display: inline-block;
     font-size: 12.5px;
@@ -511,7 +518,6 @@ createApp({
       }
       showPanel.value = false;
     }
-    function toggleActive(item){ item.ACTIVE = item.ACTIVE === 'Y' ? 'N' : 'Y'; item.UPDATE_BY='ADMIN'; item.UPDATE_DATE=now(); }
 
     /* ---- delete (blocked when other rows depend on this one) ---- */
     const confirmDeleteItem = ref(null);
@@ -551,7 +557,7 @@ createApp({
     return {
       categories, activeKey, activeCategory, itemCount, activeItemCount, selectCategory,
       search, items,
-      showPanel, isEditing, formModel, dependOptions, openAddPanel, openEditPanel, closePanel, saveItem, toggleActive,
+      showPanel, isEditing, formModel, dependOptions, openAddPanel, openEditPanel, closePanel, saveItem,
       confirmDeleteItem, askDelete, cancelDelete, blockingDependents, confirmDelete,
       showAddCategory, categoryForm, openAddCategory, saveCategory,
       toast
@@ -623,10 +629,9 @@ createApp({
                   <span v-else class="depend-empty">—</span>
                 </td>
                 <td>
-                  <label class="switch">
-                    <input type="checkbox" :checked="item.ACTIVE==='Y'" @change="toggleActive(item)">
-                    <span class="slider"></span>
-                  </label>
+                  <span class="status-text" :class="item.ACTIVE==='Y' ? 'is-active' : 'is-inactive'">
+                    {{ item.ACTIVE==='Y' ? 'Active' : 'Inactive' }}
+                  </span>
                 </td>
                 <td>
                   <div class="dropdown-container">
