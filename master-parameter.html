@@ -741,14 +741,14 @@ createApp({
           <div class="filter-field">
             <label>Lead Type</label>
             <select v-model="verFilterLeadType">
-              <option value="">— All —</option>
+              <option value="">Select All</option>
               <option v-for="l in leadTypeMaster" :key="l.CODE" :value="l.CODE">{{ l.NAME }}</option>
             </select>
           </div>
           <div class="filter-field">
             <label>Status</label>
             <select v-model="verFilterStatus">
-              <option value="">— All —</option>
+              <option value="">Select All</option>
               <option v-for="st in VERSION_STATUSES" :key="st" :value="st">{{ st }}</option>
             </select>
           </div>
