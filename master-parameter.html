@@ -522,6 +522,8 @@ createApp({
     }
 
     const versionParamCount = (v) => paramConfigs.filter(c => c.VERSION_ID === v.VERSION_ID).length;
+    const verStatusText  = (st) => st || 'Active';
+    const verStatusClass = (st) => 'vs-' + verStatusText(st).toLowerCase().replace(/ /g,'-');
 
     const showCfgForm = ref(false);
     const isEditingCfg = ref(false);
@@ -704,7 +706,7 @@ createApp({
       openAddCfg, openEditCfg, closeCfgForm, toggleCfgKey, removeCfgKeyAt, saveCfg, toggleCfgActive,
       confirmDeleteCfg, askDeleteCfg, confirmDeleteCfgRow, cfgPreview,
       cfgView, cfgVersionId, cfgVersions, openCfgSetup, backToCfgList,
-      cfgVersionStatus, cfgEditable, versionParamCount, cloneVersion,
+      cfgVersionStatus, cfgEditable, versionParamCount, cloneVersion, verStatusText, verStatusClass,
       confirmSubmitVersion, askSubmitVersion, confirmSubmitVersionYes,
       confirmApproveVersion, askApproveVersion, confirmApproveVersionYes,
       confirmDeleteVersion, askDeleteVersion, confirmDeleteVersionYes,
@@ -744,25 +746,25 @@ createApp({
                   </div>
                 </td>
                 <td align="center" style="vertical-align:top;">
-                  <span class="ver-status" :class="'vs-'+v.STATUS.toLowerCase().replace(/ /g,'-')">{{ v.STATUS }}</span>
+                  <span class="ver-status" :class="verStatusClass(v.STATUS)">{{ verStatusText(v.STATUS) }}</span>
                 </td>
                 <td align="center" style="vertical-align:top;">
                   <div class="dropdown-container">
                     <button class="btn-dots" onclick="toggleDropdown(event, this)">⋮</button>
                     <div class="dropdown-menu">
                       <!-- Open : ยังแก้ไขได้ -->
-                      <template v-if="v.STATUS==='Open'">
+                      <template v-if="verStatusText(v.STATUS)==='Open'">
                         <button class="icon-btn" @click="openCfgSetup(v)">Edit</button>
                         <button class="icon-btn danger" @click="askDeleteVersion(v)">Delete</button>
                         <button class="icon-btn" @click="askSubmitVersion(v)">Submit</button>
                       </template>
                       <!-- รออนุมัติ : ดูได้ กับ อนุมัติ -->
-                      <template v-else-if="v.STATUS==='Waiting for approve'">
+                      <template v-else-if="verStatusText(v.STATUS)==='Waiting for approve'">
                         <button class="icon-btn" @click="openCfgSetup(v)">View</button>
                         <button class="icon-btn" @click="askApproveVersion(v)">Approve</button>
                       </template>
                       <!-- Active : ดูได้ กับ clone ไปแก้เป็นชุดใหม่ -->
-                      <template v-else-if="v.STATUS==='Active'">
+                      <template v-else-if="verStatusText(v.STATUS)==='Active'">
                         <button class="icon-btn" @click="openCfgSetup(v)">View</button>
                         <button class="icon-btn" @click="cloneVersion(v)">Clone</button>
                       </template>
@@ -791,7 +793,7 @@ createApp({
           <div>
             <div class="panel-title-row">
               <h2>Parameter Master Setup</h2>
-              <span class="ver-status" :class="'vs-'+cfgVersionStatus.toLowerCase().replace(/ /g,'-')">{{ cfgVersionStatus }}</span>
+              <span class="ver-status" :class="verStatusClass(cfgVersionStatus)">{{ verStatusText(cfgVersionStatus) }}</span>
               <span class="view-only-tag" v-if="!cfgEditable">View only</span>
             </div>
           </div>

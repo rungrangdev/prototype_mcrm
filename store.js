@@ -477,6 +477,23 @@
       return db;
     }
   
+    /* Data saved by an older build is missing fields added since. Fill them in
+       on load so a returning user isn't left with a broken page (a version with
+       no STATUS, or parameters with no VERSION_ID that no screen can find). */
+    function migrate(db) {
+      const versions = Array.isArray(db.cfgVersions) ? db.cfgVersions : [];
+      versions.forEach(v => {
+        if (!v.STATUS) v.STATUS = 'Active';          // ของเดิมคือชุดที่ใช้งานอยู่
+        if (v.CLONED_FROM === undefined) v.CLONED_FROM = '';
+      });
+      const fallbackVersion = versions[0]?.VERSION_ID || 'V0001';
+      [db.paramConfigs, db.criteriaRows].forEach(list => {
+        if (!Array.isArray(list)) return;
+        list.forEach(r => { if (!r.VERSION_ID) r.VERSION_ID = fallbackVersion; });
+      });
+      return db;
+    }
+
     function loadDb() {
       const base = seed();
       try {
@@ -490,7 +507,7 @@
       } catch (e) {
         console.warn('MCRM store: failed to read localStorage, using defaults', e);
       }
-      return base;
+      return migrate(base);
     }
   
     const db = Vue.reactive(loadDb());
@@ -507,7 +524,7 @@
     global.addEventListener('storage', (e) => {
       if (e.key !== STORAGE_KEY || !e.newValue) return;
       try {
-        const saved = JSON.parse(e.newValue);
+        const saved = migrate(JSON.parse(e.newValue));
         Object.keys(db).forEach(key => {
           if (Object.prototype.hasOwnProperty.call(saved, key)) db[key] = saved[key];
         });
