@@ -374,14 +374,6 @@ createApp({
       executionLogs.push(entry);
       showToast(`สร้าง Transaction "${entry.trans_id}" เรียบร้อย`);
     }
-    const confirmDeleteTrans = ref(null);
-    function askDeleteTrans(t){ confirmDeleteTrans.value = t; }
-    function confirmDeleteTransYes(){
-      const t = confirmDeleteTrans.value;
-      executionLogs.splice(executionLogs.findIndex(e => e === t), 1);
-      confirmDeleteTrans.value = null;
-      showToast(`ลบ Transaction "${t.trans_id}" แล้ว`);
-    }
 
     /* ---- register a completed/running transaction as a worklist lead ---- */
     const confirmRegister = ref(null);
@@ -649,7 +641,6 @@ createApp({
       flows, executionLogs, CATEGORIES, paramNameOf, STROKE, STROKE_W,
       pageView, currentTrans, openTransaction, backToList,
       createFlowId, createTransaction,
-      confirmDeleteTrans, askDeleteTrans, confirmDeleteTransYes,
       confirmRegister, registerLead, confirmRegisterYes,
       canvasEl, cols, steps, nodeCount, isTerm, rectAt, makePath, svgW, svgH,
       statusClass, badgeClass, codeChipInfo, allDone,
@@ -688,7 +679,6 @@ createApp({
                 <div class="dropdown-menu">
                   <button @click="openTransaction(t.trans_id)">View</button>
                   <button @click="registerLead(t.trans_id)">Register Lead</button>
-                  <button @click="askDeleteTrans(t)">Delete</button>
                 </div>
               </div>
             </td>
@@ -795,15 +785,6 @@ createApp({
             </div>
           </foreignObject>
         </svg>
-      </div>
-    </div>
-
-    <!-- Delete transaction confirm -->
-    <div class="modal-overlay" v-if="confirmDeleteTrans" @click.self="confirmDeleteTrans=null">
-      <div class="modal-box">
-        <h3>Delete this transaction?</h3>
-        <p>You are about to delete <strong>{{ confirmDeleteTrans.trans_id }}</strong> ({{ confirmDeleteTrans.flow_name }}). This cannot be undone.</p>
-        <div class="modal-actions"><button class="btn-ghost" @click="confirmDeleteTrans=null">Cancel</button><button class="btn-run" style="background:#DC2626" @click="confirmDeleteTransYes">Delete</button></div>
       </div>
     </div>
 

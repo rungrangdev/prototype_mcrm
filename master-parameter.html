@@ -240,6 +240,16 @@
   .meta-box{margin-top:6px;padding:12px 14px;background:var(--surface-alt);border-radius:8px;font-size:12px;color:var(--text-secondary);line-height:1.7;}
   .side-drawer-foot{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;}
 
+  /* ---- สถานะของ version ---- */
+  .ver-status{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:999px;white-space:nowrap;}
+  .vs-open{background:#EEF1F6;color:#4B5563;}
+  .vs-waiting-for-approve{background:var(--accent-soft);color:#9A6316;}
+  .vs-active{background:var(--success-soft);color:var(--success);}
+  .vs-inactive{background:#F1F2F5;color:#9AA2B1;}
+  .cloned-from{font-size:10.5px;font-weight:500;color:var(--text-secondary);margin-top:3px;}
+  .view-only-tag{font-size:11px;font-weight:600;color:var(--text-secondary);
+    background:var(--surface-alt);border:1px solid var(--border);border-radius:6px;padding:2px 8px;}
+
   .modal-overlay{position:fixed;inset:0;background:rgba(20,26,40,.42);display:flex;align-items:center;justify-content:center;z-index:60;}
   .modal-box{background:#fff;border-radius:12px;padding:24px;width:400px;max-width:92vw;box-shadow:var(--shadow-md);animation:pop .15s ease;}
   @keyframes pop{from{transform:scale(.96);opacity:0;}to{transform:scale(1);opacity:1;}}
@@ -424,7 +434,7 @@ createApp({
     const cfgProgram = ref('TOPUP');
     const cfgEntity = ref('KA');
     const cfgLeadType = ref('CRM_X_SELL_POOL');
-    const cfgRecords = computed(() => paramConfigs.filter(c=>c.PROGRAM_CODE===cfgProgram.value && c.ENTITY===cfgEntity.value).sort((a,b)=>Number(a.ORDER)-Number(b.ORDER)));
+    const cfgRecords = computed(() => paramConfigs.filter(c=>c.VERSION_ID===cfgVersionId.value && c.PROGRAM_CODE===cfgProgram.value && c.ENTITY===cfgEntity.value).sort((a,b)=>Number(a.ORDER)-Number(b.ORDER)));
 
     /* =========================================================
        Version list — ตารางก่อนเข้าหน้า Parameter Master Setup
@@ -432,14 +442,86 @@ createApp({
     const cfgView = ref('list');   // 'list' = ตาราง version, 'setup' = หน้า Parameter Master Setup
     const cfgVersionId = ref('');
     const cfgVersions = MCRM.db.cfgVersions;
+    /* ---- วงจรสถานะของ version ----
+         Open                -> แก้ไขได้ (Edit / Delete / Submit)
+         Waiting for approve -> ล็อกแล้ว (View / Approve)
+         Active              -> ชุดที่ใช้งานจริง (View / Clone)
+         Inactive            -> ของเก่าที่ถูกแทนที่ไปแล้ว (View)             */
+    const cfgVersionStatus = ref('');      // สถานะของ version ที่เปิดอยู่
+    /* แก้ไขได้เฉพาะตอน Open เท่านั้น — ใช้คุมปุ่ม Add/Edit/Delete/Set value ทั้งหน้า */
+    const cfgEditable = computed(() => cfgVersionStatus.value === 'Open');
+
     function openCfgSetup(v){
       cfgVersionId.value = v.VERSION_ID;
+      cfgVersionStatus.value = v.STATUS || 'Open';
       cfgLeadType.value = leadTypeMaster.value[0]?.CODE || '';
       cfgView.value = 'setup';
     }
     function backToCfgList(){
       cfgView.value = 'list';
     }
+
+    function nextVersionId(){
+      const nums = cfgVersions.map(v => parseInt(String(v.VERSION_ID).replace(/\D/g,''),10)).filter(n=>!isNaN(n));
+      return 'V' + String((nums.length ? Math.max(...nums) : 0) + 1).padStart(4,'0');
+    }
+
+    /* Clone : คัดลอกทั้ง version (parameter + ค่าที่ตั้งไว้) มาเป็นชุดใหม่สถานะ Open */
+    function cloneVersion(v){
+      const id = nextVersionId();
+      const deep = x => JSON.parse(JSON.stringify(x));
+      paramConfigs
+        .filter(c => c.VERSION_ID === v.VERSION_ID)
+        .forEach(c => paramConfigs.push({ ...deep(c), VERSION_ID:id, CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() }));
+      criteriaRows
+        .filter(r => r.VERSION_ID === v.VERSION_ID)
+        .forEach(r => criteriaRows.push({ ...deep(r), VERSION_ID:id, CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() }));
+      cfgVersions.push({
+        VERSION_ID:id, STATUS:'Open', CLONED_FROM:v.VERSION_ID,
+        PROGRAMS: deep(v.PROGRAMS),
+        CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now(),
+      });
+      showToast(`Clone ${v.VERSION_ID} เป็น ${id} แล้ว (สถานะ Open)`);
+    }
+
+    /* Submit : ล็อกไม่ให้แก้ไขต่อ รอการอนุมัติ */
+    const confirmSubmitVersion = ref(null);
+    function askSubmitVersion(v){ confirmSubmitVersion.value = v; }
+    function confirmSubmitVersionYes(){
+      const v = confirmSubmitVersion.value;
+      v.STATUS = 'Waiting for approve';
+      v.UPDATE_BY = 'ADMIN'; v.UPDATE_DATE = now();
+      confirmSubmitVersion.value = null;
+      showToast(`${v.VERSION_ID} ส่งขออนุมัติแล้ว`);
+    }
+
+    /* Approve : version นี้เป็น Active และดัน version ต้นทางที่ถูก clone มาเป็น Inactive */
+    const confirmApproveVersion = ref(null);
+    function askApproveVersion(v){ confirmApproveVersion.value = v; }
+    function confirmApproveVersionYes(){
+      const v = confirmApproveVersion.value;
+      v.STATUS = 'Active';
+      v.UPDATE_BY = 'ADMIN'; v.UPDATE_DATE = now();
+      const src = cfgVersions.find(x => x.VERSION_ID === v.CLONED_FROM);
+      if (src){ src.STATUS = 'Inactive'; src.UPDATE_BY = 'ADMIN'; src.UPDATE_DATE = now(); }
+      confirmApproveVersion.value = null;
+      showToast(src ? `${v.VERSION_ID} เป็น Active แล้ว และ ${src.VERSION_ID} เป็น Inactive`
+                    : `${v.VERSION_ID} เป็น Active แล้ว`);
+    }
+
+    /* Delete : ลบได้เฉพาะ version ที่ยัง Open พร้อมข้อมูลที่ผูกอยู่ */
+    const confirmDeleteVersion = ref(null);
+    function askDeleteVersion(v){ confirmDeleteVersion.value = v; }
+    function confirmDeleteVersionYes(){
+      const v = confirmDeleteVersion.value;
+      for (let i = paramConfigs.length-1; i >= 0; i--) if (paramConfigs[i].VERSION_ID === v.VERSION_ID) paramConfigs.splice(i,1);
+      for (let i = criteriaRows.length-1; i >= 0; i--) if (criteriaRows[i].VERSION_ID === v.VERSION_ID) criteriaRows.splice(i,1);
+      cfgVersions.splice(cfgVersions.findIndex(x => x === v), 1);
+      confirmDeleteVersion.value = null;
+      showToast(`ลบ ${v.VERSION_ID} แล้ว`);
+    }
+
+    const versionParamCount = (v) => paramConfigs.filter(c => c.VERSION_ID === v.VERSION_ID).length;
 
     const showCfgForm = ref(false);
     const isEditingCfg = ref(false);
@@ -462,11 +544,11 @@ createApp({
       if (!cfgFormModel.KEY_BASE.length){ showToast('กรุณาเลือก Base Key อย่างน้อย 1 รายการ', false); return; }
       const code = isEditingCfg.value ? cfgFormModel.PARAMETER_CODE : slugify(cfgFormModel.PARAMETER_NAME);
       if (isEditingCfg.value){
-        const idx = paramConfigs.findIndex(c=>c.PROGRAM_CODE===cfgProgram.value && c.ENTITY===cfgEntity.value && c.PARAMETER_CODE===code);
+        const idx = paramConfigs.findIndex(c=>c.VERSION_ID===cfgVersionId.value && c.PROGRAM_CODE===cfgProgram.value && c.ENTITY===cfgEntity.value && c.PARAMETER_CODE===code);
         paramConfigs[idx] = { ...paramConfigs[idx], ...cfgFormModel, PARAMETER_CODE:code, UPDATE_BY:'ADMIN', UPDATE_DATE:now() };
       } else {
-        if (paramConfigs.some(c=>c.PROGRAM_CODE===cfgProgram.value && c.ENTITY===cfgEntity.value && c.PARAMETER_CODE===code)){ showToast('มีพารามิเตอร์นี้อยู่แล้ว', false); return; }
-        paramConfigs.push({ PROGRAM_CODE:cfgProgram.value, ENTITY:cfgEntity.value, ...cfgFormModel, PARAMETER_CODE:code, CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
+        if (paramConfigs.some(c=>c.VERSION_ID===cfgVersionId.value && c.PROGRAM_CODE===cfgProgram.value && c.ENTITY===cfgEntity.value && c.PARAMETER_CODE===code)){ showToast('มีพารามิเตอร์นี้อยู่แล้ว', false); return; }
+        paramConfigs.push({ VERSION_ID:cfgVersionId.value, PROGRAM_CODE:cfgProgram.value, ENTITY:cfgEntity.value, ...cfgFormModel, PARAMETER_CODE:code, CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
       }
       showToast('บันทึกการตั้งค่าพารามิเตอร์เรียบร้อย');
       showCfgForm.value = false;
@@ -537,14 +619,14 @@ createApp({
 
     const criteriaRows = MCRM.db.criteriaRows;
 
-    const valueCount = (row) => criteriaRows.filter(r => r.PROGRAM_CODE===cfgProgram.value && r.ENTITY===cfgEntity.value && r.PARAMETER_CODE===row.PARAMETER_CODE).length;
+    const valueCount = (row) => criteriaRows.filter(r => r.VERSION_ID===cfgVersionId.value && r.PROGRAM_CODE===cfgProgram.value && r.ENTITY===cfgEntity.value && r.PARAMETER_CODE===row.PARAMETER_CODE).length;
 
     const showCritPanel = ref(false);
     const critMode = ref('list');        // 'list' | 'form'
     const critParamRow = ref(null);      // แถวพารามิเตอร์ที่กำลัง Set value
     const critBaseKeys = computed(() => critParamRow.value ? critParamRow.value.KEY_BASE : []);
     const critList = computed(() => !critParamRow.value ? [] : criteriaRows
-      .filter(r => r.PROGRAM_CODE===cfgProgram.value && r.ENTITY===cfgEntity.value && r.PARAMETER_CODE===critParamRow.value.PARAMETER_CODE)
+      .filter(r => r.VERSION_ID===cfgVersionId.value && r.PROGRAM_CODE===cfgProgram.value && r.ENTITY===cfgEntity.value && r.PARAMETER_CODE===critParamRow.value.PARAMETER_CODE)
       .sort((a,b)=>Number(a.ORDER)-Number(b.ORDER)));
 
     function openSetValue(row){ critParamRow.value = row; critMode.value = 'list'; showCritPanel.value = true; }
@@ -574,7 +656,7 @@ createApp({
     function saveCritValue(){
       const val = critFormModel.VALUE.trim();
       if (!val){ showToast('กรุณากรอก value', false); return; }
-      const dup = criteriaRows.some(r => r !== editingCritRow.value &&
+      const dup = criteriaRows.some(r => r !== editingCritRow.value && r.VERSION_ID===cfgVersionId.value &&
         r.PROGRAM_CODE===cfgProgram.value && r.ENTITY===cfgEntity.value &&
         r.PARAMETER_CODE===critParamRow.value.PARAMETER_CODE && r.VALUE===val);
       if (dup){ showToast('มี value นี้อยู่แล้วในพารามิเตอร์นี้', false); return; }
@@ -593,6 +675,7 @@ createApp({
         showToast(`บันทึก "${val}" เรียบร้อย`);
       } else {
         criteriaRows.push({
+          VERSION_ID: cfgVersionId.value,
           PROGRAM_CODE:cfgProgram.value, ENTITY:cfgEntity.value, PARAMETER_CODE:critParamRow.value.PARAMETER_CODE,
           VALUE:val, ORDER:critFormModel.ORDER, ACTIVE:critFormModel.ACTIVE,
           KEY_VALUES:JSON.parse(JSON.stringify(critFormModel.KEY_VALUES)),
@@ -621,6 +704,10 @@ createApp({
       openAddCfg, openEditCfg, closeCfgForm, toggleCfgKey, removeCfgKeyAt, saveCfg, toggleCfgActive,
       confirmDeleteCfg, askDeleteCfg, confirmDeleteCfgRow, cfgPreview,
       cfgView, cfgVersionId, cfgVersions, openCfgSetup, backToCfgList,
+      cfgVersionStatus, cfgEditable, versionParamCount, cloneVersion,
+      confirmSubmitVersion, askSubmitVersion, confirmSubmitVersionYes,
+      confirmApproveVersion, askApproveVersion, confirmApproveVersionYes,
+      confirmDeleteVersion, askDeleteVersion, confirmDeleteVersionYes,
       KV_OPS, isNAkv, kvText, valueCount,
       kvOpts, kvOps, kvIsNum, kvIsMulti, kvArr, kvHas, kvOffList, kvToggle, kvRemove, kvClear, onKvOpChange,
       pickerKey, pickerSearch, togglePicker, closePicker, kvFiltered,
@@ -644,20 +731,45 @@ createApp({
         </div>
         <div class="table-wrap">
           <table class="data-table" v-if="cfgVersions.length">
-            <thead><tr><th style="width:140px">Version id</th><th>Program name</th><th style="width:70px"></th></tr></thead>
+            <thead><tr><th style="width:140px">Version id</th><th>Program name</th><th style="width:170px">Status</th><th style="width:70px"></th></tr></thead>
             <tbody>
               <tr v-for="v in cfgVersions" :key="v.VERSION_ID">
-                <td align="center" style="vertical-align:top;font-weight:700;">{{ v.VERSION_ID }}</td>
+                <td align="center" style="vertical-align:top;font-weight:700;">
+                  {{ v.VERSION_ID }}
+                  <div class="cloned-from" v-if="v.CLONED_FROM">clone of {{ v.CLONED_FROM }}</div>
+                </td>
                 <td>
                   <div class="program-list">
                     <span v-for="(p,i) in v.PROGRAMS" :key="i">{{ p }}</span>
                   </div>
                 </td>
                 <td align="center" style="vertical-align:top;">
+                  <span class="ver-status" :class="'vs-'+v.STATUS.toLowerCase().replace(/ /g,'-')">{{ v.STATUS }}</span>
+                </td>
+                <td align="center" style="vertical-align:top;">
                   <div class="dropdown-container">
                     <button class="btn-dots" onclick="toggleDropdown(event, this)">⋮</button>
                     <div class="dropdown-menu">
-                      <button class="icon-btn" title="" @click="openCfgSetup(v)">Edit</button>
+                      <!-- Open : ยังแก้ไขได้ -->
+                      <template v-if="v.STATUS==='Open'">
+                        <button class="icon-btn" @click="openCfgSetup(v)">Edit</button>
+                        <button class="icon-btn danger" @click="askDeleteVersion(v)">Delete</button>
+                        <button class="icon-btn" @click="askSubmitVersion(v)">Submit</button>
+                      </template>
+                      <!-- รออนุมัติ : ดูได้ กับ อนุมัติ -->
+                      <template v-else-if="v.STATUS==='Waiting for approve'">
+                        <button class="icon-btn" @click="openCfgSetup(v)">View</button>
+                        <button class="icon-btn" @click="askApproveVersion(v)">Approve</button>
+                      </template>
+                      <!-- Active : ดูได้ กับ clone ไปแก้เป็นชุดใหม่ -->
+                      <template v-else-if="v.STATUS==='Active'">
+                        <button class="icon-btn" @click="openCfgSetup(v)">View</button>
+                        <button class="icon-btn" @click="cloneVersion(v)">Clone</button>
+                      </template>
+                      <!-- Inactive : ดูได้อย่างเดียว -->
+                      <template v-else>
+                        <button class="icon-btn" @click="openCfgSetup(v)">View</button>
+                      </template>
                     </div>
                   </div>
                 </td>
@@ -679,11 +791,13 @@ createApp({
           <div>
             <div class="panel-title-row">
               <h2>Parameter Master Setup</h2>
+              <span class="ver-status" :class="'vs-'+cfgVersionStatus.toLowerCase().replace(/ /g,'-')">{{ cfgVersionStatus }}</span>
+              <span class="view-only-tag" v-if="!cfgEditable">View only</span>
             </div>
           </div>
           <div style="display:flex;gap:10px;">
             <button class="btn btn-ghost" @click="backToCfgList">« Back</button>
-            <button class="btn btn-primary" @click="openAddCfg">+ Add</button>
+            <button class="btn btn-primary" v-if="cfgEditable" @click="openAddCfg">+ Add</button>
           </div>
         </div>
         <div class="filter-row">
@@ -722,7 +836,12 @@ createApp({
                         <button class="btn-dots" onclick="toggleDropdown(event, this)">⋮</button>
 
                         <div class="dropdown-menu">
-                            <button class="icon-btn" title="" @click="openEditCfg(row)">Edit</button><button class="icon-btn" title="" @click="openSetValue(row)">Set value<span v-if="valueCount(row)" style="color:var(--text-secondary);font-size:12px;"> ({{ valueCount(row) }})</span></button><button class="icon-btn danger" title="" @click="askDeleteCfg(row)">Delete</button>
+                            <template v-if="cfgEditable">
+                              <button class="icon-btn" title="" @click="openEditCfg(row)">Edit</button><button class="icon-btn" title="" @click="openSetValue(row)">Set value<span v-if="valueCount(row)" style="color:var(--text-secondary);font-size:12px;"> ({{ valueCount(row) }})</span></button><button class="icon-btn danger" title="" @click="askDeleteCfg(row)">Delete</button>
+                            </template>
+                            <template v-else>
+                              <button class="icon-btn" title="" @click="openSetValue(row)">View value<span v-if="valueCount(row)" style="color:var(--text-secondary);font-size:12px;"> ({{ valueCount(row) }})</span></button>
+                            </template>
                     </div>
                     </div>
                     </td>
@@ -732,11 +851,40 @@ createApp({
           <div v-else class="empty-state">
             <div class="glyph"></div>
             <h3>ยังไม่มีพารามิเตอร์สำหรับโปรแกรมนี้</h3>
-            <p>เพิ่มพารามิเตอร์แรกของ {{ cfgProgram }} / {{ cfgEntity }} ได้เลย</p>
-            <button class="btn btn-primary" style="margin-top:12px" @click="openAddCfg">+ เพิ่มพารามิเตอร์</button>
+            <template v-if="cfgEditable">
+              <p>เพิ่มพารามิเตอร์แรกของ {{ cfgProgram }} / {{ cfgEntity }} ได้เลย</p>
+              <button class="btn btn-primary" style="margin-top:12px" @click="openAddCfg">+ เพิ่มพารามิเตอร์</button>
+            </template>
           </div>
         </div>
       </section>
+    </div>
+
+    <div class="modal-overlay" v-if="confirmSubmitVersion" @click.self="confirmSubmitVersion=null">
+      <div class="modal-box">
+        <h3>ส่ง {{ confirmSubmitVersion.VERSION_ID }} ขออนุมัติ?</h3>
+        <p>หลังส่งแล้วจะแก้ไข version นี้ไม่ได้อีก สถานะจะเปลี่ยนเป็น <strong>Waiting for approve</strong></p>
+        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmSubmitVersion=null">ยกเลิก</button><button class="btn btn-primary" @click="confirmSubmitVersionYes">Submit</button></div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" v-if="confirmApproveVersion" @click.self="confirmApproveVersion=null">
+      <div class="modal-box">
+        <h3>อนุมัติ {{ confirmApproveVersion.VERSION_ID }}?</h3>
+        <p>
+          version นี้จะเปลี่ยนเป็น <strong>Active</strong>
+          <template v-if="confirmApproveVersion.CLONED_FROM"> และ <strong>{{ confirmApproveVersion.CLONED_FROM }}</strong> ที่ถูก clone มาจะเปลี่ยนเป็น Inactive</template>
+        </p>
+        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmApproveVersion=null">ยกเลิก</button><button class="btn btn-primary" @click="confirmApproveVersionYes">Approve</button></div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" v-if="confirmDeleteVersion" @click.self="confirmDeleteVersion=null">
+      <div class="modal-box">
+        <h3>ลบ {{ confirmDeleteVersion.VERSION_ID }} ใช่หรือไม่?</h3>
+        <p>พารามิเตอร์และค่าทั้งหมดของ version นี้ ({{ versionParamCount(confirmDeleteVersion) }} รายการ) จะถูกลบไปด้วย</p>
+        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmDeleteVersion=null">ยกเลิก</button><button class="btn btn-danger" @click="confirmDeleteVersionYes">ยืนยันลบ</button></div>
+      </div>
     </div>
 
     <div class="modal-overlay" v-if="quickAdd.show" @click.self="quickAdd.show=false">
@@ -814,7 +962,7 @@ createApp({
                   <span class="value-pill">{{ r.VALUE }}</span>
                   <span class="status-badge" :class="r.ACTIVE==='Y' ? 'y' : 'n'">{{ r.ACTIVE==='Y' ? 'Active' : 'Inactive' }}</span>
                 </div>
-                <div class="crit-item-actions">
+                <div class="crit-item-actions" v-if="cfgEditable">
                   <button class="icon-btn" title="แก้ไข" @click="openEditCritForm(r)">✎</button>
                   <button class="icon-btn danger" title="ลบ" @click="askDeleteCritVal(r)">🗑</button>
                 </div>
@@ -918,7 +1066,7 @@ createApp({
 
         <div class="side-drawer-foot" v-if="critMode==='list'">
           <button class="btn btn-ghost" @click="closeCritPanel">ปิด</button>
-          <button class="btn btn-primary" @click="openAddCritForm">+ เพิ่ม value</button>
+          <button class="btn btn-primary" v-if="cfgEditable" @click="openAddCritForm">+ เพิ่ม value</button>
         </div>
         <div class="side-drawer-foot" v-else>
           <button class="btn btn-ghost" @click="backToCritList">ยกเลิก</button>
