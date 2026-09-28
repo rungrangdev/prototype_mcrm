@@ -285,8 +285,6 @@
   table.data-table tbody tr:hover{ background: var(--brown-lighter); }
 
   /* program name list ในตาราง version */
-  .program-list{display:flex;flex-direction:column;gap:2px;}
-  .program-list span{line-height:1.7;}
 
   /* กล่องครอบ */
 .dropdown-container {
@@ -452,8 +450,8 @@ createApp({
 
     function openCfgSetup(v){
       cfgVersionId.value = v.VERSION_ID;
-      cfgVersionStatus.value = v.STATUS || 'Open';
-      cfgLeadType.value = leadTypeMaster.value[0]?.CODE || '';
+      cfgVersionStatus.value = verStatusText(v.STATUS);
+      cfgLeadType.value = v.LEAD_TYPE || '';   // 1 version = 1 lead type จึงแก้ในหน้า setup ไม่ได้
       cfgView.value = 'setup';
     }
     function backToCfgList(){
@@ -476,8 +474,7 @@ createApp({
         .filter(r => r.VERSION_ID === v.VERSION_ID)
         .forEach(r => criteriaRows.push({ ...deep(r), VERSION_ID:id, CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() }));
       cfgVersions.push({
-        VERSION_ID:id, STATUS:'Open', CLONED_FROM:v.VERSION_ID,
-        PROGRAMS: deep(v.PROGRAMS),
+        VERSION_ID:id, LEAD_TYPE:v.LEAD_TYPE, STATUS:'Open', CLONED_FROM:v.VERSION_ID,
         CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now(),
       });
       showToast(`Clone ${v.VERSION_ID} เป็น ${id} แล้ว (สถานะ Open)`);
@@ -521,6 +518,15 @@ createApp({
     }
 
     const versionParamCount = (v) => paramConfigs.filter(c => c.VERSION_ID === v.VERSION_ID).length;
+
+    /* ---- ตัวกรองเหนือตาราง version ---- */
+    const VERSION_STATUSES = ['Open','Waiting for approve','Active','Inactive'];
+    const verFilterLeadType = ref('');   // '' = ทั้งหมด
+    const verFilterStatus = ref('');
+    const filteredVersions = computed(() => cfgVersions.filter(v =>
+      (!verFilterLeadType.value || (v.LEAD_TYPE || '') === verFilterLeadType.value) &&
+      (!verFilterStatus.value   || verStatusText(v.STATUS) === verFilterStatus.value)
+    ));
     const verStatusText  = (st) => st || 'Active';
     const verStatusClass = (st) => 'vs-' + verStatusText(st).toLowerCase().replace(/ /g,'-');
 
@@ -706,6 +712,7 @@ createApp({
       confirmDeleteCfg, askDeleteCfg, confirmDeleteCfgRow, cfgPreview,
       cfgView, cfgVersionId, cfgVersions, openCfgSetup, backToCfgList,
       cfgVersionStatus, cfgEditable, versionParamCount, cloneVersion, verStatusText, verStatusClass,
+      VERSION_STATUSES, verFilterLeadType, verFilterStatus, filteredVersions,
       confirmSubmitVersion, askSubmitVersion, confirmSubmitVersionYes,
       confirmApproveVersion, askApproveVersion, confirmApproveVersionYes,
       confirmDeleteVersion, askDeleteVersion, confirmDeleteVersionYes,
@@ -730,17 +737,29 @@ createApp({
             <div class="panel-title-row"><h2>Parameter Master Setup</h2></div>
           </div>
         </div>
+        <div class="filter-row">
+          <div class="filter-field">
+            <label>Lead Type</label>
+            <select v-model="verFilterLeadType">
+              <option value="">— All —</option>
+              <option v-for="l in leadTypeMaster" :key="l.CODE" :value="l.CODE">{{ l.NAME }}</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label>Status</label>
+            <select v-model="verFilterStatus">
+              <option value="">— All —</option>
+              <option v-for="st in VERSION_STATUSES" :key="st" :value="st">{{ st }}</option>
+            </select>
+          </div>
+        </div>
         <div class="table-wrap">
-          <table class="data-table" v-if="cfgVersions.length">
-            <thead><tr><th style="width:140px">Version id</th><th>Program name</th><th style="width:170px">Status</th><th style="width:70px"></th></tr></thead>
+          <table class="data-table" v-if="filteredVersions.length">
+            <thead><tr><th style="width:140px">Version id</th><th>Lead type</th><th style="width:170px">Status</th><th style="width:70px"></th></tr></thead>
             <tbody>
-              <tr v-for="v in cfgVersions" :key="v.VERSION_ID">
+              <tr v-for="v in filteredVersions" :key="v.VERSION_ID">
                 <td align="center" style="vertical-align:top;font-weight:700;">{{ v.VERSION_ID }}</td>
-                <td>
-                  <div class="program-list">
-                    <span v-for="(p,i) in v.PROGRAMS" :key="i">{{ p }}</span>
-                  </div>
-                </td>
+                <td>{{ v.LEAD_TYPE }}</td>
                 <td align="center" style="vertical-align:top;">
                   <span class="ver-status" :class="verStatusClass(v.STATUS)">{{ verStatusText(v.STATUS) }}</span>
                 </td>
@@ -776,7 +795,8 @@ createApp({
           </table>
           <div v-else class="empty-state">
             <div class="glyph"></div>
-            <h3>ยังไม่มี Version</h3>
+            <h3 v-if="cfgVersions.length">ไม่พบ Version ตามเงื่อนไขที่เลือก</h3>
+            <h3 v-else>ยังไม่มี Version</h3>
           </div>
         </div>
       </section>
@@ -805,7 +825,7 @@ createApp({
           </div>
           <div class="filter-field">
             <label>Lead Type</label>
-            <select v-model="cfgLeadType"><option v-for="l in leadTypeMaster" :key="l.CODE" :value="l.CODE">{{ l.NAME }} ({{ l.CODE }})</option></select>
+            <input type="text" :value="cfgLeadType" readonly>
           </div>
           <div class="filter-field">
             <label>Program</label>
