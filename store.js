@@ -452,6 +452,342 @@
           { flow_id:'F00007', flow_name:'Gen X_SELL_POOL + Validation', run_type:'AUTO', schedule:'0 5 * * *', steps:[] },
         ],
         validations: defaultValidations(),
+
+        /* ---- สิทธิ์ตาม role ----
+           index.html อ่าน PERMISSIONS.menuOptions มาตัดสินว่า role ไหนเห็นเมนูใด
+           status = โชว์ทั้งกลุ่มหรือไม่, children = โชว์เมนูย่อยตัวไหนบ้าง
+           เมนูที่ไม่ได้ระบุไว้ใน children ถือว่าเห็นได้ (ยังไม่ถูกจัดสิทธิ์) */
+        currentRole: 'CRM_Sup_CMS',
+        roles: [
+          {
+            "ROLE_NAME": "CRM_Sup_CMS",
+            "PERMISSIONS": {
+              "campaign_detail": {
+                "add": true,
+                "delete": true,
+                "edit": true,
+                "view": true
+              },
+              "master_data_manager": {
+                "add": true,
+                "delete": true,
+                "edit": true,
+                "view": true
+              },
+              "menuOptions": {
+                "menuCampaignManagement": {
+                  "children": {
+                    "campaign": true
+                  },
+                  "status": true
+                },
+                "menuDataConfiguration": {
+                  "children": {
+                    "suppression": true,
+                    "uploadfile": true,
+                    "master_data_manager": true
+                  },
+                  "status": true
+                },
+                "menuLeadManageMent": {
+                  "children": {
+                    "assignment-worklist": false,
+                    "worklist": true
+                  },
+                  "status": true
+                },
+                "menuOtherFeature": {
+                  "children": {
+                    "pricing-model-worklist": true,
+                    "printhouse-worklist": true
+                  },
+                  "status": true
+                }
+              },
+              "pricing": {
+                "add": false,
+                "approval": false,
+                "delete": false,
+                "edit": false,
+                "transfer": true,
+                "view": true
+              },
+              "print_house": {
+                "add": false,
+                "approval": false,
+                "delete": false,
+                "edit": false,
+                "transfer": true,
+                "view": true
+              },
+              "suppression": {
+                "view": true
+              },
+              "suppression_detail": {
+                "add": true,
+                "approval": false,
+                "edit": true,
+                "view": true
+              },
+              "uploadfile": {
+                "add": true,
+                "approval": false,
+                "delete": false,
+                "edit": false,
+                "transfer": false,
+                "view": true
+              },
+              "worklist": true,
+              "worklist_detail": true
+            }
+          },
+          {
+            "ROLE_NAME": "CRM_Man_CMS",
+            "PERMISSIONS": {
+              "campaign_detail": {
+                "add": true,
+                "delete": true,
+                "edit": true,
+                "view": true
+              },
+              "master_data_manager": {
+                "add": true,
+                "delete": true,
+                "edit": true,
+                "view": true
+              },
+              "menuOptions": {
+                "menuCampaignManagement": {
+                  "children": {
+                    "campaign": true
+                  },
+                  "status": true
+                },
+                "menuDataConfiguration": {
+                  "children": {
+                    "suppression": true,
+                    "uploadfile": true,
+                    "master_data_manager": true
+                  },
+                  "status": true
+                },
+                "menuLeadManageMent": {
+                  "children": {
+                    "assignment-worklist": false,
+                    "worklist": true
+                  },
+                  "status": true
+                },
+                "menuOtherFeature": {
+                  "children": {
+                    "pricing-model-worklist": true,
+                    "printhouse-worklist": true
+                  },
+                  "status": true
+                }
+              },
+              "pricing": {
+                "add": false,
+                "approval": false,
+                "delete": false,
+                "edit": false,
+                "transfer": true,
+                "view": true
+              },
+              "print_house": {
+                "add": false,
+                "approval": false,
+                "delete": false,
+                "edit": false,
+                "transfer": true,
+                "view": true
+              },
+              "suppression": {
+                "view": true
+              },
+              "suppression_detail": {
+                "add": false,
+                "approval": true,
+                "edit": false,
+                "view": true
+              },
+              "uploadfile": {
+                "add": true,
+                "approval": false,
+                "delete": false,
+                "edit": false,
+                "transfer": false,
+                "view": true
+              },
+              "worklist": true,
+              "worklist_detail": true
+            }
+          },
+          {
+            "ROLE_NAME": "INS_BI_CMS",
+            "PERMISSIONS": {
+              "campaign_detail": {
+                "add": false,
+                "delete": false,
+                "edit": false,
+                "view": false
+              },
+              "master_data_manager": {
+                "add": false,
+                "delete": false,
+                "edit": false,
+                "view": false
+              },
+              "menuOptions": {
+                "menuCampaignManagement": {
+                  "children": {
+                    "campaign": false
+                  },
+                  "status": false
+                },
+                "menuDataConfiguration": {
+                  "children": {
+                    "suppression": false,
+                    "uploadfile": false,
+                    "master_data_manager": false
+                  },
+                  "status": false
+                },
+                "menuLeadManageMent": {
+                  "children": {
+                    "assignment-worklist": false,
+                    "worklist": true
+                  },
+                  "status": true
+                },
+                "menuOtherFeature": {
+                  "children": {
+                    "pricing-model-worklist": false,
+                    "printhouse-worklist": false
+                  },
+                  "status": false
+                }
+              },
+              "pricing": {
+                "add": false,
+                "approval": false,
+                "delete": false,
+                "edit": false,
+                "transfer": false,
+                "view": false
+              },
+              "print_house": {
+                "add": false,
+                "approval": false,
+                "delete": false,
+                "edit": false,
+                "transfer": false,
+                "view": false
+              },
+              "suppression": {
+                "view": false
+              },
+              "suppression_detail": {
+                "add": false,
+                "approval": false,
+                "edit": false,
+                "view": false
+              },
+              "uploadfile": {
+                "add": false,
+                "approval": false,
+                "delete": false,
+                "edit": false,
+                "transfer": false,
+                "view": false
+              },
+              "worklist": true,
+              "worklist_detail": false
+            }
+          },
+          {
+            "ROLE_NAME": "INS_Sup_CMS",
+            "PERMISSIONS": {
+              "campaign_detail": {
+                "add": false,
+                "delete": false,
+                "edit": false,
+                "view": false
+              },
+              "master_data_manager": {
+                "add": false,
+                "delete": false,
+                "edit": false,
+                "view": false
+              },
+              "menuOptions": {
+                "menuCampaignManagement": {
+                  "children": {
+                    "campaign": false
+                  },
+                  "status": false
+                },
+                "menuDataConfiguration": {
+                  "children": {
+                    "suppression": false,
+                    "uploadfile": false,
+                    "master_data_manager": false
+                  },
+                  "status": false
+                },
+                "menuLeadManageMent": {
+                  "children": {
+                    "assignment-worklist": true,
+                    "worklist": true
+                  },
+                  "status": true
+                },
+                "menuOtherFeature": {
+                  "children": {
+                    "pricing-model-worklist": false,
+                    "printhouse-worklist": false
+                  },
+                  "status": false
+                }
+              },
+              "pricing": {
+                "add": false,
+                "approval": false,
+                "delete": false,
+                "edit": false,
+                "transfer": false,
+                "view": false
+              },
+              "print_house": {
+                "add": false,
+                "approval": false,
+                "delete": false,
+                "edit": false,
+                "transfer": false,
+                "view": false
+              },
+              "suppression": {
+                "view": false
+              },
+              "suppression_detail": {
+                "add": false,
+                "approval": false,
+                "edit": false,
+                "view": false
+              },
+              "uploadfile": {
+                "add": false,
+                "approval": false,
+                "delete": false,
+                "edit": false,
+                "transfer": false,
+                "view": false
+              },
+              "worklist": true,
+              "worklist_detail": false
+            }
+          }
+        ],
         worklist: [],
         executionLogs: [],
       };
