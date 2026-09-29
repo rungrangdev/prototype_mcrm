@@ -477,7 +477,10 @@
               "menuOptions": {
                 "menuCampaignManagement": {
                   "children": {
-                    "campaign": true
+                    "campaign": true,
+                    "program_setup": true,
+                    "parameter_master_setup": true,
+                    "validation_setup": true
                   },
                   "status": true
                 },
@@ -485,21 +488,25 @@
                   "children": {
                     "suppression": true,
                     "uploadfile": true,
-                    "master_data_manager": true
+                    "master_data_manager": true,
+                    "lead_eligible_config": true,
+                    "workflow_config": true
                   },
                   "status": true
                 },
                 "menuLeadManageMent": {
                   "children": {
                     "assignment-worklist": false,
-                    "worklist": true
+                    "worklist": true,
+                    "workflow_execution_log": true
                   },
                   "status": true
                 },
                 "menuOtherFeature": {
                   "children": {
                     "pricing-model-worklist": true,
-                    "printhouse-worklist": true
+                    "printhouse-worklist": true,
+                    "premium-reward-worklist": true
                   },
                   "status": true
                 }
@@ -559,7 +566,10 @@
               "menuOptions": {
                 "menuCampaignManagement": {
                   "children": {
-                    "campaign": true
+                    "campaign": true,
+                    "program_setup": true,
+                    "parameter_master_setup": true,
+                    "validation_setup": true
                   },
                   "status": true
                 },
@@ -567,21 +577,25 @@
                   "children": {
                     "suppression": true,
                     "uploadfile": true,
-                    "master_data_manager": true
+                    "master_data_manager": true,
+                    "lead_eligible_config": true,
+                    "workflow_config": true
                   },
                   "status": true
                 },
                 "menuLeadManageMent": {
                   "children": {
                     "assignment-worklist": false,
-                    "worklist": true
+                    "worklist": true,
+                    "workflow_execution_log": true
                   },
                   "status": true
                 },
                 "menuOtherFeature": {
                   "children": {
                     "pricing-model-worklist": true,
-                    "printhouse-worklist": true
+                    "printhouse-worklist": true,
+                    "premium-reward-worklist": true
                   },
                   "status": true
                 }
@@ -641,7 +655,10 @@
               "menuOptions": {
                 "menuCampaignManagement": {
                   "children": {
-                    "campaign": false
+                    "campaign": false,
+                    "program_setup": false,
+                    "parameter_master_setup": false,
+                    "validation_setup": false
                   },
                   "status": false
                 },
@@ -649,21 +666,25 @@
                   "children": {
                     "suppression": false,
                     "uploadfile": false,
-                    "master_data_manager": false
+                    "master_data_manager": false,
+                    "lead_eligible_config": false,
+                    "workflow_config": false
                   },
                   "status": false
                 },
                 "menuLeadManageMent": {
                   "children": {
                     "assignment-worklist": false,
-                    "worklist": true
+                    "worklist": true,
+                    "workflow_execution_log": false
                   },
                   "status": true
                 },
                 "menuOtherFeature": {
                   "children": {
                     "pricing-model-worklist": false,
-                    "printhouse-worklist": false
+                    "printhouse-worklist": false,
+                    "premium-reward-worklist": false
                   },
                   "status": false
                 }
@@ -723,7 +744,10 @@
               "menuOptions": {
                 "menuCampaignManagement": {
                   "children": {
-                    "campaign": false
+                    "campaign": false,
+                    "program_setup": false,
+                    "parameter_master_setup": false,
+                    "validation_setup": false
                   },
                   "status": false
                 },
@@ -731,21 +755,25 @@
                   "children": {
                     "suppression": false,
                     "uploadfile": false,
-                    "master_data_manager": false
+                    "master_data_manager": false,
+                    "lead_eligible_config": false,
+                    "workflow_config": false
                   },
                   "status": false
                 },
                 "menuLeadManageMent": {
                   "children": {
                     "assignment-worklist": true,
-                    "worklist": true
+                    "worklist": true,
+                    "workflow_execution_log": false
                   },
                   "status": true
                 },
                 "menuOtherFeature": {
                   "children": {
                     "pricing-model-worklist": false,
-                    "printhouse-worklist": false
+                    "printhouse-worklist": false,
+                    "premium-reward-worklist": false
                   },
                   "status": false
                 }
