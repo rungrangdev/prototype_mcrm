@@ -858,6 +858,11 @@
       return db;
     }
 
+    /* Collections that are configuration, not user data: they always come from
+       the code so a change here reaches everyone on the next load. Without this
+       a stale copy in localStorage would keep overriding new role rules. */
+    const CONFIG_KEYS = new Set(['roles']);
+
     function loadDb() {
       const base = seed();
       try {
@@ -865,6 +870,7 @@
         if (raw) {
           const saved = JSON.parse(raw);
           Object.keys(base).forEach(key => {
+            if (CONFIG_KEYS.has(key)) return;
             if (saved && Object.prototype.hasOwnProperty.call(saved, key)) base[key] = saved[key];
           });
         }
@@ -890,6 +896,7 @@
       try {
         const saved = migrate(JSON.parse(e.newValue));
         Object.keys(db).forEach(key => {
+          if (CONFIG_KEYS.has(key)) return;
           if (Object.prototype.hasOwnProperty.call(saved, key)) db[key] = saved[key];
         });
       } catch (err) { /* ignore malformed payloads */ }
