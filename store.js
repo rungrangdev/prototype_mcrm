@@ -511,6 +511,14 @@
                   "status": true
                 }
               },
+              "parameter_master_setup": {
+                "view": true,
+                "clone": true,
+                "edit": true,
+                "delete": true,
+                "submit": true,
+                "approve": false
+              },
               "pricing": {
                 "add": false,
                 "approval": false,
@@ -599,6 +607,14 @@
                   },
                   "status": true
                 }
+              },
+              "parameter_master_setup": {
+                "view": true,
+                "clone": true,
+                "edit": true,
+                "delete": true,
+                "submit": true,
+                "approve": false
               },
               "pricing": {
                 "add": false,
@@ -689,6 +705,14 @@
                   "status": false
                 }
               },
+              "parameter_master_setup": {
+                "view": false,
+                "clone": false,
+                "edit": false,
+                "delete": false,
+                "submit": false,
+                "approve": false
+              },
               "pricing": {
                 "add": false,
                 "approval": false,
@@ -778,6 +802,14 @@
                   "status": false
                 }
               },
+              "parameter_master_setup": {
+                "view": false,
+                "clone": false,
+                "edit": false,
+                "delete": false,
+                "submit": false,
+                "approve": false
+              },
               "pricing": {
                 "add": false,
                 "approval": false,
@@ -812,6 +844,200 @@
                 "view": false
               },
               "worklist": true,
+              "worklist_detail": false
+            }
+          },
+          {
+            "ROLE_NAME": "RIS_Sup_CMS",
+            "PERMISSIONS": {
+              "campaign_detail": {
+                "add": false,
+                "delete": false,
+                "edit": false,
+                "view": false
+              },
+              "master_data_manager": {
+                "add": false,
+                "delete": false,
+                "edit": false,
+                "view": false
+              },
+              "menuOptions": {
+                "menuCampaignManagement": {
+                  "children": {
+                    "campaign": false,
+                    "program_setup": false,
+                    "parameter_master_setup": true,
+                    "validation_setup": false
+                  },
+                  "status": true
+                },
+                "menuDataConfiguration": {
+                  "children": {
+                    "suppression": false,
+                    "uploadfile": false,
+                    "master_data_manager": false,
+                    "lead_eligible_config": false,
+                    "workflow_config": false
+                  },
+                  "status": false
+                },
+                "menuLeadManageMent": {
+                  "children": {
+                    "assignment-worklist": false,
+                    "worklist": false,
+                    "workflow_execution_log": false
+                  },
+                  "status": false
+                },
+                "menuOtherFeature": {
+                  "children": {
+                    "pricing-model-worklist": false,
+                    "printhouse-worklist": false,
+                    "premium-reward-worklist": false
+                  },
+                  "status": false
+                }
+              },
+              "parameter_master_setup": {
+                "view": true,
+                "clone": false,
+                "edit": false,
+                "delete": false,
+                "submit": false,
+                "approve": true
+              },
+              "pricing": {
+                "add": false,
+                "approval": false,
+                "delete": false,
+                "edit": false,
+                "transfer": false,
+                "view": false
+              },
+              "print_house": {
+                "add": false,
+                "approval": false,
+                "delete": false,
+                "edit": false,
+                "transfer": false,
+                "view": false
+              },
+              "suppression": {
+                "view": false
+              },
+              "suppression_detail": {
+                "add": false,
+                "approval": false,
+                "edit": false,
+                "view": false
+              },
+              "uploadfile": {
+                "add": false,
+                "approval": false,
+                "delete": false,
+                "edit": false,
+                "transfer": false,
+                "view": false
+              },
+              "worklist": false,
+              "worklist_detail": false
+            }
+          },
+          {
+            "ROLE_NAME": "RIS_Man_CMS",
+            "PERMISSIONS": {
+              "campaign_detail": {
+                "add": false,
+                "delete": false,
+                "edit": false,
+                "view": false
+              },
+              "master_data_manager": {
+                "add": false,
+                "delete": false,
+                "edit": false,
+                "view": false
+              },
+              "menuOptions": {
+                "menuCampaignManagement": {
+                  "children": {
+                    "campaign": false,
+                    "program_setup": false,
+                    "parameter_master_setup": true,
+                    "validation_setup": false
+                  },
+                  "status": true
+                },
+                "menuDataConfiguration": {
+                  "children": {
+                    "suppression": false,
+                    "uploadfile": false,
+                    "master_data_manager": false,
+                    "lead_eligible_config": false,
+                    "workflow_config": false
+                  },
+                  "status": false
+                },
+                "menuLeadManageMent": {
+                  "children": {
+                    "assignment-worklist": false,
+                    "worklist": false,
+                    "workflow_execution_log": false
+                  },
+                  "status": false
+                },
+                "menuOtherFeature": {
+                  "children": {
+                    "pricing-model-worklist": false,
+                    "printhouse-worklist": false,
+                    "premium-reward-worklist": false
+                  },
+                  "status": false
+                }
+              },
+              "parameter_master_setup": {
+                "view": true,
+                "clone": false,
+                "edit": false,
+                "delete": false,
+                "submit": false,
+                "approve": true
+              },
+              "pricing": {
+                "add": false,
+                "approval": false,
+                "delete": false,
+                "edit": false,
+                "transfer": false,
+                "view": false
+              },
+              "print_house": {
+                "add": false,
+                "approval": false,
+                "delete": false,
+                "edit": false,
+                "transfer": false,
+                "view": false
+              },
+              "suppression": {
+                "view": false
+              },
+              "suppression_detail": {
+                "add": false,
+                "approval": false,
+                "edit": false,
+                "view": false
+              },
+              "uploadfile": {
+                "add": false,
+                "approval": false,
+                "delete": false,
+                "edit": false,
+                "transfer": false,
+                "view": false
+              },
+              "worklist": false,
               "worklist_detail": false
             }
           }

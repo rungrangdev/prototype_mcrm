@@ -446,7 +446,7 @@ createApp({
          Inactive            -> ของเก่าที่ถูกแทนที่ไปแล้ว (View)             */
     const cfgVersionStatus = ref('');      // สถานะของ version ที่เปิดอยู่
     /* แก้ไขได้เฉพาะตอน Open เท่านั้น — ใช้คุมปุ่ม Add/Edit/Delete/Set value ทั้งหน้า */
-    const cfgEditable = computed(() => cfgVersionStatus.value === 'Open');
+    const cfgEditable = computed(() => cfgVersionStatus.value === 'Open' && pagePerm.value.edit);
 
     function openCfgSetup(v){
       cfgVersionId.value = v.VERSION_ID;
@@ -527,6 +527,18 @@ createApp({
       (!verFilterLeadType.value || (v.LEAD_TYPE || '') === verFilterLeadType.value) &&
       (!verFilterStatus.value   || verStatusText(v.STATUS) === verFilterStatus.value)
     ));
+    /* ---- สิทธิ์ในหน้านี้ตาม role ที่เลือกอยู่ ----
+       เปิดไฟล์นี้ตรง ๆ โดยไม่ผ่านหน้า index (ไม่มี role) ให้สิทธิ์เต็มไว้ก่อน
+       เพื่อให้ยังทดสอบหน้าได้ */
+    const FULL_ACCESS = { view:true, clone:true, edit:true, delete:true, submit:true, approve:true };
+    const pagePerm = computed(() => {
+      const list = MCRM.db.roles || [];
+      const role = list.find(r => r.ROLE_NAME === MCRM.db.currentRole);
+      if (!role) return FULL_ACCESS;
+      const p = (role.PERMISSIONS || {}).parameter_master_setup || {};
+      return { view:!!p.view, clone:!!p.clone, edit:!!p.edit, delete:!!p.delete, submit:!!p.submit, approve:!!p.approve };
+    });
+
     const verStatusText  = (st) => st || 'Active';
     const verStatusClass = (st) => 'vs-' + verStatusText(st).toLowerCase().replace(/ /g,'-');
 
@@ -711,7 +723,7 @@ createApp({
       openAddCfg, openEditCfg, closeCfgForm, toggleCfgKey, removeCfgKeyAt, saveCfg, toggleCfgActive,
       confirmDeleteCfg, askDeleteCfg, confirmDeleteCfgRow, cfgPreview,
       cfgView, cfgVersionId, cfgVersions, openCfgSetup, backToCfgList,
-      cfgVersionStatus, cfgEditable, versionParamCount, cloneVersion, verStatusText, verStatusClass,
+      cfgVersionStatus, cfgEditable, pagePerm, versionParamCount, cloneVersion, verStatusText, verStatusClass,
       VERSION_STATUSES, verFilterLeadType, verFilterStatus, filteredVersions,
       confirmSubmitVersion, askSubmitVersion, confirmSubmitVersionYes,
       confirmApproveVersion, askApproveVersion, confirmApproveVersionYes,
@@ -769,19 +781,20 @@ createApp({
                     <div class="dropdown-menu">
                       <!-- Open : ยังแก้ไขได้ -->
                       <template v-if="verStatusText(v.STATUS)==='Open'">
-                        <button class="icon-btn" @click="openCfgSetup(v)">Edit</button>
-                        <button class="icon-btn danger" @click="askDeleteVersion(v)">Delete</button>
-                        <button class="icon-btn" @click="askSubmitVersion(v)">Submit</button>
+                        <button class="icon-btn" v-if="pagePerm.edit" @click="openCfgSetup(v)">Edit</button>
+                        <button class="icon-btn" v-else @click="openCfgSetup(v)">View</button>
+                        <button class="icon-btn danger" v-if="pagePerm.delete" @click="askDeleteVersion(v)">Delete</button>
+                        <button class="icon-btn" v-if="pagePerm.submit" @click="askSubmitVersion(v)">Submit</button>
                       </template>
-                      <!-- รออนุมัติ : ดูได้ กับ อนุมัติ -->
+                      <!-- รออนุมัติ : ดูได้ กับ อนุมัติ (Approve เฉพาะ role ที่มีสิทธิ์) -->
                       <template v-else-if="verStatusText(v.STATUS)==='Waiting for approve'">
                         <button class="icon-btn" @click="openCfgSetup(v)">View</button>
-                        <button class="icon-btn" @click="askApproveVersion(v)">Approve</button>
+                        <button class="icon-btn" v-if="pagePerm.approve" @click="askApproveVersion(v)">Approve</button>
                       </template>
                       <!-- Active : ดูได้ กับ clone ไปแก้เป็นชุดใหม่ -->
                       <template v-else-if="verStatusText(v.STATUS)==='Active'">
                         <button class="icon-btn" @click="openCfgSetup(v)">View</button>
-                        <button class="icon-btn" @click="cloneVersion(v)">Clone</button>
+                        <button class="icon-btn" v-if="pagePerm.clone" @click="cloneVersion(v)">Clone</button>
                       </template>
                       <!-- Inactive : ดูได้อย่างเดียว -->
                       <template v-else>
