@@ -244,6 +244,7 @@
   .ver-status{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:999px;white-space:nowrap;}
   .vs-open{background:#EEF1F6;color:#4B5563;}
   .vs-waiting-for-approve{background:var(--accent-soft);color:#9A6316;}
+  .vs-approve{background:#E8F0FB;color:#2B5FA8;}
   .vs-active{background:var(--success-soft);color:var(--success);}
   .vs-inactive{background:#F1F2F5;color:#9AA2B1;}
   .view-only-tag{font-size:11px;font-weight:600;color:var(--text-secondary);
@@ -491,18 +492,29 @@ createApp({
       showToast(`${v.VERSION_ID} ส่งขออนุมัติแล้ว`);
     }
 
-    /* Approve : version นี้เป็น Active และดัน version ต้นทางที่ถูก clone มาเป็น Inactive */
+    /* Approve : แค่ผ่านการอนุมัติ ยังไม่เริ่มใช้งานและยังไม่แตะ version ต้นทาง */
     const confirmApproveVersion = ref(null);
     function askApproveVersion(v){ confirmApproveVersion.value = v; }
     function confirmApproveVersionYes(){
       const v = confirmApproveVersion.value;
+      v.STATUS = 'Approve';
+      v.UPDATE_BY = 'ADMIN'; v.UPDATE_DATE = now();
+      confirmApproveVersion.value = null;
+      showToast(`${v.VERSION_ID} อนุมัติแล้ว รอเริ่มใช้งาน`);
+    }
+
+    /* Active : เริ่มใช้งานจริง ตอนนี้ค่อยดัน version ต้นทางที่ถูก clone มาเป็น Inactive */
+    const confirmActivateVersion = ref(null);
+    function askActivateVersion(v){ confirmActivateVersion.value = v; }
+    function confirmActivateVersionYes(){
+      const v = confirmActivateVersion.value;
       v.STATUS = 'Active';
       v.UPDATE_BY = 'ADMIN'; v.UPDATE_DATE = now();
       const src = cfgVersions.find(x => x.VERSION_ID === v.CLONED_FROM);
       if (src){ src.STATUS = 'Inactive'; src.UPDATE_BY = 'ADMIN'; src.UPDATE_DATE = now(); }
-      confirmApproveVersion.value = null;
-      showToast(src ? `${v.VERSION_ID} เป็น Active แล้ว และ ${src.VERSION_ID} เป็น Inactive`
-                    : `${v.VERSION_ID} เป็น Active แล้ว`);
+      confirmActivateVersion.value = null;
+      showToast(src ? `${v.VERSION_ID} เริ่มใช้งานแล้ว และ ${src.VERSION_ID} เป็น Inactive`
+                    : `${v.VERSION_ID} เริ่มใช้งานแล้ว`);
     }
 
     /* Delete : ลบได้เฉพาะ version ที่ยัง Open พร้อมข้อมูลที่ผูกอยู่ */
@@ -520,7 +532,7 @@ createApp({
     const versionParamCount = (v) => paramConfigs.filter(c => c.VERSION_ID === v.VERSION_ID).length;
 
     /* ---- ตัวกรองเหนือตาราง version ---- */
-    const VERSION_STATUSES = ['Open','Waiting for approve','Active','Inactive'];
+    const VERSION_STATUSES = ['Open','Waiting for approve','Approve','Active','Inactive'];
     const verFilterLeadType = ref('');   // '' = ทั้งหมด
     const verFilterStatus = ref('');
     const filteredVersions = computed(() => cfgVersions.filter(v =>
@@ -530,13 +542,13 @@ createApp({
     /* ---- สิทธิ์ในหน้านี้ตาม role ที่เลือกอยู่ ----
        เปิดไฟล์นี้ตรง ๆ โดยไม่ผ่านหน้า index (ไม่มี role) ให้สิทธิ์เต็มไว้ก่อน
        เพื่อให้ยังทดสอบหน้าได้ */
-    const FULL_ACCESS = { view:true, clone:true, edit:true, delete:true, submit:true, approve:true };
+    const FULL_ACCESS = { view:true, clone:true, edit:true, delete:true, submit:true, approve:true, activate:true };
     const pagePerm = computed(() => {
       const list = MCRM.db.roles || [];
       const role = list.find(r => r.ROLE_NAME === MCRM.db.currentRole);
       if (!role) return FULL_ACCESS;
       const p = (role.PERMISSIONS || {}).parameter_master_setup || {};
-      return { view:!!p.view, clone:!!p.clone, edit:!!p.edit, delete:!!p.delete, submit:!!p.submit, approve:!!p.approve };
+      return { view:!!p.view, clone:!!p.clone, edit:!!p.edit, delete:!!p.delete, submit:!!p.submit, approve:!!p.approve, activate:!!p.activate };
     });
 
     const verStatusText  = (st) => st || 'Active';
@@ -727,6 +739,7 @@ createApp({
       VERSION_STATUSES, verFilterLeadType, verFilterStatus, filteredVersions,
       confirmSubmitVersion, askSubmitVersion, confirmSubmitVersionYes,
       confirmApproveVersion, askApproveVersion, confirmApproveVersionYes,
+      confirmActivateVersion, askActivateVersion, confirmActivateVersionYes,
       confirmDeleteVersion, askDeleteVersion, confirmDeleteVersionYes,
       KV_OPS, isNAkv, kvText, valueCount,
       kvOpts, kvOps, kvIsNum, kvIsMulti, kvArr, kvHas, kvOffList, kvToggle, kvRemove, kvClear, onKvOpChange,
@@ -790,6 +803,11 @@ createApp({
                       <template v-else-if="verStatusText(v.STATUS)==='Waiting for approve'">
                         <button class="icon-btn" @click="openCfgSetup(v)">View</button>
                         <button class="icon-btn" v-if="pagePerm.approve" @click="askApproveVersion(v)">Approve</button>
+                      </template>
+                      <!-- อนุมัติแล้ว : รอ CRM กด Active เพื่อเริ่มใช้งาน -->
+                      <template v-else-if="verStatusText(v.STATUS)==='Approve'">
+                        <button class="icon-btn" @click="openCfgSetup(v)">View</button>
+                        <button class="icon-btn" v-if="pagePerm.activate" @click="askActivateVersion(v)">Active</button>
                       </template>
                       <!-- Active : ดูได้ กับ clone ไปแก้เป็นชุดใหม่ -->
                       <template v-else-if="verStatusText(v.STATUS)==='Active'">
@@ -902,11 +920,20 @@ createApp({
     <div class="modal-overlay" v-if="confirmApproveVersion" @click.self="confirmApproveVersion=null">
       <div class="modal-box">
         <h3>อนุมัติ {{ confirmApproveVersion.VERSION_ID }}?</h3>
+        <p>version นี้จะเปลี่ยนเป็น <strong>Approve</strong> แต่ยังไม่เริ่มใช้งาน
+          จนกว่าจะมีการกด Active<template v-if="confirmApproveVersion.CLONED_FROM"> (ตอนนั้น {{ confirmApproveVersion.CLONED_FROM }} จึงจะเป็น Inactive)</template></p>
+        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmApproveVersion=null">ยกเลิก</button><button class="btn btn-primary" @click="confirmApproveVersionYes">Approve</button></div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" v-if="confirmActivateVersion" @click.self="confirmActivateVersion=null">
+      <div class="modal-box">
+        <h3>เริ่มใช้งาน {{ confirmActivateVersion.VERSION_ID }}?</h3>
         <p>
           version นี้จะเปลี่ยนเป็น <strong>Active</strong>
-          <template v-if="confirmApproveVersion.CLONED_FROM"> และ <strong>{{ confirmApproveVersion.CLONED_FROM }}</strong> ที่ถูก clone มาจะเปลี่ยนเป็น Inactive</template>
+          <template v-if="confirmActivateVersion.CLONED_FROM"> และ <strong>{{ confirmActivateVersion.CLONED_FROM }}</strong> ที่ถูก clone มาจะเปลี่ยนเป็น Inactive</template>
         </p>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmApproveVersion=null">ยกเลิก</button><button class="btn btn-primary" @click="confirmApproveVersionYes">Approve</button></div>
+        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmActivateVersion=null">ยกเลิก</button><button class="btn btn-primary" @click="confirmActivateVersionYes">Active</button></div>
       </div>
     </div>
 

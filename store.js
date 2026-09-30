@@ -198,6 +198,7 @@
           leadType: s.leadType || '', entity: s.entity || '', program: s.program || '',
           params: Array.isArray(s.params) ? s.params.slice() : [],
           validations: Array.isArray(s.validations) ? s.validations.slice() : [],
+          versionId: s.versionId || '',
         }));
       }
       const f5 = workflows.find(f => f.flow_id === 'F00005');
@@ -378,7 +379,7 @@
         eligibleNames: ['X Sell Pool','Insurance PPI' ,'Insurance Motor'],
         eligibleProfiles: ['X Sell Pool','Retention (Refin)', 'Retention (New, Use)','PPI PA','Insurance Motor (IF02)'],
         workflows: [
-          { flow_id:'F00001', flow_name:'Select Base X_Sell_Pool (KA)', run_type:'AUTO', schedule:'0 1 * * *', steps:[
+          { STATUS:'Active', flow_id:'F00001', flow_name:'Select Base X_Sell_Pool (KA)', run_type:'AUTO', schedule:'0 1 * * *', steps:[
             { order:1, type:'AUTO', name:'mcrm_select_base_topup_tele', status:'Wait' },
             { order:2, type:'AUTO', name:'mcrm_select_base_topup_tele_config', status:'Wait' },
             { order:3, type:'AUTO', name:'mcrm_select_base_topup_rh', status:'Wait' },
@@ -386,43 +387,43 @@
             { order:5, type:'AUTO', name:'mcrm_select_base_preapprove_refin', status:'Wait' },
             { order:6, type:'AUTO', name:'mcrm_select_base_feedback', status:'Wait' },
           ] },
-          { flow_id:'F00002', flow_name:'Select Base X_Sell_Pool (AY)', run_type:'AUTO', schedule:'30 2 * * 1-5', steps:[
+          { STATUS:'Active', flow_id:'F00002', flow_name:'Select Base X_Sell_Pool (AY)', run_type:'AUTO', schedule:'30 2 * * 1-5', steps:[
             { order:1, type:'AUTO', name:'mcrm_select_base_topmc', status:'Wait' },
             { order:2, type:'AUTO', name:'mcrm_select_base_feedback', status:'Wait' },
           ] },
-          { flow_id:'F00003', flow_name:'Gen X_SELL_POOL (by program)', run_type:'AUTO', schedule:'0 3 1,15 * *', steps:[
+          { STATUS:'Active', flow_id:'F00003', flow_name:'Gen X_SELL_POOL (by program)', run_type:'AUTO', schedule:'0 3 1,15 * *', steps:[
             { order:1, type:'AUTO', name:'DWH-program Topup', status:'Wait' },
             { order:2, type:'AUTO', name:'DWH-program Revolving loan', status:'Wait' },
             { order:3, type:'AUTO', name:'DWH-program Pre-Approve (R)', status:'Wait' },
             { order:4, type:'AUTO', name:'DWH-program Pre-Approve (N/U)', status:'Wait' },
             { order:5, type:'AUTO', name:'DWH-program Pre-Approve (MC)', status:'Wait' },
           ] },
-          { flow_id:'F00004', flow_name:'Gen X_SELL_POOL (by parameter)', run_type:'AUTO', schedule:'*/30 * * * *', steps:[
-            { order:1, type:'AUTO', name:'DWH-Max LTV', status:'Wait', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:['MAX_LTV'] },
-            { order:2, type:'AUTO', name:'DWH-Receipt Term', status:'Wait', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:['RECEIPT_TERM'] },
+          { STATUS:'Active', flow_id:'F00004', flow_name:'Gen X_SELL_POOL (by parameter)', run_type:'AUTO', schedule:'*/30 * * * *', steps:[
+            { order:1, type:'AUTO', name:'DWH-Max LTV', status:'Wait', category:'PARAMETER', versionId:'V0001', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:['MAX_LTV'] },
+            { order:2, type:'AUTO', name:'DWH-Receipt Term', status:'Wait', category:'PARAMETER', versionId:'V0001', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:['RECEIPT_TERM'] },
             { order:3, type:'AUTO', name:'DWH-FOIR', status:'Wait', category:'PARAMETER' },
-            { order:4, type:'AUTO', name:'DWH-Flat rate,Flat rate TP_RH', status:'Wait', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:['FLAT_RATE_OPT1','FLAT_RATE_OPT2','FLAT_RATE_OPT3','FLAT_RATE_OPT4'] },
+            { order:4, type:'AUTO', name:'DWH-Flat rate,Flat rate TP_RH', status:'Wait', category:'PARAMETER', versionId:'V0001', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:['FLAT_RATE_OPT1','FLAT_RATE_OPT2','FLAT_RATE_OPT3','FLAT_RATE_OPT4'] },
             { order:5, type:'AUTO', name:'DWH-Flat rate OPTT%', status:'Wait', category:'PARAMETER' },
-            { order:6, type:'AUTO', name:'DWH-X Installment%', status:'Wait', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:['X_INSTALLMENT_OPT1','X_INSTALLMENT_OPT2','X_INSTALLMENT_OPT3','X_INSTALLMENT_OPT4'] },
-            { order:7, type:'AUTO', name:'DWH-NCB', status:'Wait', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:['NCB'] },
+            { order:6, type:'AUTO', name:'DWH-X Installment%', status:'Wait', category:'PARAMETER', versionId:'V0001', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:['X_INSTALLMENT_OPT1','X_INSTALLMENT_OPT2','X_INSTALLMENT_OPT3','X_INSTALLMENT_OPT4'] },
+            { order:7, type:'AUTO', name:'DWH-NCB', status:'Wait', category:'PARAMETER', versionId:'V0001', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:['NCB'] },
             { order:8, type:'AUTO', name:'DWH-Minimum down payment', status:'Wait', category:'PARAMETER' },
             { order:9, type:'AUTO', name:'DWH-Minimum Credit line (Threshold)', status:'Wait', category:'PARAMETER' },
           ] },
-          { flow_id:'F00005', flow_name:'Gen X_SELL_POOL (Final)', run_type:'MANUAL', schedule:null, steps:[
+          { STATUS:'Active', flow_id:'F00005', flow_name:'Gen X_SELL_POOL (Final)', run_type:'MANUAL', schedule:null, steps:[
             { order:1, type:'AUTO', name:'Inquiry Data X Sell Pool', detail:'Retain all condition columns defined in the proposal that filter basic conditions', category:'ELIGIBLE', code:'EL00001', status:'Wait' },
-            { order:2, type:'AUTO', name:'Update data of Topup program per parameter', detail:'update Loan offer Parameters for Topup, parameter:all(exclude: Flat rate%)', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:['TOPUP_OPTION','MAX_LTV','RECEIPT_TERM','X_INSTALLMENT_OPT1','X_INSTALLMENT_OPT2','X_INSTALLMENT_OPT3','X_INSTALLMENT_OPT4','NCB'], status:'Wait' },
-            { order:3, type:'AUTO', name:'dev-mcrm-program-topup-flat-rate1', detail:'update Loan offer Parameters for Topup, parameter:Flat rate option 1', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:['FLAT_RATE_OPT1'], status:'Wait' },
-            { order:4, type:'AUTO', name:'dev-mcrm-program-topup-flat-rate2', detail:'update Loan offer Parameters for Flat rate option 2', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:['FLAT_RATE_OPT2'], status:'Wait' },
-            { order:5, type:'AUTO', name:'dev-mcrm-program-topup-flat-rate3', detail:'update Loan offer Parameters for Flat rate option 3', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:['FLAT_RATE_OPT3'], status:'Wait' },
-            { order:6, type:'AUTO', name:'dev-mcrm-program-topup-flat-rate4', detail:'update Loan offer Parameters for Flat rate option 4', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:['FLAT_RATE_OPT4'], status:'Wait' },
-            { order:7, type:'AUTO', name:'dev-mcrm-program-revolving-loan', detail:'update program Loan offer Parameters for revoling Loan', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'REVOLVING_LOAN', params:['RL_OPTION'], status:'Wait' },
-            { order:8, type:'AUTO', name:'dev-mcrm-program-revolving-loan-flat-rate-tp_rh', detail:'update Loan offer Parameters for Flat Rate', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'REVOLVING_LOAN', params:['FLAT_RATE_TP_RH'], status:'Wait' },
-            { order:9, type:'AUTO', name:'dev-mcrm-program-pre-approve-r', detail:'Update Loan offer Parameters for pre-approve r', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'PRE_APPROVE_R', params:['PA_R_OPTION'], status:'Wait' },
-            { order:10, type:'AUTO', name:'dev-mcrm-program-pre-approve-r-flat-rate', detail:'Update Loan offer Parameters for flat-rate pre-approve r', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'PRE_APPROVE_R', params:['PA_R_FLAT_RATE'], status:'Wait' },
-            { order:11, type:'AUTO', name:'dev-mcrm-program-pre-approve-nu', detail:'Update Loan offer Parameters for pre-approve N/U', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'PRE_APPROVE_NU', params:['PA_NU_OPTION'], status:'Wait' },
-            { order:12, type:'AUTO', name:'dev-mcrm-program-pre-approve-nu-flat-rate', detail:'Update Loan offer Parameters for flat-rate pre-approve N/U', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'PRE_APPROVE_NU', params:['PA_NU_FLAT_RATE'], status:'Wait' },
-            { order:13, type:'AUTO', name:'dev-mcrm-program-pre-approve-mc', detail:'Update Loan offer Parameters for pre-approve MC', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'PRE_APPROVE_MC', params:['PA_MC_OPTION'], status:'Wait' },
-            { order:14, type:'AUTO', name:'dev-mcrm-program-pre-approve-mc-flat-rate', detail:'Update Loan offer Parameters for pre-approve MC flag rate', category:'PARAMETER', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'PRE_APPROVE_MC', params:['PA_MC_FLAT_RATE'], status:'Wait' },
+            { order:2, type:'AUTO', name:'Update data of Topup program per parameter', detail:'update Loan offer Parameters for Topup, parameter:all(exclude: Flat rate%)', category:'PARAMETER', versionId:'V0001', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:['TOPUP_OPTION','MAX_LTV','RECEIPT_TERM','X_INSTALLMENT_OPT1','X_INSTALLMENT_OPT2','X_INSTALLMENT_OPT3','X_INSTALLMENT_OPT4','NCB'], status:'Wait' },
+            { order:3, type:'AUTO', name:'dev-mcrm-program-topup-flat-rate1', detail:'update Loan offer Parameters for Topup, parameter:Flat rate option 1', category:'PARAMETER', versionId:'V0001', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:['FLAT_RATE_OPT1'], status:'Wait' },
+            { order:4, type:'AUTO', name:'dev-mcrm-program-topup-flat-rate2', detail:'update Loan offer Parameters for Flat rate option 2', category:'PARAMETER', versionId:'V0001', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:['FLAT_RATE_OPT2'], status:'Wait' },
+            { order:5, type:'AUTO', name:'dev-mcrm-program-topup-flat-rate3', detail:'update Loan offer Parameters for Flat rate option 3', category:'PARAMETER', versionId:'V0001', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:['FLAT_RATE_OPT3'], status:'Wait' },
+            { order:6, type:'AUTO', name:'dev-mcrm-program-topup-flat-rate4', detail:'update Loan offer Parameters for Flat rate option 4', category:'PARAMETER', versionId:'V0001', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'TOPUP', params:['FLAT_RATE_OPT4'], status:'Wait' },
+            { order:7, type:'AUTO', name:'dev-mcrm-program-revolving-loan', detail:'update program Loan offer Parameters for revoling Loan', category:'PARAMETER', versionId:'V0001', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'REVOLVING_LOAN', params:['RL_OPTION'], status:'Wait' },
+            { order:8, type:'AUTO', name:'dev-mcrm-program-revolving-loan-flat-rate-tp_rh', detail:'update Loan offer Parameters for Flat Rate', category:'PARAMETER', versionId:'V0001', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'REVOLVING_LOAN', params:['FLAT_RATE_TP_RH'], status:'Wait' },
+            { order:9, type:'AUTO', name:'dev-mcrm-program-pre-approve-r', detail:'Update Loan offer Parameters for pre-approve r', category:'PARAMETER', versionId:'V0001', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'PRE_APPROVE_R', params:['PA_R_OPTION'], status:'Wait' },
+            { order:10, type:'AUTO', name:'dev-mcrm-program-pre-approve-r-flat-rate', detail:'Update Loan offer Parameters for flat-rate pre-approve r', category:'PARAMETER', versionId:'V0001', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'PRE_APPROVE_R', params:['PA_R_FLAT_RATE'], status:'Wait' },
+            { order:11, type:'AUTO', name:'dev-mcrm-program-pre-approve-nu', detail:'Update Loan offer Parameters for pre-approve N/U', category:'PARAMETER', versionId:'V0001', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'PRE_APPROVE_NU', params:['PA_NU_OPTION'], status:'Wait' },
+            { order:12, type:'AUTO', name:'dev-mcrm-program-pre-approve-nu-flat-rate', detail:'Update Loan offer Parameters for flat-rate pre-approve N/U', category:'PARAMETER', versionId:'V0001', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'PRE_APPROVE_NU', params:['PA_NU_FLAT_RATE'], status:'Wait' },
+            { order:13, type:'AUTO', name:'dev-mcrm-program-pre-approve-mc', detail:'Update Loan offer Parameters for pre-approve MC', category:'PARAMETER', versionId:'V0001', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'PRE_APPROVE_MC', params:['PA_MC_OPTION'], status:'Wait' },
+            { order:14, type:'AUTO', name:'dev-mcrm-program-pre-approve-mc-flat-rate', detail:'Update Loan offer Parameters for pre-approve MC flag rate', category:'PARAMETER', versionId:'V0001', leadType:'CRM_X_SELL_POOL', entity:'KA', program:'PRE_APPROVE_MC', params:['PA_MC_FLAT_RATE'], status:'Wait' },
             { order:15, type:'AUTO', name:'dev-mcrm-cap-max-special-criteria', detail:'Run special logic of Cap Max Flat Rate and Max LTV for Topup program', category:'PARAMETER', code:'', status:'Wait' },
             { order:16, type:'AUTO', name:'credit line calculations Top up programs (X Sell Pool)', detail:'calculate credit line and cash offer', category:'PARAMETER', code:'', status:'Wait' },
             { order:17, type:'AUTO', name:'credit line calculations Revolving Loan programs (X Sell Pool)', detail:'', category:'PARAMETER', code:'', status:'Wait' },
@@ -434,7 +435,7 @@
             { order:23, type:'AUTO', name:'Flag Program Pre-Approve (N/U) ', detail:'Flag Program Pre-Approve (N/U) ', category:'PARAMETER', code:'', status:'Wait' },
             { order:24, type:'AUTO', name:'Validate Interest Rate', detail:'ตรวจสอบอัตราดอกเบี้ย (SOL_INT_RATE) ว่าตรงกับ Expected Result ของแต่ละ Condition', category:'VALIDATION', validations:['V00001'], status:'Wait' },
           ] },
-          { flow_id:'F00006', flow_name:'GEN LEAD INS_PPI', run_type:'MANUAL', schedule:null, steps:[
+          { STATUS:'Active', flow_id:'F00006', flow_name:'GEN LEAD INS_PPI', run_type:'MANUAL', schedule:null, steps:[
             { order:1,  type:'AUTO', name:'STEP 0',  detail:'BASE LEAD (No Condition)', category:'ELIGIBLE', code:'EL00001', status:'Wait' },
             { order:2,  type:'AUTO', name:'STEP 1',  detail:'SUPPRESS AGE,REMAINING_TERM,DELINQUENCY,TOTAL_INCOME,BLACKLIST', category:'ELIGIBLE', code:'EL00002', status:'Wait' },
             { order:3,  type:'AUTO', name:'STEP 2',  detail:'SUPPRESS BILL CODE', category:'ELIGIBLE', code:'EL00003', status:'Wait' },
@@ -449,7 +450,7 @@
             { order:12, type:'AUTO', name:'STEP 11', detail:'SUPPRESS ADVANCE PERIOD', category:'ELIGIBLE', code:'EL00002', status:'Wait' },
             { order:13, type:'AUTO', name:'STEP 12', detail:'PREPARE FOR REGISTER INS PPI', category:'ELIGIBLE', code:'EL00003', status:'Wait' },
           ] },
-          { flow_id:'F00007', flow_name:'Gen X_SELL_POOL + Validation', run_type:'AUTO', schedule:'0 5 * * *', steps:[] },
+          { STATUS:'Active', flow_id:'F00007', flow_name:'Gen X_SELL_POOL + Validation', run_type:'AUTO', schedule:'0 5 * * *', steps:[] },
         ],
         validations: defaultValidations(),
 
@@ -517,7 +518,8 @@
                 "edit": true,
                 "delete": true,
                 "submit": true,
-                "approve": false
+                "approve": false,
+                "activate": true
               },
               "pricing": {
                 "add": false,
@@ -614,7 +616,8 @@
                 "edit": true,
                 "delete": true,
                 "submit": true,
-                "approve": false
+                "approve": false,
+                "activate": true
               },
               "pricing": {
                 "add": false,
@@ -711,7 +714,8 @@
                 "edit": false,
                 "delete": false,
                 "submit": false,
-                "approve": false
+                "approve": false,
+                "activate": false
               },
               "pricing": {
                 "add": false,
@@ -808,7 +812,8 @@
                 "edit": false,
                 "delete": false,
                 "submit": false,
-                "approve": false
+                "approve": false,
+                "activate": false
               },
               "pricing": {
                 "add": false,
@@ -905,7 +910,8 @@
                 "edit": false,
                 "delete": false,
                 "submit": false,
-                "approve": true
+                "approve": true,
+                "activate": false
               },
               "pricing": {
                 "add": false,
@@ -1002,7 +1008,8 @@
                 "edit": false,
                 "delete": false,
                 "submit": false,
-                "approve": true
+                "approve": true,
+                "activate": false
               },
               "pricing": {
                 "add": false,
@@ -1077,6 +1084,13 @@
         if (!v.LEAD_TYPE) v.LEAD_TYPE = 'CRM_X_SELL_POOL';
       });
       const fallbackVersion = versions[0]?.VERSION_ID || 'V0001';
+      (Array.isArray(db.workflows) ? db.workflows : []).forEach(f => {
+        if (!f.STATUS) f.STATUS = 'Active';
+        (f.steps || []).forEach(st => { if (st.category === 'PARAMETER' && !st.versionId) st.versionId = fallbackVersion; });
+      });
+      (Array.isArray(db.executionLogs) ? db.executionLogs : []).forEach(t => {
+        (t.steps || []).forEach(st => { if (st.category === 'PARAMETER' && !st.versionId) st.versionId = fallbackVersion; });
+      });
       [db.paramConfigs, db.criteriaRows].forEach(list => {
         if (!Array.isArray(list)) return;
         list.forEach(r => { if (!r.VERSION_ID) r.VERSION_ID = fallbackVersion; });

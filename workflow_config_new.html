@@ -36,6 +36,14 @@
 .cat-pick .dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
 
 .run-tag{ display:inline-block;font-size:10px;font-weight:bold; padding:2px 8px;border-radius:10px;color:#fff;vertical-align:middle; }
+.flow-status{
+  display:inline-block;font-size:10px;font-weight:bold;
+  padding:2px 10px;border-radius:10px;color:#fff;vertical-align:middle;
+}
+.flow-status.fs-draft{background:#6B7280}
+.flow-status.fs-active{background:#2F9E68}
+.flow-status.fs-inactive{background:#C6CBD6}
+
 .run-tag.run-auto{background:#D9A404}
 .run-tag.run-manual{background:#6B7280}
 
@@ -274,6 +282,36 @@ createApp({
     const flows = MCRM.db.workflows;
     /* Validation steps pick records saved in Validation Setup. */
     const validationList = MCRM.db.validations;
+    /* ---- version ของ Parameter : เลือกได้เฉพาะที่ Active หรือ Approve ---- */
+    const cfgVersions = MCRM.db.cfgVersions;
+    const PARAM_VERSION_OK = ['Active','Approve'];
+    const selectableVersions = computed(() =>
+      cfgVersions.filter(v => PARAM_VERSION_OK.includes(v.STATUS || 'Active')));
+    const versionStatusOf = (id) => (cfgVersions.find(v => v.VERSION_ID === id) || {}).STATUS || '';
+
+    /* ---- สถานะของ flow : Draft (สร้างใหม่/clone) -> Active / Inactive ---- */
+    const FLOW_STATUSES = ['Draft','Active','Inactive'];
+    const flowStatusOf = (f) => f.STATUS || 'Draft';
+    const flowStatusClass = (f) => 'fs-' + flowStatusOf(f).toLowerCase();
+    function setFlowStatus(f, st){ f.STATUS = st; showToast(`${f.flow_id} เป็น ${st} แล้ว`); }
+
+    /* ---- Run Flow กดได้เมื่ออ้างอิงของที่ใช้ได้เท่านั้น ---- */
+    const ELIGIBLE_OK = ['Active','Draft'];
+    function runBlockReason(f){
+      for (const st of (f.steps || [])){
+        if (st.category === 'ELIGIBLE' && st.code){
+          const rec = eligibleList.find(e => e.code === st.code);
+          const ok = rec && ELIGIBLE_OK.includes(rec.status);
+          if (!ok) return `Eligible ${st.code} สถานะ ${rec ? rec.status : 'ไม่พบ'} — ใช้ได้เฉพาะ Active / Draft`;
+        }
+        if (st.category === 'PARAMETER' && st.versionId){
+          const vst = versionStatusOf(st.versionId);
+          if (!PARAM_VERSION_OK.includes(vst)) return `Parameter version ${st.versionId} สถานะ ${vst || 'ไม่พบ'} — ใช้ได้เฉพาะ Active / Approve`;
+        }
+      }
+      return '';
+    }
+    const canRunFlow = (f) => !runBlockReason(f);
     function validationNameOf(code){
       const v = validationList.find(x => x.validation_id === code);
       return v ? v.validation_name : code;
@@ -314,7 +352,8 @@ createApp({
         entity: s.entity || '',
         program: s.program || '',
         params: Array.isArray(s.params) ? s.params.slice() : [],
-        validations: Array.isArray(s.validations) ? s.validations.slice() : []
+        validations: Array.isArray(s.validations) ? s.validations.slice() : [],
+        versionId: s.versionId || (selectableVersions.value[0]?.VERSION_ID || '')
       };
     }
 
@@ -357,7 +396,8 @@ createApp({
       category = CATEGORIES.value[category] ? category : DEFAULT_CATEGORY;
       currentFlow.steps.push({
         id: nextId++, name:`Step${currentFlow.steps.length+1}`, type:'AUTO', status:'Wait', detail:'',
-        category, code:'', leadType: LEAD_TYPES.value[0] ? LEAD_TYPES.value[0].code : '', entity:'', program:'', params:[], validations:[]
+        category, code:'', leadType: LEAD_TYPES.value[0] ? LEAD_TYPES.value[0].code : '', entity:'', program:'', params:[], validations:[],
+        versionId: selectableVersions.value[0]?.VERSION_ID || ''
       });
       showAddStep.value = false;
     }
@@ -569,7 +609,7 @@ createApp({
         schedule: currentFlow.run_type==='AUTO' ? (currentFlow.schedule||DEFAULT_CRON) : null,
         steps: currentFlow.steps.map((s,i) => {
           const base = { order:i+1, type:s.type, name:s.name, detail:s.detail, category:s.category, status:s.status };
-          if (s.category==='PARAMETER'){ base.leadType=s.leadType; base.entity=s.entity; base.program=s.program; base.params=s.params||[]; }
+          if (s.category==='PARAMETER'){ base.versionId=s.versionId; base.leadType=s.leadType; base.entity=s.entity; base.program=s.program; base.params=s.params||[]; }
           else if (s.category==='VALIDATION'){ base.validations = s.validations||[]; }
           else { base.code = s.code; }
           return base;
@@ -582,7 +622,8 @@ createApp({
       showOutput.value = true;
       if (!currentFlow.flow_id.trim()){ showToast('กรุณากรอก Flow ID เพื่อบันทึกเข้ารายการ', false); return; }
       const idx = flows.findIndex(f => f.flow_id === currentFlow.flow_id);
-      const record = { flow_id: payload.flow_id, flow_name: payload.flow_name, run_type: payload.run_type, schedule: payload.schedule, steps: payload.steps };
+      const record = { flow_id: payload.flow_id, flow_name: payload.flow_name, run_type: payload.run_type, schedule: payload.schedule,
+                       STATUS: idx >= 0 ? flowStatusOf(flows[idx]) : 'Draft', steps: payload.steps };
       if (idx >= 0) flows[idx] = record; else flows.push(record);
       showToast('บันทึก Flow เรียบร้อย');
     }
@@ -623,6 +664,16 @@ createApp({
       showToast(`The flow "${flow.flow_name}" is now running.`);
       setTimeout(() => { window.location.href = `workflow_management.html?create_flow_id=${flow.flow_id}`; }, 600);
     }
+    /* Clone Workflow : คัดลอกทั้ง flow มาเป็นชุดใหม่สถานะ Draft */
+    function cloneFlow(f){
+      const copy = JSON.parse(JSON.stringify(f));
+      copy.flow_id = nextFlowId();
+      copy.flow_name = f.flow_name + ' (copy)';
+      copy.STATUS = 'Draft';
+      flows.push(copy);
+      showToast(`Clone ${f.flow_id} เป็น ${copy.flow_id} แล้ว (สถานะ Draft)`);
+    }
+
     const confirmDeleteFlow = ref(null);
     function askDeleteFlow(flow){ confirmDeleteFlow.value = flow; }
     function confirmDeleteFlowYes(){
@@ -640,6 +691,8 @@ createApp({
       TYPES, SCH_MODES, WD_TH_SHORT, MIN_BOX_H, BOX_W, STROKE, STROKE_W,
       LEAD_TYPES, ENTITIES, PROGRAMS, getParamList, paramNameOf,
       flows, CATEGORIES, DEFAULT_CATEGORY,
+      selectableVersions, versionStatusOf, FLOW_STATUSES, flowStatusOf, flowStatusClass, setFlowStatus,
+      canRunFlow, runBlockReason, cloneFlow,
       pageView, currentFlow, openFlow, backToList, onRunTypeChange, scheduleDesc, scheduleDescFor,
       showAddStep, openAddStepDialog, addStep, removeStep, changeCategory, onEntityOrProgramChange,
       paramPickerStepId, paramPickerPos, activeParamStep, toggleParamPicker, toggleParamValue, removeParam,
@@ -666,13 +719,14 @@ createApp({
       </div>
       <table id="list_flow_table" width="100%">
         <thead>
-          <tr><th>Flow ID</th><th>Flow Name</th><th>Steps</th><th>Run Type</th><th>Schedule (Cronjob)</th><th></th></tr>
+          <tr><th>Flow ID</th><th>Flow Name</th><th>Steps</th><th>Status</th><th>Run Type</th><th>Schedule (Cronjob)</th><th></th></tr>
         </thead>
         <tbody>
           <tr v-for="f in flows" :key="f.flow_id">
             <td align="center">{{ f.flow_id }}</td>
             <td>{{ f.flow_name }}</td>
             <td align="center">{{ f.steps.length }}</td>
+            <td align="center"><span class="flow-status" :class="flowStatusClass(f)">{{ flowStatusOf(f) }}</span></td>
             <td align="center"><span class="run-tag" :class="(f.run_type||'MANUAL').toUpperCase()==='AUTO' ? 'run-auto':'run-manual'">{{ (f.run_type||'MANUAL').toUpperCase() }}</span></td>
             <td align="center">
               <template v-if="(f.run_type||'MANUAL').toUpperCase()==='AUTO'">
@@ -686,7 +740,11 @@ createApp({
                 <button class="btn-dots" onclick="toggleDropdown(event, this)">⋮</button>
                 <div class="dropdown-menu">
                   <button @click="openFlow(f.flow_id)">Edit</button>
-                  <button @click="askRunFlow(f)">Run Flow</button>
+                  <button @click="cloneFlow(f)">Clone Workflow</button>
+                  <button v-if="canRunFlow(f)" @click="askRunFlow(f)">Run Flow</button>
+                  <button v-else disabled :title="runBlockReason(f)" style="color:#B4ACA5;cursor:not-allowed">Run Flow</button>
+                  <button v-if="flowStatusOf(f)!=='Active'" @click="setFlowStatus(f,'Active')">Set Active</button>
+                  <button v-if="flowStatusOf(f)!=='Inactive'" @click="setFlowStatus(f,'Inactive')">Set Inactive</button>
                   <button @click="askDeleteFlow(f)">Delete</button>
                 </div>
               </div>
@@ -762,6 +820,12 @@ createApp({
               </div>
 
               <template v-if="s.category==='PARAMETER'">
+                <div class="field-lbl">Parameter Version</div>
+                <select class="step-select" v-model="s.versionId">
+                  <option value="">-- Select Version --</option>
+                  <option v-for="v in selectableVersions" :key="v.VERSION_ID" :value="v.VERSION_ID">{{ v.VERSION_ID }} ({{ v.STATUS }})</option>
+                  <option v-if="s.versionId && !selectableVersions.some(v=>v.VERSION_ID===s.versionId)" :value="s.versionId">{{ s.versionId }} ({{ versionStatusOf(s.versionId) || 'ไม่พบ' }})</option>
+                </select>
                 <div class="field-lbl">Lead Type</div>
                 <select class="step-select" v-model="s.leadType">
                   <option v-for="l in LEAD_TYPES" :key="l.code" :value="l.code">{{ l.name }}</option>

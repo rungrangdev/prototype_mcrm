@@ -341,6 +341,25 @@ createApp({
       return f ? f.PARAMETER_NAME : code;
     }
 
+    /* ---- Register Lead : เห็นได้เมื่อ parameter version และ eligible ของ
+       transaction นั้นเป็น Active ทั้งหมดเท่านั้น ---- */
+    const cfgVersions = MCRM.db.cfgVersions;
+    function registerBlockReason(t){
+      for (const st of (t.steps || [])){
+        if (st.category === 'ELIGIBLE' && st.code){
+          const rec = eligibleList.find(e => e.code === st.code);
+          if (!rec || rec.status !== 'Active') return `Eligible ${st.code} สถานะ ${rec ? rec.status : 'ไม่พบ'} — ต้องเป็น Active`;
+        }
+        if (st.category === 'PARAMETER' && st.versionId){
+          const v = cfgVersions.find(x => x.VERSION_ID === st.versionId);
+          const vst = v ? (v.STATUS || 'Active') : '';
+          if (vst !== 'Active') return `Parameter version ${st.versionId} สถานะ ${vst || 'ไม่พบ'} — ต้องเป็น Active`;
+        }
+      }
+      return '';
+    }
+    const canRegisterLead = (t) => !registerBlockReason(t);
+
     function normalizeStep(s, i){
       let category = s.category || (s.eligible_code ? 'ELIGIBLE' : DEFAULT_CATEGORY);
       if (!CATEGORIES[category]) category = DEFAULT_CATEGORY;
@@ -350,6 +369,7 @@ createApp({
         leadType: s.leadType || '', entity: s.entity || '', program: s.program || '',
         params: Array.isArray(s.params) ? s.params.slice() : [],
         validations: Array.isArray(s.validations) ? s.validations.slice() : [],
+        versionId: s.versionId || '',
       };
     }
 
@@ -639,6 +659,7 @@ createApp({
 
     return {
       flows, executionLogs, CATEGORIES, paramNameOf, STROKE, STROKE_W,
+      canRegisterLead, registerBlockReason,
       pageView, currentTrans, openTransaction, backToList,
       createFlowId, createTransaction,
       confirmRegister, registerLead, confirmRegisterYes,
@@ -678,7 +699,7 @@ createApp({
                 <button class="btn-dots" onclick="toggleDropdown(event, this)">⋮</button>
                 <div class="dropdown-menu">
                   <button @click="openTransaction(t.trans_id)">View</button>
-                  <button @click="registerLead(t.trans_id)">Register Lead</button>
+                  <button v-if="canRegisterLead(t)" @click="registerLead(t.trans_id)">Register Lead</button>
                 </div>
               </div>
             </td>
