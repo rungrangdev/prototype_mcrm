@@ -246,8 +246,6 @@
   .vs-waiting-for-approve{background:var(--accent-soft);color:#9A6316;}
   .vs-approve{background:#E8F0FB;color:#2B5FA8;}
   .vs-reject{background:var(--danger-soft);color:var(--danger);}
-  .reject-reason{font-size:10.5px;color:var(--danger);margin-top:4px;max-width:180px;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;}
   .vs-active{background:var(--success-soft);color:var(--success);}
   .vs-inactive{background:#F1F2F5;color:#9AA2B1;}
   .view-only-tag{font-size:11px;font-weight:600;color:var(--text-secondary);
@@ -839,8 +837,7 @@ createApp({
                 <td>{{ v.VERSION_NAME || '—' }}</td>
                 <td>{{ v.LEAD_TYPE }}</td>
                 <td align="center" style="vertical-align:top;">
-                  <span class="ver-status" :class="verStatusClass(v.STATUS)">{{ verStatusText(v.STATUS) }}</span>
-                  <div class="reject-reason" v-if="verStatusText(v.STATUS)==='Reject' && v.REJECT_REASON" :title="v.REJECT_REASON">{{ v.REJECT_REASON }}</div>
+                  <span class="ver-status" :class="verStatusClass(v.STATUS)" :title="v.REJECT_REASON || ''">{{ verStatusText(v.STATUS) }}</span>
                 </td>
                 <td align="center" style="vertical-align:top;">
                   <div class="dropdown-container">
