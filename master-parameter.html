@@ -464,8 +464,23 @@ createApp({
       return 'V' + String((nums.length ? Math.max(...nums) : 0) + 1).padStart(4,'0');
     }
 
+    /* ---- 1 lead type มี version ที่กำลังแก้ไขได้แค่ชุดเดียว ----
+       ถ้ายังมีตัวที่ค้างอยู่ใน Open / Waiting for approve / Approve
+       จะ clone ซ้ำไม่ได้ ไม่งั้นจะดันขึ้น Active ได้พร้อมกันหลายแถว */
+    const IN_PROGRESS = ['Open','Waiting for approve','Approve'];
+    function pendingVersionOf(leadType){
+      return cfgVersions.find(x => (x.LEAD_TYPE||'') === (leadType||'') && IN_PROGRESS.includes(verStatusText(x.STATUS)));
+    }
+    function cloneBlockReason(v){
+      const pending = pendingVersionOf(v.LEAD_TYPE);
+      return pending ? `${v.LEAD_TYPE} มี ${pending.VERSION_ID} (${verStatusText(pending.STATUS)}) ค้างอยู่ — ต้องทำให้จบก่อนจึงจะ clone ใหม่ได้` : '';
+    }
+    const canCloneVersion = (v) => !cloneBlockReason(v);
+
     /* Clone : คัดลอกทั้ง version (parameter + ค่าที่ตั้งไว้) มาเป็นชุดใหม่สถานะ Open */
     function cloneVersion(v){
+      const blocked = cloneBlockReason(v);
+      if (blocked){ showToast(blocked, false); return; }
       const id = nextVersionId();
       const deep = x => JSON.parse(JSON.stringify(x));
       paramConfigs
@@ -508,13 +523,15 @@ createApp({
     function askActivateVersion(v){ confirmActivateVersion.value = v; }
     function confirmActivateVersionYes(){
       const v = confirmActivateVersion.value;
+      /* lead type หนึ่งมี Active ได้แถวเดียว ตัวเดิมทั้งหมดจึงถูกปิดไปพร้อมกัน */
+      const replaced = cfgVersions.filter(x => x !== v && (x.LEAD_TYPE||'') === (v.LEAD_TYPE||'')
+                                            && verStatusText(x.STATUS) === 'Active');
+      replaced.forEach(x => { x.STATUS = 'Inactive'; x.UPDATE_BY = 'ADMIN'; x.UPDATE_DATE = now(); });
       v.STATUS = 'Active';
       v.UPDATE_BY = 'ADMIN'; v.UPDATE_DATE = now();
-      const src = cfgVersions.find(x => x.VERSION_ID === v.CLONED_FROM);
-      if (src){ src.STATUS = 'Inactive'; src.UPDATE_BY = 'ADMIN'; src.UPDATE_DATE = now(); }
       confirmActivateVersion.value = null;
-      showToast(src ? `${v.VERSION_ID} เริ่มใช้งานแล้ว และ ${src.VERSION_ID} เป็น Inactive`
-                    : `${v.VERSION_ID} เริ่มใช้งานแล้ว`);
+      showToast(replaced.length ? `${v.VERSION_ID} เริ่มใช้งานแล้ว และ ${replaced.map(x=>x.VERSION_ID).join(', ')} เป็น Inactive`
+                                : `${v.VERSION_ID} เริ่มใช้งานแล้ว`);
     }
 
     /* Delete : ลบได้เฉพาะ version ที่ยัง Open พร้อมข้อมูลที่ผูกอยู่ */
@@ -736,6 +753,7 @@ createApp({
       confirmDeleteCfg, askDeleteCfg, confirmDeleteCfgRow, cfgPreview,
       cfgView, cfgVersionId, cfgVersions, openCfgSetup, backToCfgList,
       cfgVersionStatus, cfgEditable, pagePerm, versionParamCount, cloneVersion, verStatusText, verStatusClass,
+      canCloneVersion, cloneBlockReason,
       VERSION_STATUSES, verFilterLeadType, verFilterStatus, filteredVersions,
       confirmSubmitVersion, askSubmitVersion, confirmSubmitVersionYes,
       confirmApproveVersion, askApproveVersion, confirmApproveVersionYes,
@@ -812,7 +830,10 @@ createApp({
                       <!-- Active : ดูได้ กับ clone ไปแก้เป็นชุดใหม่ -->
                       <template v-else-if="verStatusText(v.STATUS)==='Active'">
                         <button class="icon-btn" @click="openCfgSetup(v)">View</button>
-                        <button class="icon-btn" v-if="pagePerm.clone" @click="cloneVersion(v)">Clone</button>
+                        <template v-if="pagePerm.clone">
+                          <button class="icon-btn" v-if="canCloneVersion(v)" @click="cloneVersion(v)">Clone</button>
+                          <button class="icon-btn" v-else disabled :title="cloneBlockReason(v)" style="color:#B4ACA5;cursor:not-allowed">Clone</button>
+                        </template>
                       </template>
                       <!-- Inactive : ดูได้อย่างเดียว -->
                       <template v-else>
@@ -931,7 +952,7 @@ createApp({
         <h3>เริ่มใช้งาน {{ confirmActivateVersion.VERSION_ID }}?</h3>
         <p>
           version นี้จะเปลี่ยนเป็น <strong>Active</strong>
-          <template v-if="confirmActivateVersion.CLONED_FROM"> และ <strong>{{ confirmActivateVersion.CLONED_FROM }}</strong> ที่ถูก clone มาจะเปลี่ยนเป็น Inactive</template>
+          และ version ที่เป็น Active อยู่ของ {{ confirmActivateVersion.LEAD_TYPE }} จะเปลี่ยนเป็น Inactive
         </p>
         <div class="modal-actions"><button class="btn btn-ghost" @click="confirmActivateVersion=null">ยกเลิก</button><button class="btn btn-primary" @click="confirmActivateVersionYes">Active</button></div>
       </div>
