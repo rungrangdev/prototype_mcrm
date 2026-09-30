@@ -245,6 +245,9 @@
   .vs-open{background:#EEF1F6;color:#4B5563;}
   .vs-waiting-for-approve{background:var(--accent-soft);color:#9A6316;}
   .vs-approve{background:#E8F0FB;color:#2B5FA8;}
+  .vs-reject{background:var(--danger-soft);color:var(--danger);}
+  .reject-reason{font-size:10.5px;color:var(--danger);margin-top:4px;max-width:180px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;}
   .vs-active{background:var(--success-soft);color:var(--success);}
   .vs-inactive{background:#F1F2F5;color:#9AA2B1;}
   .view-only-tag{font-size:11px;font-weight:600;color:var(--text-secondary);
@@ -447,7 +450,8 @@ createApp({
          Inactive            -> ของเก่าที่ถูกแทนที่ไปแล้ว (View)             */
     const cfgVersionStatus = ref('');      // สถานะของ version ที่เปิดอยู่
     /* แก้ไขได้เฉพาะตอน Open เท่านั้น — ใช้คุมปุ่ม Add/Edit/Delete/Set value ทั้งหน้า */
-    const cfgEditable = computed(() => cfgVersionStatus.value === 'Open' && pagePerm.value.edit);
+    const EDITABLE_STATUSES = ['Open','Reject'];
+    const cfgEditable = computed(() => EDITABLE_STATUSES.includes(cfgVersionStatus.value) && pagePerm.value.edit);
 
     function openCfgSetup(v){
       cfgVersionId.value = v.VERSION_ID;
@@ -467,7 +471,7 @@ createApp({
     /* ---- 1 lead type มี version ที่กำลังแก้ไขได้แค่ชุดเดียว ----
        ถ้ายังมีตัวที่ค้างอยู่ใน Open / Waiting for approve / Approve
        จะ clone ซ้ำไม่ได้ ไม่งั้นจะดันขึ้น Active ได้พร้อมกันหลายแถว */
-    const IN_PROGRESS = ['Open','Waiting for approve','Approve'];
+    const IN_PROGRESS = ['Open','Reject','Waiting for approve','Approve'];
     function pendingVersionOf(leadType){
       return cfgVersions.find(x => (x.LEAD_TYPE||'') === (leadType||'') && IN_PROGRESS.includes(verStatusText(x.STATUS)));
     }
@@ -477,8 +481,20 @@ createApp({
     }
     const canCloneVersion = (v) => !cloneBlockReason(v);
 
-    /* Clone : คัดลอกทั้ง version (parameter + ค่าที่ตั้งไว้) มาเป็นชุดใหม่สถานะ Open */
-    function cloneVersion(v){
+    /* Clone : ถามชื่อ version ก่อน แล้วค่อยคัดลอกทั้งชุด */
+    const cloneForm = reactive({ show:false, source:null, name:'' });
+    function askCloneVersion(v){
+      const blocked = cloneBlockReason(v);
+      if (blocked){ showToast(blocked, false); return; }
+      Object.assign(cloneForm, { show:true, source:v, name:'' });
+    }
+    function confirmCloneVersion(){
+      if (!cloneForm.name.trim()){ showToast('กรุณากรอก Version Name', false); return; }
+      cloneVersion(cloneForm.source, cloneForm.name.trim());
+      cloneForm.show = false;
+    }
+
+    function cloneVersion(v, versionName){
       const blocked = cloneBlockReason(v);
       if (blocked){ showToast(blocked, false); return; }
       const id = nextVersionId();
@@ -490,7 +506,8 @@ createApp({
         .filter(r => r.VERSION_ID === v.VERSION_ID)
         .forEach(r => criteriaRows.push({ ...deep(r), VERSION_ID:id, CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() }));
       cfgVersions.push({
-        VERSION_ID:id, LEAD_TYPE:v.LEAD_TYPE, STATUS:'Open', CLONED_FROM:v.VERSION_ID,
+        VERSION_ID:id, VERSION_NAME: versionName || id, LEAD_TYPE:v.LEAD_TYPE, STATUS:'Open',
+        CLONED_FROM:v.VERSION_ID, REJECT_REASON:'',
         CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now(),
       });
       showToast(`Clone ${v.VERSION_ID} เป็น ${id} แล้ว (สถานะ Open)`);
@@ -502,6 +519,7 @@ createApp({
     function confirmSubmitVersionYes(){
       const v = confirmSubmitVersion.value;
       v.STATUS = 'Waiting for approve';
+      v.REJECT_REASON = '';
       v.UPDATE_BY = 'ADMIN'; v.UPDATE_DATE = now();
       confirmSubmitVersion.value = null;
       showToast(`${v.VERSION_ID} ส่งขออนุมัติแล้ว`);
@@ -518,14 +536,29 @@ createApp({
       showToast(`${v.VERSION_ID} อนุมัติแล้ว รอเริ่มใช้งาน`);
     }
 
+    /* Reject : ตีกลับให้แก้ พร้อมเหตุผล — กลับไปแก้แล้ว Submit ใหม่ได้ */
+    const rejectForm = reactive({ show:false, target:null, reason:'' });
+    function askRejectVersion(v){ Object.assign(rejectForm, { show:true, target:v, reason:'' }); }
+    function confirmRejectVersion(){
+      if (!rejectForm.reason.trim()){ showToast('กรุณากรอกเหตุผลที่ไม่อนุมัติ', false); return; }
+      const v = rejectForm.target;
+      v.STATUS = 'Reject';
+      v.REJECT_REASON = rejectForm.reason.trim();
+      v.UPDATE_BY = 'ADMIN'; v.UPDATE_DATE = now();
+      rejectForm.show = false;
+      showToast(`${v.VERSION_ID} ถูกตีกลับแล้ว`);
+    }
+
     /* Active : เริ่มใช้งานจริง ตอนนี้ค่อยดัน version ต้นทางที่ถูก clone มาเป็น Inactive */
     const confirmActivateVersion = ref(null);
     function askActivateVersion(v){ confirmActivateVersion.value = v; }
     function confirmActivateVersionYes(){
       const v = confirmActivateVersion.value;
-      /* lead type หนึ่งมี Active ได้แถวเดียว ตัวเดิมทั้งหมดจึงถูกปิดไปพร้อมกัน */
-      const replaced = cfgVersions.filter(x => x !== v && (x.LEAD_TYPE||'') === (v.LEAD_TYPE||'')
-                                            && verStatusText(x.STATUS) === 'Active');
+      /* ปิดทุก version ของ lead type เดียวกัน เหลือไว้เฉพาะรายการใหม่สุด (ตัวที่กำลังเปิดใช้งาน) */
+      const idNum = x => parseInt(String(x.VERSION_ID).replace(/\D/g,''),10) || 0;
+      const sameLead = cfgVersions.filter(x => (x.LEAD_TYPE||'') === (v.LEAD_TYPE||''));
+      const newest = sameLead.reduce((a,b) => idNum(b) > idNum(a) ? b : a, v);
+      const replaced = sameLead.filter(x => x !== v && x !== newest);
       replaced.forEach(x => { x.STATUS = 'Inactive'; x.UPDATE_BY = 'ADMIN'; x.UPDATE_DATE = now(); });
       v.STATUS = 'Active';
       v.UPDATE_BY = 'ADMIN'; v.UPDATE_DATE = now();
@@ -549,7 +582,7 @@ createApp({
     const versionParamCount = (v) => paramConfigs.filter(c => c.VERSION_ID === v.VERSION_ID).length;
 
     /* ---- ตัวกรองเหนือตาราง version ---- */
-    const VERSION_STATUSES = ['Open','Waiting for approve','Approve','Active','Inactive'];
+    const VERSION_STATUSES = ['Open','Waiting for approve','Approve','Reject','Active','Inactive'];
     const verFilterLeadType = ref('');   // '' = ทั้งหมด
     const verFilterStatus = ref('');
     const filteredVersions = computed(() => cfgVersions.filter(v =>
@@ -752,8 +785,9 @@ createApp({
       openAddCfg, openEditCfg, closeCfgForm, toggleCfgKey, removeCfgKeyAt, saveCfg, toggleCfgActive,
       confirmDeleteCfg, askDeleteCfg, confirmDeleteCfgRow, cfgPreview,
       cfgView, cfgVersionId, cfgVersions, openCfgSetup, backToCfgList,
-      cfgVersionStatus, cfgEditable, pagePerm, versionParamCount, cloneVersion, verStatusText, verStatusClass,
-      canCloneVersion, cloneBlockReason,
+      cfgVersionStatus, cfgEditable, pagePerm, versionParamCount, verStatusText, verStatusClass,
+      canCloneVersion, cloneBlockReason, cloneForm, askCloneVersion, confirmCloneVersion,
+      rejectForm, askRejectVersion, confirmRejectVersion,
       VERSION_STATUSES, verFilterLeadType, verFilterStatus, filteredVersions,
       confirmSubmitVersion, askSubmitVersion, confirmSubmitVersionYes,
       confirmApproveVersion, askApproveVersion, confirmApproveVersionYes,
@@ -798,20 +832,22 @@ createApp({
         </div>
         <div class="table-wrap">
           <table class="data-table" v-if="filteredVersions.length">
-            <thead><tr><th style="width:140px">Version id</th><th>Lead type</th><th style="width:170px">Status</th><th style="width:70px"></th></tr></thead>
+            <thead><tr><th style="width:120px">Version id</th><th style="width:220px">Version Name</th><th>Lead type</th><th style="width:190px">Status</th><th style="width:70px"></th></tr></thead>
             <tbody>
               <tr v-for="v in filteredVersions" :key="v.VERSION_ID">
                 <td align="center" style="vertical-align:top;font-weight:700;">{{ v.VERSION_ID }}</td>
+                <td>{{ v.VERSION_NAME || '—' }}</td>
                 <td>{{ v.LEAD_TYPE }}</td>
                 <td align="center" style="vertical-align:top;">
                   <span class="ver-status" :class="verStatusClass(v.STATUS)">{{ verStatusText(v.STATUS) }}</span>
+                  <div class="reject-reason" v-if="verStatusText(v.STATUS)==='Reject' && v.REJECT_REASON" :title="v.REJECT_REASON">{{ v.REJECT_REASON }}</div>
                 </td>
                 <td align="center" style="vertical-align:top;">
                   <div class="dropdown-container">
                     <button class="btn-dots" onclick="toggleDropdown(event, this)">⋮</button>
                     <div class="dropdown-menu">
                       <!-- Open : ยังแก้ไขได้ -->
-                      <template v-if="verStatusText(v.STATUS)==='Open'">
+                      <template v-if="verStatusText(v.STATUS)==='Open' || verStatusText(v.STATUS)==='Reject'">
                         <button class="icon-btn" v-if="pagePerm.edit" @click="openCfgSetup(v)">Edit</button>
                         <button class="icon-btn" v-else @click="openCfgSetup(v)">View</button>
                         <button class="icon-btn danger" v-if="pagePerm.delete" @click="askDeleteVersion(v)">Delete</button>
@@ -821,6 +857,7 @@ createApp({
                       <template v-else-if="verStatusText(v.STATUS)==='Waiting for approve'">
                         <button class="icon-btn" @click="openCfgSetup(v)">View</button>
                         <button class="icon-btn" v-if="pagePerm.approve" @click="askApproveVersion(v)">Approve</button>
+                        <button class="icon-btn danger" v-if="pagePerm.approve" @click="askRejectVersion(v)">Reject</button>
                       </template>
                       <!-- อนุมัติแล้ว : รอ CRM กด Active เพื่อเริ่มใช้งาน -->
                       <template v-else-if="verStatusText(v.STATUS)==='Approve'">
@@ -831,7 +868,7 @@ createApp({
                       <template v-else-if="verStatusText(v.STATUS)==='Active'">
                         <button class="icon-btn" @click="openCfgSetup(v)">View</button>
                         <template v-if="pagePerm.clone">
-                          <button class="icon-btn" v-if="canCloneVersion(v)" @click="cloneVersion(v)">Clone</button>
+                          <button class="icon-btn" v-if="canCloneVersion(v)" @click="askCloneVersion(v)">Clone</button>
                           <button class="icon-btn" v-else disabled :title="cloneBlockReason(v)" style="color:#B4ACA5;cursor:not-allowed">Clone</button>
                         </template>
                       </template>
@@ -928,6 +965,30 @@ createApp({
           </div>
         </div>
       </section>
+    </div>
+
+    <div class="modal-overlay" v-if="cloneForm.show" @click.self="cloneForm.show=false">
+      <div class="modal-box">
+        <h3>Clone {{ cloneForm.source.VERSION_ID }}</h3>
+        <p>ตั้งชื่อ version ใหม่ที่จะคัดลอกข้อมูลทั้งหมดของ {{ cloneForm.source.LEAD_TYPE }} มา</p>
+        <div class="field">
+          <label>Version Name <span style="color:var(--danger)">*</span></label>
+          <input type="text" v-model="cloneForm.name" placeholder="เช่น Rate update Q4" @keyup.enter="confirmCloneVersion">
+        </div>
+        <div class="modal-actions"><button class="btn btn-ghost" @click="cloneForm.show=false">ยกเลิก</button><button class="btn btn-primary" @click="confirmCloneVersion">Clone</button></div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" v-if="rejectForm.show" @click.self="rejectForm.show=false">
+      <div class="modal-box">
+        <h3>ไม่อนุมัติ {{ rejectForm.target.VERSION_ID }}?</h3>
+        <p>ระบุเหตุผล แล้ว version จะกลับไปสถานะ <strong>Reject</strong> ให้แก้ไขและ Submit ใหม่ได้</p>
+        <div class="field">
+          <label>Reason <span style="color:var(--danger)">*</span></label>
+          <textarea v-model="rejectForm.reason" placeholder="เหตุผลที่ไม่อนุมัติ"></textarea>
+        </div>
+        <div class="modal-actions"><button class="btn btn-ghost" @click="rejectForm.show=false">ยกเลิก</button><button class="btn btn-danger" @click="confirmRejectVersion">Reject</button></div>
+      </div>
     </div>
 
     <div class="modal-overlay" v-if="confirmSubmitVersion" @click.self="confirmSubmitVersion=null">

@@ -364,7 +364,7 @@
         /* STATUS ของ version : Open -> Waiting for approve -> Active -> Inactive
            Open เท่านั้นที่แก้ไขได้ ; Active คือชุดที่ใช้งานจริงอยู่ */
         cfgVersions: [
-          { VERSION_ID:'V0001', LEAD_TYPE:'CRM_X_SELL_POOL', STATUS:'Active', CLONED_FROM:'',
+          { VERSION_ID:'V0001', VERSION_NAME:'Initial version', LEAD_TYPE:'CRM_X_SELL_POOL', STATUS:'Active', CLONED_FROM:'', REJECT_REASON:'',
             CREATE_BY:'SYSTEM', CREATE_DATE:'01/10/2024 09:00', UPDATE_BY:'SYSTEM', UPDATE_DATE:'01/10/2024 09:00' },
         ],
   
@@ -1082,6 +1082,8 @@
         if (!v.STATUS) v.STATUS = 'Active';          // ของเดิมคือชุดที่ใช้งานอยู่
         if (v.CLONED_FROM === undefined) v.CLONED_FROM = '';
         if (!v.LEAD_TYPE) v.LEAD_TYPE = 'CRM_X_SELL_POOL';
+        if (!v.VERSION_NAME) v.VERSION_NAME = v.VERSION_ID;
+        if (v.REJECT_REASON === undefined) v.REJECT_REASON = '';
       });
       const fallbackVersion = versions[0]?.VERSION_ID || 'V0001';
       (Array.isArray(db.workflows) ? db.workflows : []).forEach(f => {

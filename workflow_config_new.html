@@ -284,7 +284,7 @@ createApp({
     const validationList = MCRM.db.validations;
     /* ---- version ของ Parameter : เลือกได้เฉพาะที่ Active หรือ Approve ---- */
     const cfgVersions = MCRM.db.cfgVersions;
-    const PARAM_VERSION_OK = ['Active','Approve'];
+    const PARAM_VERSION_OK = ['Active','Approve','Open'];
     const selectableVersions = computed(() =>
       cfgVersions.filter(v => PARAM_VERSION_OK.includes(v.STATUS || 'Active')));
     const versionStatusOf = (id) => (cfgVersions.find(v => v.VERSION_ID === id) || {}).STATUS || '';
@@ -295,7 +295,8 @@ createApp({
     const flowStatusClass = (f) => 'fs-' + flowStatusOf(f).toLowerCase();
     function setFlowStatus(f, st){ f.STATUS = st; showToast(`${f.flow_id} เป็น ${st} แล้ว`); }
 
-    /* ---- Run Flow กดได้เมื่ออ้างอิงของที่ใช้ได้เท่านั้น ---- */
+    /* ---- Run Flow : ดูแค่ Eligible ส่วน parameter version ที่ยังไม่ Active
+       ยังรันทดสอบได้ แต่จะไปติดตอน Register Lead ที่หน้า Execution Log ---- */
     const ELIGIBLE_OK = ['Active','Draft'];
     function runBlockReason(f){
       for (const st of (f.steps || [])){
@@ -303,10 +304,6 @@ createApp({
           const rec = eligibleList.find(e => e.code === st.code);
           const ok = rec && ELIGIBLE_OK.includes(rec.status);
           if (!ok) return `Eligible ${st.code} สถานะ ${rec ? rec.status : 'ไม่พบ'} — ใช้ได้เฉพาะ Active / Draft`;
-        }
-        if (st.category === 'PARAMETER' && st.versionId){
-          const vst = versionStatusOf(st.versionId);
-          if (!PARAM_VERSION_OK.includes(vst)) return `Parameter version ${st.versionId} สถานะ ${vst || 'ไม่พบ'} — ใช้ได้เฉพาะ Active / Approve`;
         }
       }
       return '';
