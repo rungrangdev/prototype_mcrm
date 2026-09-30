@@ -567,7 +567,10 @@ createApp({
 
     /* Delete : ลบได้เฉพาะ version ที่ยัง Open พร้อมข้อมูลที่ผูกอยู่ */
     const confirmDeleteVersion = ref(null);
-    function askDeleteVersion(v){ confirmDeleteVersion.value = v; }
+    function askDeleteVersion(v){
+      if (verStatusText(v.STATUS) !== 'Open') { showToast('ลบได้เฉพาะ Version ที่สถานะ Open เท่านั้น'); return; }
+      confirmDeleteVersion.value = v;
+    }
     function confirmDeleteVersionYes(){
       const v = confirmDeleteVersion.value;
       for (let i = paramConfigs.length-1; i >= 0; i--) if (paramConfigs[i].VERSION_ID === v.VERSION_ID) paramConfigs.splice(i,1);
@@ -847,7 +850,7 @@ createApp({
                       <template v-if="verStatusText(v.STATUS)==='Open' || verStatusText(v.STATUS)==='Reject'">
                         <button class="icon-btn" v-if="pagePerm.edit" @click="openCfgSetup(v)">Edit</button>
                         <button class="icon-btn" v-else @click="openCfgSetup(v)">View</button>
-                        <button class="icon-btn danger" v-if="pagePerm.delete" @click="askDeleteVersion(v)">Delete</button>
+                        <button class="icon-btn danger" v-if="pagePerm.delete && verStatusText(v.STATUS)==='Open'" @click="askDeleteVersion(v)">Delete</button>
                         <button class="icon-btn" v-if="pagePerm.submit" @click="askSubmitVersion(v)">Submit</button>
                       </template>
                       <!-- รออนุมัติ : ดูได้ กับ อนุมัติ (Approve เฉพาะ role ที่มีสิทธิ์) -->
