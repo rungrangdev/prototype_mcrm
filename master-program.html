@@ -325,11 +325,11 @@ createApp({
     function openQuickAdd(type, label){ Object.assign(quickAdd, { show:true, type, typeLabel:label, CODE:'', NAME:'' }); }
     function saveQuickAdd(){
       const code = quickAdd.CODE.trim();
-      if (!code || !quickAdd.NAME.trim()){ showToast('กรุณากรอกรหัสและชื่อ', false); return; }
-      if (rows.some(r=>r.TYPE===quickAdd.type && r.CODE===code)){ showToast('มีรหัสนี้อยู่แล้ว', false); return; }
+      if (!code || !quickAdd.NAME.trim()){ showToast('Code and name are required', false); return; }
+      if (rows.some(r=>r.TYPE===quickAdd.type && r.CODE===code)){ showToast('That code already exists', false); return; }
       const count = rows.filter(r=>r.TYPE===quickAdd.type).length;
       rows.push({ TYPE:quickAdd.type, CODE:code, NAME:quickAdd.NAME.trim(), DESCRIPTION:'', ORDER:String((count+1)), ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
-      showToast(`เพิ่ม "${quickAdd.NAME}" เข้าแคตตาล็อกแล้ว`);
+      showToast(`"${quickAdd.NAME}" added to the catalog`);
       quickAdd.show = false;
     }
 
@@ -355,21 +355,21 @@ createApp({
     function openEditAssign(row){ isEditingAssign.value = true; Object.assign(assignFormModel, row); showAssignForm.value = true; }
     function closeAssignForm(){ showAssignForm.value = false; }
     function saveAssign(){
-      if (!assignFormModel.PROGRAM_CODE){ showToast('กรุณาเลือกโปรแกรม', false); return; }
+      if (!assignFormModel.PROGRAM_CODE){ showToast('Please select a program', false); return; }
       if (isEditingAssign.value){
         const idx = assignments.findIndex(a=>a.ENTITY===assignEntity.value && a.LEAD_TYPE===assignLeadType.value && a.PROGRAM_CODE===assignFormModel.PROGRAM_CODE);
         assignments[idx] = { ...assignments[idx], ...assignFormModel, UPDATE_BY:'ADMIN', UPDATE_DATE:now() };
       } else {
         assignments.push({ ENTITY:assignEntity.value, LEAD_TYPE:assignLeadType.value, ...assignFormModel, CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
       }
-      showToast('บันทึกการกำหนดโปรแกรมเรียบร้อย');
+      showToast('Program saved');
       showAssignForm.value = false;
     }
     const confirmDeleteAssign = ref(null);
     function askDeleteAssign(row){ confirmDeleteAssign.value = row; }
     function confirmDeleteAssignRow(){
       assignments.splice(assignments.findIndex(a=>a===confirmDeleteAssign.value),1);
-      showToast('ลบการกำหนดโปรแกรมแล้ว');
+      showToast('Program deleted');
       confirmDeleteAssign.value = null;
     }
 
@@ -409,7 +409,7 @@ createApp({
 
         <div class="table-wrap">
           <table class="data-table" v-if="assignRecords.length">
-            <thead><tr><th style="width:60px">No.</th><th style="width:130px">Program ID</th><th>Program</th><th style="width:100px">Status</th><th style="width:90px"></th></tr></thead>
+            <thead><tr><th style="width:90px">Sequence</th><th style="width:130px">Program ID</th><th>Program</th><th style="width:100px">Status</th><th style="width:90px"></th></tr></thead>
             <tbody>
               <tr v-for="row in assignRecords" :key="row.PROGRAM_CODE">
                 <td><span class="order-pill">{{ row.ORDER }}</span></td>
@@ -430,9 +430,8 @@ createApp({
           </table>
           <div v-else class="empty-state">
             <div class="glyph"></div>
-            <h3>ยังไม่มีโปรแกรมสำหรับ {{ assignEntity }} / {{ assignLeadType }}</h3>
-            <p>เพิ่มโปรแกรมแรกให้กลุ่มนี้ได้เลย</p>
-            <button class="btn btn-primary" style="margin-top:12px" @click="openAddAssign">+ เพิ่มโปรแกรม</button>
+            <h3>No program for {{ assignEntity }} / {{ assignLeadType }}</h3>
+            <button class="btn btn-primary" style="margin-top:12px" @click="openAddAssign">+ Add</button>
           </div>
         </div>
       </section>
@@ -440,47 +439,45 @@ createApp({
 
     <div class="modal-overlay" v-if="quickAdd.show" @click.self="quickAdd.show=false">
       <div class="modal-box">
-        <h3>เพิ่ม{{ quickAdd.typeLabel }}ใหม่</h3>
-        <p>รายการนี้จะถูกเพิ่มเข้าแคตตาล็อกกลาง และเลือกใช้ได้ทันทีจากทุกหน้าจอ</p>
-        <div class="field"><label>รหัส</label><input type="text" v-model="quickAdd.CODE" placeholder="เช่น TOPUP"></div>
-        <div class="field"><label>ชื่อที่แสดงผล</label><input type="text" v-model="quickAdd.NAME"></div>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="quickAdd.show=false">ยกเลิก</button><button class="btn btn-primary" @click="saveQuickAdd">เพิ่มรายการ</button></div>
+        <h3>New {{ quickAdd.typeLabel }}</h3>
+        <div class="field"><label>Code</label><input type="text" v-model="quickAdd.CODE" placeholder="e.g. TOPUP"></div>
+        <div class="field"><label>Name</label><input type="text" v-model="quickAdd.NAME"></div>
+        <div class="modal-actions"><button class="btn btn-ghost" @click="quickAdd.show=false">Cancel</button><button class="btn btn-primary" @click="saveQuickAdd">Add</button></div>
       </div>
     </div>
 
     <div class="overlay" v-if="showAssignForm" @click.self="closeAssignForm">
       <div class="side-drawer">
-        <div class="side-drawer-head"><h3>{{ isEditingAssign ? 'แก้ไขโปรแกรม' : 'เพิ่มโปรแกรม' }} · {{ assignEntity }} / {{ assignLeadType }}</h3><button class="close-x" @click="closeAssignForm">✕</button></div>
+        <div class="side-drawer-head"><h3>Program · {{ assignEntity }} / {{ assignLeadType }}</h3><button class="close-x" @click="closeAssignForm">✕</button></div>
         <div class="side-drawer-body">
           <div class="field">
             <label>Program ID</label>
             <input type="text" :value="assignFormModel.PROGRAM_ID" readonly>
-            <div class="hint">รหัสประจำ Program ของ {{ assignEntity }} / {{ assignLeadType }} — ใช้อ้างอิงที่หน้า Parameter Master Setup และ Workflow Config</div>
           </div>
           <div class="field">
             <div class="field-inline">
               <div class="field">
-                <label>โปรแกรม</label>
+                <label>Program</label>
                 <select v-model="assignFormModel.PROGRAM_CODE" :disabled="isEditingAssign">
-                  <option value="" disabled>— เลือกโปรแกรม —</option>
+                  <option value="" disabled>— Select Program —</option>
                   <option v-for="p in assignableProgramOptions" :key="p.CODE" :value="p.CODE">{{ p.NAME }} ({{ p.CODE }})</option>
                 </select>
               </div>
-              <button class="btn-icon-sm" title="เพิ่มโปรแกรมใหม่ในแคตตาล็อก" @click="openQuickAdd('PROGRAM','โปรแกรม (Program)')">+</button>
+              <button class="btn-icon-sm" title="Add Program" @click="openQuickAdd('PROGRAM','Program')">+</button>
             </div>
           </div>
-          <div class="field"><label>ลำดับการแสดงผล (ORDER)</label><input type="number" v-model="assignFormModel.ORDER"></div>
-          <div class="field"><div class="active-toggle-row"><div class="lab"><strong>เปิดใช้งานโปรแกรมนี้</strong><span>โปรแกรมที่ปิดใช้งานจะไม่แสดงให้ลูกค้ากลุ่มนี้</span></div><label class="switch"><input type="checkbox" v-model="assignFormModel.STATUS" true-value="Y" false-value="N"><span class="slider"></span></label></div></div>
+          <div class="field"><label>Sequence</label><input type="number" v-model="assignFormModel.ORDER"></div>
+          <div class="field"><div class="active-toggle-row"><div class="lab"><strong>Status</strong></div><label class="switch"><input type="checkbox" v-model="assignFormModel.STATUS" true-value="Y" false-value="N"><span class="slider"></span></label></div></div>
         </div>
-        <div class="side-drawer-foot"><button class="btn btn-ghost" @click="closeAssignForm">ยกเลิก</button><button class="btn btn-primary" @click="saveAssign">บันทึกข้อมูล</button></div>
+        <div class="side-drawer-foot"><button class="btn btn-ghost" @click="closeAssignForm">Cancel</button><button class="btn btn-primary" @click="saveAssign">Save</button></div>
       </div>
     </div>
 
     <div class="modal-overlay" v-if="confirmDeleteAssign" @click.self="confirmDeleteAssign=null">
       <div class="modal-box">
-        <h3>ลบโปรแกรมนี้ใช่หรือไม่?</h3>
-        <p>คุณกำลังจะลบ <strong>{{ nameOf(programMaster, confirmDeleteAssign.PROGRAM_CODE) }}</strong> ออกจาก {{ assignEntity }} / {{ assignLeadType }}</p>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmDeleteAssign=null">ยกเลิก</button><button class="btn btn-danger" @click="confirmDeleteAssignRow">ยืนยันลบ</button></div>
+        <h3>Delete this program?</h3>
+        <p><strong>{{ nameOf(programMaster, confirmDeleteAssign.PROGRAM_CODE) }}</strong> · {{ assignEntity }} / {{ assignLeadType }}</p>
+        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmDeleteAssign=null">Cancel</button><button class="btn btn-danger" @click="confirmDeleteAssignRow">Delete</button></div>
       </div>
     </div>
 
