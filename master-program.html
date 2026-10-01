@@ -466,7 +466,7 @@ createApp({
               <button class="btn-icon-sm" title="Add Program" @click="openQuickAdd('PROGRAM','Program')">+</button>
             </div>
           </div>
-          <div class="field"><label>Sequence</label><input type="number" v-model="assignFormModel.ORDER"></div>
+          <div class="field"><label>Order</label><input type="number" v-model="assignFormModel.ORDER"></div>
           <div class="field"><div class="active-toggle-row"><div class="lab"><strong>Status</strong></div><label class="switch"><input type="checkbox" v-model="assignFormModel.STATUS" true-value="Y" false-value="N"><span class="slider"></span></label></div></div>
         </div>
         <div class="side-drawer-foot"><button class="btn btn-ghost" @click="closeAssignForm">Cancel</button><button class="btn btn-primary" @click="saveAssign">Save</button></div>

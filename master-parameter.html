@@ -1046,7 +1046,7 @@ createApp({
         <div class="side-drawer-body">
           <div class="field"><label>Parameter ID</label><input type="text" :value="cfgFormModel.PARAMETER_ID || 'Auto-generated on save'" readonly></div>
           <div class="field"><label>Parameter Name</label><input type="text" v-model="cfgFormModel.PARAMETER_NAME" placeholder="e.g. Topup Option, Flat rate OPTT1"></div>
-          <div class="field"><label>Sequence</label><input type="number" v-model="cfgFormModel.ORDER" readonly></div>
+          <div class="field"><label>Order</label><input type="number" v-model="cfgFormModel.ORDER" readonly></div>
           <div class="field">
             <div class="field-inline" style="margin-bottom:10px;">
               <label style="margin-bottom:0;">Base Key</label>
@@ -1130,7 +1130,7 @@ createApp({
               <input type="text" v-model="critFormModel.VALUE" placeholder="e.g. TP_Option 1, LTV150">
             </div>
             <div class="field" style="max-width:110px;">
-              <label>Sequence</label>
+              <label>Order</label>
               <input type="number" v-model="critFormModel.ORDER">
             </div>
           </div>
