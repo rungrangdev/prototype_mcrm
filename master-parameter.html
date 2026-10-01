@@ -485,24 +485,11 @@ createApp({
       return 'V' + String((nums.length ? Math.max(...nums) : 0) + 1).padStart(4,'0');
     }
 
-    /* ---- 1 lead type มี version ที่กำลังแก้ไขได้แค่ชุดเดียว ----
-       ถ้ายังมีตัวที่ค้างอยู่ใน Open / Waiting for approve / Approve
-       จะ clone ซ้ำไม่ได้ ไม่งั้นจะดันขึ้น Active ได้พร้อมกันหลายแถว */
-    const IN_PROGRESS = ['Open','Reject','Waiting for approve','Approve'];
-    function pendingVersionOf(leadType){
-      return cfgVersions.find(x => (x.LEAD_TYPE||'') === (leadType||'') && IN_PROGRESS.includes(verStatusText(x.STATUS)));
-    }
-    function cloneBlockReason(v){
-      const pending = pendingVersionOf(v.LEAD_TYPE);
-      return pending ? `${v.LEAD_TYPE} มี ${pending.VERSION_ID} (${verStatusText(pending.STATUS)}) ค้างอยู่ — ต้องทำให้จบก่อนจึงจะ clone ใหม่ได้` : '';
-    }
-    const canCloneVersion = (v) => !cloneBlockReason(v);
-
-    /* Clone : ถามชื่อ version ก่อน แล้วค่อยคัดลอกทั้งชุด */
+    /* Clone : ถามชื่อ version ก่อน แล้วค่อยคัดลอกทั้งชุด
+       clone ซ้ำได้ไม่จำกัด — ตอน Set Active จะ Inactive ทุก version
+       ของ lead type นั้นอยู่แล้ว จึงไม่มีทางมี Active พร้อมกันหลายแถว */
     const cloneForm = reactive({ show:false, source:null, name:'' });
     function askCloneVersion(v){
-      const blocked = cloneBlockReason(v);
-      if (blocked){ showToast(blocked, false); return; }
       Object.assign(cloneForm, { show:true, source:v, name:'' });
     }
     function confirmCloneVersion(){
@@ -512,8 +499,6 @@ createApp({
     }
 
     function cloneVersion(v, versionName){
-      const blocked = cloneBlockReason(v);
-      if (blocked){ showToast(blocked, false); return; }
       const id = nextVersionId();
       const deep = x => JSON.parse(JSON.stringify(x));
       paramConfigs
@@ -571,11 +556,11 @@ createApp({
     function askActivateVersion(v){ confirmActivateVersion.value = v; }
     function confirmActivateVersionYes(){
       const v = confirmActivateVersion.value;
-      /* ปิดทุก version ของ lead type เดียวกัน เหลือไว้เฉพาะรายการใหม่สุด (ตัวที่กำลังเปิดใช้งาน) */
-      const idNum = x => parseInt(String(x.VERSION_ID).replace(/\D/g,''),10) || 0;
-      const sameLead = cfgVersions.filter(x => (x.LEAD_TYPE||'') === (v.LEAD_TYPE||''));
-      const newest = sameLead.reduce((a,b) => idNum(b) > idNum(a) ? b : a, v);
-      const replaced = sameLead.filter(x => x !== v && x !== newest);
+      /* ปิดทุก version ของ lead type เดียวกัน เหลือไว้เฉพาะตัวที่กำลังเปิดใช้งาน
+         — จึงมี Active ได้แค่แถวเดียวต่อ lead type แม้จะ clone ไว้หลายชุด */
+      const replaced = cfgVersions.filter(x => x !== v
+        && (x.LEAD_TYPE||'') === (v.LEAD_TYPE||'')
+        && verStatusText(x.STATUS) !== 'Inactive');
       replaced.forEach(x => { x.STATUS = 'Inactive'; x.UPDATE_BY = 'ADMIN'; x.UPDATE_DATE = now(); });
       v.STATUS = 'Active';
       v.UPDATE_BY = 'ADMIN'; v.UPDATE_DATE = now();
@@ -808,7 +793,7 @@ createApp({
       confirmDeleteCfg, askDeleteCfg, confirmDeleteCfgRow, cfgPreview,
       cfgView, cfgVersionId, cfgVersions, openCfgSetup, backToCfgList,
       cfgVersionStatus, cfgEditable, pagePerm, versionParamCount, verStatusText, verStatusClass,
-      canCloneVersion, cloneBlockReason, cloneForm, askCloneVersion, confirmCloneVersion,
+      cloneForm, askCloneVersion, confirmCloneVersion,
       rejectForm, askRejectVersion, confirmRejectVersion,
       VERSION_STATUSES, verFilterLeadType, verFilterStatus, filteredVersions,
       confirmSubmitVersion, askSubmitVersion, confirmSubmitVersionYes,
@@ -888,10 +873,7 @@ createApp({
                       <!-- Active : ดูได้ กับ clone ไปแก้เป็นชุดใหม่ -->
                       <template v-else-if="verStatusText(v.STATUS)==='Active'">
                         <button class="icon-btn" @click="openCfgSetup(v)">View</button>
-                        <template v-if="pagePerm.clone">
-                          <button class="icon-btn" v-if="canCloneVersion(v)" @click="askCloneVersion(v)">Clone</button>
-                          <button class="icon-btn" v-else disabled :title="cloneBlockReason(v)" style="color:#B4ACA5;cursor:not-allowed">Clone</button>
-                        </template>
+                        <button class="icon-btn" v-if="pagePerm.clone" @click="askCloneVersion(v)">Clone</button>
                       </template>
                       <!-- Inactive : ดูได้อย่างเดียว -->
                       <template v-else>
