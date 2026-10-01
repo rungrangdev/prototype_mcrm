@@ -114,6 +114,9 @@
   td{padding:12px;border-bottom:1px solid var(--border);vertical-align:middle;}
   tr:hover td{background:var(--surface-alt);}
   .code-pill{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12.5px;background:#EEF1F6;padding:3px 9px;border-radius:6px;color:var(--primary-dark);}
+  .status-text{font-size:13px;font-weight:600;}
+  .status-text.is-active{color:var(--success);}
+  .status-text.is-inactive{color:var(--text-secondary);}
   .order-pill{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-secondary);}
   .name-cell strong{display:block;}
   .name-cell span{color:var(--text-secondary);font-size:12.5px;}
@@ -417,11 +420,11 @@ createApp({
     function openQuickAdd(type, label){ Object.assign(quickAdd, { show:true, type, typeLabel:label, CODE:'', NAME:'' }); }
     function saveQuickAdd(){
       const code = quickAdd.CODE.trim();
-      if (!code || !quickAdd.NAME.trim()){ showToast('กรุณากรอกรหัสและชื่อ', false); return; }
-      if (rows.some(r=>r.TYPE===quickAdd.type && r.CODE===code)){ showToast('มีรหัสนี้อยู่แล้ว', false); return; }
+      if (!code || !quickAdd.NAME.trim()){ showToast('Code and name are required', false); return; }
+      if (rows.some(r=>r.TYPE===quickAdd.type && r.CODE===code)){ showToast('That code already exists', false); return; }
       const count = rows.filter(r=>r.TYPE===quickAdd.type).length;
       rows.push({ TYPE:quickAdd.type, CODE:code, NAME:quickAdd.NAME.trim(), DESCRIPTION:'', ORDER:String((count+1)), ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
-      showToast(`เพิ่ม "${quickAdd.NAME}" เข้าแคตตาล็อกแล้ว`);
+      showToast(`"${quickAdd.NAME}" added to the catalog`);
       quickAdd.show = false;
     }
 
@@ -493,7 +496,7 @@ createApp({
       Object.assign(cloneForm, { show:true, source:v, name:'' });
     }
     function confirmCloneVersion(){
-      if (!cloneForm.name.trim()){ showToast('กรุณากรอก Version Name', false); return; }
+      if (!cloneForm.name.trim()){ showToast('Version Name is required', false); return; }
       cloneVersion(cloneForm.source, cloneForm.name.trim());
       cloneForm.show = false;
     }
@@ -512,7 +515,7 @@ createApp({
         CLONED_FROM:v.VERSION_ID, REJECT_REASON:'',
         CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now(),
       });
-      showToast(`Clone ${v.VERSION_ID} เป็น ${id} แล้ว (สถานะ Open)`);
+      showToast(`Cloned ${v.VERSION_ID} to ${id} (status Open)`);
     }
 
     /* Submit : ล็อกไม่ให้แก้ไขต่อ รอการอนุมัติ */
@@ -524,7 +527,7 @@ createApp({
       v.REJECT_REASON = '';
       v.UPDATE_BY = 'ADMIN'; v.UPDATE_DATE = now();
       confirmSubmitVersion.value = null;
-      showToast(`${v.VERSION_ID} ส่งขออนุมัติแล้ว`);
+      showToast(`${v.VERSION_ID} submitted for approval`);
     }
 
     /* Approve : แค่ผ่านการอนุมัติ ยังไม่เริ่มใช้งานและยังไม่แตะ version ต้นทาง */
@@ -535,20 +538,20 @@ createApp({
       v.STATUS = 'Approve';
       v.UPDATE_BY = 'ADMIN'; v.UPDATE_DATE = now();
       confirmApproveVersion.value = null;
-      showToast(`${v.VERSION_ID} อนุมัติแล้ว รอเริ่มใช้งาน`);
+      showToast(`${v.VERSION_ID} approved, waiting to be activated`);
     }
 
     /* Reject : ตีกลับให้แก้ พร้อมเหตุผล — กลับไปแก้แล้ว Submit ใหม่ได้ */
     const rejectForm = reactive({ show:false, target:null, reason:'' });
     function askRejectVersion(v){ Object.assign(rejectForm, { show:true, target:v, reason:'' }); }
     function confirmRejectVersion(){
-      if (!rejectForm.reason.trim()){ showToast('กรุณากรอกเหตุผลที่ไม่อนุมัติ', false); return; }
+      if (!rejectForm.reason.trim()){ showToast('Reject reason is required', false); return; }
       const v = rejectForm.target;
       v.STATUS = 'Reject';
       v.REJECT_REASON = rejectForm.reason.trim();
       v.UPDATE_BY = 'ADMIN'; v.UPDATE_DATE = now();
       rejectForm.show = false;
-      showToast(`${v.VERSION_ID} ถูกตีกลับแล้ว`);
+      showToast(`${v.VERSION_ID} rejected`);
     }
 
     /* Active : เริ่มใช้งานจริง ตอนนี้ค่อยดัน version ต้นทางที่ถูก clone มาเป็น Inactive */
@@ -565,14 +568,14 @@ createApp({
       v.STATUS = 'Active';
       v.UPDATE_BY = 'ADMIN'; v.UPDATE_DATE = now();
       confirmActivateVersion.value = null;
-      showToast(replaced.length ? `${v.VERSION_ID} เริ่มใช้งานแล้ว และ ${replaced.map(x=>x.VERSION_ID).join(', ')} เป็น Inactive`
-                                : `${v.VERSION_ID} เริ่มใช้งานแล้ว`);
+      showToast(replaced.length ? `${v.VERSION_ID} is now Active, ${replaced.map(x=>x.VERSION_ID).join(', ')} set to Inactive`
+                                : `${v.VERSION_ID} is now Active`);
     }
 
     /* Delete : ลบได้เฉพาะ version ที่ยัง Open พร้อมข้อมูลที่ผูกอยู่ */
     const confirmDeleteVersion = ref(null);
     function askDeleteVersion(v){
-      if (verStatusText(v.STATUS) !== 'Open') { showToast('ลบได้เฉพาะ Version ที่สถานะ Open เท่านั้น'); return; }
+      if (verStatusText(v.STATUS) !== 'Open') { showToast('Only a version with status Open can be deleted', false); return; }
       confirmDeleteVersion.value = v;
     }
     function confirmDeleteVersionYes(){
@@ -581,7 +584,7 @@ createApp({
       for (let i = criteriaRows.length-1; i >= 0; i--) if (criteriaRows[i].VERSION_ID === v.VERSION_ID) criteriaRows.splice(i,1);
       cfgVersions.splice(cfgVersions.findIndex(x => x === v), 1);
       confirmDeleteVersion.value = null;
-      showToast(`ลบ ${v.VERSION_ID} แล้ว`);
+      showToast(`${v.VERSION_ID} deleted`);
     }
 
     const versionParamCount = (v) => paramConfigs.filter(c => c.VERSION_ID === v.VERSION_ID).length;
@@ -626,27 +629,26 @@ createApp({
     }
     function removeCfgKeyAt(i){ cfgFormModel.KEY_BASE.splice(i,1); }
     function saveCfg(){
-      if (!cfgFormModel.PARAMETER_NAME.trim()){ showToast('กรุณากรอกชื่อพารามิเตอร์', false); return; }
-      if (!cfgFormModel.KEY_BASE.length){ showToast('กรุณาเลือก Base Key อย่างน้อย 1 รายการ', false); return; }
+      if (!cfgFormModel.PARAMETER_NAME.trim()){ showToast('Parameter Name is required', false); return; }
+      if (!cfgFormModel.KEY_BASE.length){ showToast('Select at least one base key', false); return; }
       const code = isEditingCfg.value ? cfgFormModel.PARAMETER_CODE : slugify(cfgFormModel.PARAMETER_NAME);
       if (isEditingCfg.value){
         const idx = paramConfigs.findIndex(c=>c.VERSION_ID===cfgVersionId.value && c.PROGRAM_CODE===cfgProgram.value && c.ENTITY===cfgEntity.value && c.PARAMETER_CODE===code);
         paramConfigs[idx] = { ...paramConfigs[idx], ...cfgFormModel, PARAMETER_CODE:code, UPDATE_BY:'ADMIN', UPDATE_DATE:now() };
       } else {
-        if (paramConfigs.some(c=>c.VERSION_ID===cfgVersionId.value && c.PROGRAM_CODE===cfgProgram.value && c.ENTITY===cfgEntity.value && c.PARAMETER_CODE===code)){ showToast('มีพารามิเตอร์นี้อยู่แล้ว', false); return; }
+        if (paramConfigs.some(c=>c.VERSION_ID===cfgVersionId.value && c.PROGRAM_CODE===cfgProgram.value && c.ENTITY===cfgEntity.value && c.PARAMETER_CODE===code)){ showToast('That parameter already exists', false); return; }
         paramConfigs.push({ VERSION_ID:cfgVersionId.value, PROGRAM_CODE:cfgProgram.value, ENTITY:cfgEntity.value, ...cfgFormModel,
           PARAMETER_CODE:code, PARAMETER_ID:MCRM.parameterIdFor(cfgEntity.value, cfgProgram.value, code),
           CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
       }
-      showToast('บันทึกการตั้งค่าพารามิเตอร์เรียบร้อย');
+      showToast('Parameter saved');
       showCfgForm.value = false;
     }
-    function toggleCfgActive(row){ row.ACTIVE = row.ACTIVE==='Y'?'N':'Y'; row.UPDATE_BY='ADMIN'; row.UPDATE_DATE=now(); }
     const confirmDeleteCfg = ref(null);
     function askDeleteCfg(row){ confirmDeleteCfg.value = row; }
     function confirmDeleteCfgRow(){
       paramConfigs.splice(paramConfigs.findIndex(c=>c===confirmDeleteCfg.value),1);
-      showToast('ลบพารามิเตอร์แล้ว');
+      showToast('Parameter deleted');
       confirmDeleteCfg.value = null;
     }
     const cfgPreview = computed(() => ({
@@ -743,24 +745,24 @@ createApp({
     function backToCritList(){ closePicker(); critMode.value = 'list'; }
     function saveCritValue(){
       const val = critFormModel.VALUE.trim();
-      if (!val){ showToast('กรุณากรอก value', false); return; }
+      if (!val){ showToast('Value is required', false); return; }
       const dup = criteriaRows.some(r => r !== editingCritRow.value && r.VERSION_ID===cfgVersionId.value &&
         r.PROGRAM_CODE===cfgProgram.value && r.ENTITY===cfgEntity.value &&
         r.PARAMETER_CODE===critParamRow.value.PARAMETER_CODE && r.VALUE===val);
-      if (dup){ showToast('มี value นี้อยู่แล้วในพารามิเตอร์นี้', false); return; }
+      if (dup){ showToast('That value already exists for this parameter', false); return; }
       /* ตรวจว่า op ที่ไม่ใช่ N/A ต้องมีค่า */
       const missing = critBaseKeys.value.filter(k => {
         const c = critFormModel.KEY_VALUES[k];
         return c.op !== 'N/A' && !String(c.value).trim();
       });
-      if (missing.length){ showToast(`ยังไม่ได้ใส่ค่าให้ ${missing.map(k=>nameOf(paramMaster.value,k)).join(', ')}`, false); return; }
+      if (missing.length){ showToast(`Missing value for ${missing.map(k=>nameOf(paramMaster.value,k)).join(', ')}`, false); return; }
 
       if (isEditingCrit.value){
         Object.assign(editingCritRow.value, {
           VALUE:val, ORDER:critFormModel.ORDER, ACTIVE:critFormModel.ACTIVE,
           KEY_VALUES:JSON.parse(JSON.stringify(critFormModel.KEY_VALUES)),
           UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
-        showToast(`บันทึก "${val}" เรียบร้อย`);
+        showToast(`"${val}" saved`);
       } else {
         criteriaRows.push({
           VERSION_ID: cfgVersionId.value,
@@ -768,7 +770,7 @@ createApp({
           VALUE:val, ORDER:critFormModel.ORDER, ACTIVE:critFormModel.ACTIVE,
           KEY_VALUES:JSON.parse(JSON.stringify(critFormModel.KEY_VALUES)),
           CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
-        showToast(`เพิ่ม "${val}" เรียบร้อย`);
+        showToast(`"${val}" added`);
       }
       closePicker();
       critMode.value = 'list';
@@ -777,7 +779,7 @@ createApp({
     function askDeleteCritVal(row){ confirmDeleteCritVal.value = row; }
     function confirmDeleteCritValRow(){
       criteriaRows.splice(criteriaRows.findIndex(r=>r===confirmDeleteCritVal.value),1);
-      showToast('ลบ value แล้ว');
+      showToast('Value deleted');
       confirmDeleteCritVal.value = null;
     }
 
@@ -789,7 +791,7 @@ createApp({
       entityMaster, leadTypeMaster, programMaster, paramMaster, nameOf,
       quickAdd, openQuickAdd, saveQuickAdd,
       cfgProgram, cfgEntity, cfgLeadType, cfgProgramId, cfgProgramOptions, programLabel, cfgRecords, showCfgForm, isEditingCfg, cfgFormModel,
-      openAddCfg, openEditCfg, closeCfgForm, toggleCfgKey, removeCfgKeyAt, saveCfg, toggleCfgActive,
+      openAddCfg, openEditCfg, closeCfgForm, toggleCfgKey, removeCfgKeyAt, saveCfg,
       confirmDeleteCfg, askDeleteCfg, confirmDeleteCfgRow, cfgPreview,
       cfgView, cfgVersionId, cfgVersions, openCfgSetup, backToCfgList,
       cfgVersionStatus, cfgEditable, pagePerm, versionParamCount, verStatusText, verStatusClass,
@@ -887,8 +889,8 @@ createApp({
           </table>
           <div v-else class="empty-state">
             <div class="glyph"></div>
-            <h3 v-if="cfgVersions.length">ไม่พบ Version ตามเงื่อนไขที่เลือก</h3>
-            <h3 v-else>ยังไม่มี Version</h3>
+            <h3 v-if="cfgVersions.length">No version matches the filter</h3>
+            <h3 v-else>No version yet</h3>
           </div>
         </div>
       </section>
@@ -922,7 +924,7 @@ createApp({
           <div class="filter-field">
             <label>Program</label>
             <select v-model="cfgProgram">
-              <option v-if="!cfgProgramOptions.length" value="">— ยังไม่ได้กำหนด Program ที่หน้า Program Setup —</option>
+              <option v-if="!cfgProgramOptions.length" value="">— No program defined in Program Setup —</option>
               <option v-for="p in cfgProgramOptions" :key="p.CODE" :value="p.CODE">{{ programLabel(p) }}</option>
             </select>
           </div>
@@ -937,7 +939,7 @@ createApp({
         </div>
         <div class="table-wrap">
           <table class="data-table" v-if="cfgRecords.length">
-            <thead><tr><th style="width:60px">ลำดับ</th><th style="width:120px">Parameter ID</th><th style="width:180px">ชื่อพารามิเตอร์</th><th>Base Key ที่ใช้</th><th style="width:90px">ใช้งาน</th><th style="width:90px">จัดการ</th></tr></thead>
+            <thead><tr><th style="width:90px">Sequence</th><th style="width:120px">Parameter ID</th><th style="width:180px">Parameter Name</th><th>Base Key</th><th style="width:100px">Status</th><th style="width:90px"></th></tr></thead>
             <tbody>
               <tr v-for="row in cfgRecords" :key="row.PARAMETER_CODE">
                 <td><span class="order-pill">{{ row.ORDER }}</span></td>
@@ -948,7 +950,7 @@ createApp({
                     <span class="key-chip" v-for="(k,i) in row.KEY_BASE" :key="k"><span class="idx">{{ i+1 }}</span>{{ nameOf(paramMaster,k) }}</span>
                   </div>
                 </td>
-                <td><label class="switch">{{row.ACTIVE}}</label></td>
+                <td><span class="status-text" :class="row.ACTIVE==='Y' ? 'is-active' : 'is-inactive'">{{ row.ACTIVE==='Y' ? 'Active' : 'Inactive' }}</span></td>
                 <td>
                     <div class="dropdown-container">
                         <button class="btn-dots" onclick="toggleDropdown(event, this)">⋮</button>
@@ -968,10 +970,9 @@ createApp({
           </table>
           <div v-else class="empty-state">
             <div class="glyph"></div>
-            <h3>ยังไม่มีพารามิเตอร์สำหรับโปรแกรมนี้</h3>
+            <h3>No parameters yet</h3>
             <template v-if="cfgEditable">
-              <p>เพิ่มพารามิเตอร์แรกของ {{ cfgProgram }} / {{ cfgEntity }} ได้เลย</p>
-              <button class="btn btn-primary" style="margin-top:12px" @click="openAddCfg">+ เพิ่มพารามิเตอร์</button>
+              <button class="btn btn-primary" style="margin-top:12px" @click="openAddCfg">+ Add</button>
             </template>
           </div>
         </div>
@@ -981,70 +982,61 @@ createApp({
     <div class="modal-overlay" v-if="cloneForm.show" @click.self="cloneForm.show=false">
       <div class="modal-box">
         <h3>Clone {{ cloneForm.source.VERSION_ID }}</h3>
-        <p>ตั้งชื่อ version ใหม่ที่จะคัดลอกข้อมูลทั้งหมดของ {{ cloneForm.source.LEAD_TYPE }} มา</p>
+
         <div class="field">
           <label>Version Name <span style="color:var(--danger)">*</span></label>
-          <input type="text" v-model="cloneForm.name" placeholder="เช่น Rate update Q4" @keyup.enter="confirmCloneVersion">
+          <input type="text" v-model="cloneForm.name" placeholder="e.g. Rate update Q4" @keyup.enter="confirmCloneVersion">
         </div>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="cloneForm.show=false">ยกเลิก</button><button class="btn btn-primary" @click="confirmCloneVersion">Clone</button></div>
+        <div class="modal-actions"><button class="btn btn-ghost" @click="cloneForm.show=false">Cancel</button><button class="btn btn-primary" @click="confirmCloneVersion">Clone</button></div>
       </div>
     </div>
 
     <div class="modal-overlay" v-if="rejectForm.show" @click.self="rejectForm.show=false">
       <div class="modal-box">
-        <h3>ไม่อนุมัติ {{ rejectForm.target.VERSION_ID }}?</h3>
-        <p>ระบุเหตุผล แล้ว version จะกลับไปสถานะ <strong>Reject</strong> ให้แก้ไขและ Submit ใหม่ได้</p>
+        <h3>Reject {{ rejectForm.target.VERSION_ID }}?</h3>
         <div class="field">
           <label>Reason <span style="color:var(--danger)">*</span></label>
-          <textarea v-model="rejectForm.reason" placeholder="เหตุผลที่ไม่อนุมัติ"></textarea>
+          <textarea v-model="rejectForm.reason" placeholder="Reject reason"></textarea>
         </div>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="rejectForm.show=false">ยกเลิก</button><button class="btn btn-danger" @click="confirmRejectVersion">Reject</button></div>
+        <div class="modal-actions"><button class="btn btn-ghost" @click="rejectForm.show=false">Cancel</button><button class="btn btn-danger" @click="confirmRejectVersion">Reject</button></div>
       </div>
     </div>
 
     <div class="modal-overlay" v-if="confirmSubmitVersion" @click.self="confirmSubmitVersion=null">
       <div class="modal-box">
-        <h3>ส่ง {{ confirmSubmitVersion.VERSION_ID }} ขออนุมัติ?</h3>
-        <p>หลังส่งแล้วจะแก้ไข version นี้ไม่ได้อีก สถานะจะเปลี่ยนเป็น <strong>Waiting for approve</strong></p>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmSubmitVersion=null">ยกเลิก</button><button class="btn btn-primary" @click="confirmSubmitVersionYes">Submit</button></div>
+        <h3>Submit {{ confirmSubmitVersion.VERSION_ID }} for approval?</h3>
+        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmSubmitVersion=null">Cancel</button><button class="btn btn-primary" @click="confirmSubmitVersionYes">Submit</button></div>
       </div>
     </div>
 
     <div class="modal-overlay" v-if="confirmApproveVersion" @click.self="confirmApproveVersion=null">
       <div class="modal-box">
-        <h3>อนุมัติ {{ confirmApproveVersion.VERSION_ID }}?</h3>
-        <p>version นี้จะเปลี่ยนเป็น <strong>Approve</strong> แต่ยังไม่เริ่มใช้งาน
-          จนกว่าจะมีการกด Active<template v-if="confirmApproveVersion.CLONED_FROM"> (ตอนนั้น {{ confirmApproveVersion.CLONED_FROM }} จึงจะเป็น Inactive)</template></p>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmApproveVersion=null">ยกเลิก</button><button class="btn btn-primary" @click="confirmApproveVersionYes">Approve</button></div>
+        <h3>Approve {{ confirmApproveVersion.VERSION_ID }}?</h3>
+        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmApproveVersion=null">Cancel</button><button class="btn btn-primary" @click="confirmApproveVersionYes">Approve</button></div>
       </div>
     </div>
 
     <div class="modal-overlay" v-if="confirmActivateVersion" @click.self="confirmActivateVersion=null">
       <div class="modal-box">
-        <h3>เริ่มใช้งาน {{ confirmActivateVersion.VERSION_ID }}?</h3>
-        <p>
-          version นี้จะเปลี่ยนเป็น <strong>Active</strong>
-          และ version ที่เป็น Active อยู่ของ {{ confirmActivateVersion.LEAD_TYPE }} จะเปลี่ยนเป็น Inactive
-        </p>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmActivateVersion=null">ยกเลิก</button><button class="btn btn-primary" @click="confirmActivateVersionYes">Active</button></div>
+        <h3>Activate {{ confirmActivateVersion.VERSION_ID }}?</h3>
+        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmActivateVersion=null">Cancel</button><button class="btn btn-primary" @click="confirmActivateVersionYes">Active</button></div>
       </div>
     </div>
 
     <div class="modal-overlay" v-if="confirmDeleteVersion" @click.self="confirmDeleteVersion=null">
       <div class="modal-box">
-        <h3>ลบ {{ confirmDeleteVersion.VERSION_ID }} ใช่หรือไม่?</h3>
-        <p>พารามิเตอร์และค่าทั้งหมดของ version นี้ ({{ versionParamCount(confirmDeleteVersion) }} รายการ) จะถูกลบไปด้วย</p>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmDeleteVersion=null">ยกเลิก</button><button class="btn btn-danger" @click="confirmDeleteVersionYes">ยืนยันลบ</button></div>
+        <h3>Delete {{ confirmDeleteVersion.VERSION_ID }}?</h3>
+        <p>{{ versionParamCount(confirmDeleteVersion) }} parameters and their values will be deleted.</p>
+        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmDeleteVersion=null">Cancel</button><button class="btn btn-danger" @click="confirmDeleteVersionYes">Delete</button></div>
       </div>
     </div>
 
     <div class="modal-overlay" v-if="quickAdd.show" @click.self="quickAdd.show=false">
       <div class="modal-box">
-        <h3>เพิ่ม{{ quickAdd.typeLabel }}ใหม่</h3>
-        <p>รายการนี้จะถูกเพิ่มเข้าแคตตาล็อกกลาง และเลือกใช้ได้ทันทีจากทุกหน้าจอ</p>
-        <div class="field"><label>รหัส</label><input type="text" v-model="quickAdd.CODE" placeholder="เช่น TOPUP"></div>
-        <div class="field"><label>ชื่อที่แสดงผล</label><input type="text" v-model="quickAdd.NAME"></div>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="quickAdd.show=false">ยกเลิก</button><button class="btn btn-primary" @click="saveQuickAdd">เพิ่มรายการ</button></div>
+        <h3>New {{ quickAdd.typeLabel }}</h3>
+        <div class="field"><label>Code</label><input type="text" v-model="quickAdd.CODE" placeholder="e.g. TOPUP"></div>
+        <div class="field"><label>Name</label><input type="text" v-model="quickAdd.NAME"></div>
+        <div class="modal-actions"><button class="btn btn-ghost" @click="quickAdd.show=false">Cancel</button><button class="btn btn-primary" @click="saveQuickAdd">Add</button></div>
       </div>
     </div>
 
@@ -1052,13 +1044,13 @@ createApp({
       <div class="side-drawer">
         <div class="side-drawer-head"><h3>{{ isEditingCfg ? 'Parameter' : 'Parameter' }} · {{ cfgProgram }} / {{ cfgEntity }}</h3><button class="close-x" @click="closeCfgForm">✕</button></div>
         <div class="side-drawer-body">
-          <div class="field"><label>Parameter ID</label><input type="text" :value="cfgFormModel.PARAMETER_ID || 'ระบบออกรหัสให้เมื่อบันทึก'" readonly></div>
-          <div class="field"><label>ชื่อพารามิเตอร์</label><input type="text" v-model="cfgFormModel.PARAMETER_NAME" placeholder="เช่น Topup Option, Flat rate OPTT1"></div>
-          <div class="field"><label>ลำดับการแสดงผล (ORDER)</label><input type="number" v-model="cfgFormModel.ORDER" readonly></div>
+          <div class="field"><label>Parameter ID</label><input type="text" :value="cfgFormModel.PARAMETER_ID || 'Auto-generated on save'" readonly></div>
+          <div class="field"><label>Parameter Name</label><input type="text" v-model="cfgFormModel.PARAMETER_NAME" placeholder="e.g. Topup Option, Flat rate OPTT1"></div>
+          <div class="field"><label>Sequence</label><input type="number" v-model="cfgFormModel.ORDER" readonly></div>
           <div class="field">
             <div class="field-inline" style="margin-bottom:10px;">
-              <label style="margin-bottom:0;">Base Key ที่ใช้ (คลิกเพื่อเลือก/ยกเลิก — ลำดับคลิกมีผล)</label>
-              <button class="btn-icon-sm" title="เพิ่ม Base Key ใหม่" @click="openQuickAdd('PARAMETER','พารามิเตอร์พื้นฐาน (Base Key)')">+</button>
+              <label style="margin-bottom:0;">Base Key</label>
+              <button class="btn-icon-sm" title="Add Base Key" @click="openQuickAdd('PARAMETER','Base Key')">+</button>
             </div>
             <div class="keybuilder">
               <div class="key-option" v-for="p in paramMaster" :key="p.CODE" :class="{selected: cfgFormModel.KEY_BASE.includes(p.CODE)}" @click="toggleCfgKey(p.CODE)">
@@ -1066,7 +1058,7 @@ createApp({
               </div>
             </div>
             <div class="selected-keys-box">
-              <span v-if="!cfgFormModel.KEY_BASE.length" class="placeholder">ยังไม่ได้เลือก Base Key</span>
+              <span v-if="!cfgFormModel.KEY_BASE.length" class="placeholder">No base key selected</span>
               <span class="sel-chip" v-for="(k,i) in cfgFormModel.KEY_BASE" :key="k"><span class="idx">{{ i+1 }}</span>{{ nameOf(paramMaster,k) }}<button @click="removeCfgKeyAt(i)">✕</button></span>
             </div>
             <div class="preview-line" v-if="cfgFormModel.KEY_BASE.length">
@@ -1074,17 +1066,17 @@ createApp({
               <div><b>key_base:</b> {{ cfgPreview.keyBase }}</div>
             </div>
           </div>
-          <div class="field"><div class="active-toggle-row"><div class="lab"><strong>เปิดใช้งานพารามิเตอร์นี้</strong><span>ตัวที่ปิดใช้งานจะไม่ถูกใช้ในการคำนวณ</span></div><label class="switch"><input type="checkbox" v-model="cfgFormModel.ACTIVE" true-value="Y" false-value="N"><span class="slider"></span></label></div></div>
+          <div class="field"><div class="active-toggle-row"><div class="lab"><strong>Status</strong></div><label class="switch"><input type="checkbox" v-model="cfgFormModel.ACTIVE" true-value="Y" false-value="N"><span class="slider"></span></label></div></div>
         </div>
-        <div class="side-drawer-foot"><button class="btn btn-ghost" @click="closeCfgForm">ยกเลิก</button><button class="btn btn-primary" @click="saveCfg">บันทึกข้อมูล</button></div>
+        <div class="side-drawer-foot"><button class="btn btn-ghost" @click="closeCfgForm">Cancel</button><button class="btn btn-primary" @click="saveCfg">Save</button></div>
       </div>
     </div>
 
     <div class="modal-overlay" v-if="confirmDeleteCfg" @click.self="confirmDeleteCfg=null">
       <div class="modal-box">
-        <h3>ลบพารามิเตอร์นี้ใช่หรือไม่?</h3>
-        <p>คุณกำลังจะลบ <strong>{{ confirmDeleteCfg.PARAMETER_NAME }}</strong> ออกจาก {{ cfgProgram }} / {{ cfgEntity }}</p>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmDeleteCfg=null">ยกเลิก</button><button class="btn btn-danger" @click="confirmDeleteCfgRow">ยืนยันลบ</button></div>
+        <h3>Delete this parameter?</h3>
+        <p><strong>{{ confirmDeleteCfg.PARAMETER_NAME }}</strong> · {{ cfgProgram }} / {{ cfgEntity }}</p>
+        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmDeleteCfg=null">Cancel</button><button class="btn btn-danger" @click="confirmDeleteCfgRow">Delete</button></div>
       </div>
     </div>
 
@@ -1093,14 +1085,14 @@ createApp({
       <div class="side-drawer wide">
         <div class="side-drawer-head">
           <h3 v-if="critMode==='list'">Set value · {{ critParamRow?.PARAMETER_NAME }} ({{ cfgProgram }} / {{ cfgEntity }})</h3>
-          <h3 v-else>{{ isEditingCrit ? 'แก้ไข value' : 'เพิ่ม value' }} · {{ critParamRow?.PARAMETER_NAME }}</h3>
+          <h3 v-else>{{ isEditingCrit ? 'Edit value' : 'Add value' }} · {{ critParamRow?.PARAMETER_NAME }}</h3>
           <button class="close-x" @click="closeCritPanel">✕</button>
         </div>
 
         <!-- โหมดรายการ -->
         <div class="side-drawer-body" v-if="critMode==='list'">
           <div class="field" style="margin-bottom:14px;">
-            <label>Base Key ของพารามิเตอร์นี้</label>
+            <label>Base Key</label>
             <div class="key-chip-row">
               <span class="key-chip" v-for="(k,i) in critBaseKeys" :key="k"><span class="idx">{{ i+1 }}</span>{{ nameOf(paramMaster,k) }}</span>
             </div>
@@ -1115,8 +1107,8 @@ createApp({
                   <span class="status-badge" :class="r.ACTIVE==='Y' ? 'y' : 'n'">{{ r.ACTIVE==='Y' ? 'Active' : 'Inactive' }}</span>
                 </div>
                 <div class="crit-item-actions" v-if="cfgEditable">
-                  <button class="icon-btn" title="แก้ไข" @click="openEditCritForm(r)">✎</button>
-                  <button class="icon-btn danger" title="ลบ" @click="askDeleteCritVal(r)">🗑</button>
+                  <button class="icon-btn" title="Edit" @click="openEditCritForm(r)">✎</button>
+                  <button class="icon-btn danger" title="Delete" @click="askDeleteCritVal(r)">🗑</button>
                 </div>
               </div>
               <div class="cond-chip-row">
@@ -1127,7 +1119,7 @@ createApp({
               </div>
             </div>
           </div>
-          <div v-else class="crit-empty">ยังไม่มี value ของพารามิเตอร์นี้ — กด "+ เพิ่ม value" เพื่อเริ่มต้น</div>
+          <div v-else class="crit-empty">No value yet</div>
         </div>
 
         <!-- โหมดฟอร์ม -->
@@ -1135,16 +1127,16 @@ createApp({
           <div class="field-inline" style="margin-bottom:18px;">
             <div class="field">
               <label>value</label>
-              <input type="text" v-model="critFormModel.VALUE" placeholder="เช่น TP_Option 1, LTV150 หรือตัวเลข">
+              <input type="text" v-model="critFormModel.VALUE" placeholder="e.g. TP_Option 1, LTV150">
             </div>
             <div class="field" style="max-width:110px;">
-              <label>ลำดับ</label>
+              <label>Sequence</label>
               <input type="number" v-model="critFormModel.ORDER">
             </div>
           </div>
 
           <div class="field">
-            <label>key_value ของแต่ละ base key <span style="font-weight:400;">(เลือก operator เป็น N/A หากไม่ใช้ · IN / NOT IN เลือกได้หลายค่า)</span></label>
+            <label>key_value</label>
 
             <div class="cond-input-row" v-for="k in critBaseKeys" :key="k">
               <div class="cond-label">
@@ -1158,47 +1150,47 @@ createApp({
 
               <div class="kv-value">
                 <!-- 1) ไม่ใช้เงื่อนไขนี้ -->
-                <input v-if="critFormModel.KEY_VALUES[k].op==='N/A'" type="text" disabled placeholder="ไม่ใช้ base key นี้">
+                <input v-if="critFormModel.KEY_VALUES[k].op==='N/A'" type="text" disabled placeholder="Not used">
 
                 <!-- 2) IN / NOT IN + มีชุดค่า -> เลือกได้หลายค่า -->
                 <template v-else-if="kvIsMulti(critFormModel.KEY_VALUES[k].op) && kvOpts(k).length">
                   <div class="tag-field" @click.stop="togglePicker(k)">
                     <span class="kv-chip" v-for="v in kvArr(k)" :key="v"
                           :class="{off: !kvOpts(k).includes(v)}"
-                          :title="kvOpts(k).includes(v) ? '' : 'ค่านี้ไม่อยู่ในรายการของ base key'">
+                          :title="kvOpts(k).includes(v) ? '' : 'Value is not in the base key list'">
                       {{ v }}<button type="button" @click.stop="kvRemove(k,v)">✕</button>
                     </span>
-                    <span class="tag-add">+ เลือกค่า</span>
+                    <span class="tag-add">+ Select</span>
                   </div>
 
                   <div class="kv-picker" v-if="pickerKey===k" @click.stop>
                     <div class="kv-search-wrap">
-                      <input class="kv-search" v-model="pickerSearch" :placeholder="'ค้นหาใน ' + kvOpts(k).length + ' ค่า...'">
+                      <input class="kv-search" v-model="pickerSearch" :placeholder="'Search ' + kvOpts(k).length + ' values...'">
                     </div>
                     <div class="kv-picker-list">
                       <label class="kv-opt" v-for="o in kvFiltered(k)" :key="o" :class="{on: kvHas(k,o)}">
                         <input type="checkbox" :checked="kvHas(k,o)" @change="kvToggle(k,o)">
                         <span>{{ o }}</span>
                       </label>
-                      <div class="kv-empty" v-if="!kvFiltered(k).length">ไม่พบค่าที่ค้นหา</div>
+                      <div class="kv-empty" v-if="!kvFiltered(k).length">No match</div>
                     </div>
                     <div class="kv-picker-foot">
-                      <span>เลือกแล้ว {{ kvArr(k).length }} / {{ kvOpts(k).length }}</span>
-                      <button type="button" @click.stop="kvClear(k)">ล้างทั้งหมด</button>
+                      <span>{{ kvArr(k).length }} / {{ kvOpts(k).length }} selected</span>
+                      <button type="button" @click.stop="kvClear(k)">Clear all</button>
                     </div>
                   </div>
                   <div class="kv-warn" v-if="kvOffList(k).length">
-                    ⚠ ค่าที่ไม่อยู่ในรายการ: {{ kvOffList(k).join(', ') }}
+                    ⚠ Not in list: {{ kvOffList(k).join(', ') }}
                   </div>
                 </template>
 
                 <!-- 3) operator ค่าเดียว + มีชุดค่า -> dropdown -->
                 <select v-else-if="kvOpts(k).length" class="kv-single" v-model="critFormModel.KEY_VALUES[k].value">
-                  <option value="" disabled>— เลือกค่า —</option>
+                  <option value="" disabled>— Select value —</option>
                   <option v-for="o in kvOpts(k)" :key="o" :value="o">{{ o }}</option>
                   <option v-if="critFormModel.KEY_VALUES[k].value && !kvOpts(k).includes(critFormModel.KEY_VALUES[k].value)"
                           :value="critFormModel.KEY_VALUES[k].value">
-                    {{ critFormModel.KEY_VALUES[k].value }} (นอกรายการ)
+                    {{ critFormModel.KEY_VALUES[k].value }} (not in list)
                   </option>
                 </select>
 
@@ -1206,32 +1198,32 @@ createApp({
                 <template v-else>
                   <input :type="kvIsNum(k) && !kvIsMulti(critFormModel.KEY_VALUES[k].op) ? 'number' : 'text'"
                          v-model="critFormModel.KEY_VALUES[k].value"
-                         :placeholder="kvIsMulti(critFormModel.KEY_VALUES[k].op) ? 'คั่นด้วย , เช่น 10,20,30' : (kvIsNum(k) ? 'เช่น 50000' : 'พิมพ์ค่า')">
-                  <div class="kv-hint">base key นี้ยังไม่มีชุดค่าให้เลือก</div>
+                         :placeholder="kvIsMulti(critFormModel.KEY_VALUES[k].op) ? 'Comma separated, e.g. 10,20,30' : (kvIsNum(k) ? 'e.g. 50000' : 'Type a value')">
+                  <div class="kv-hint">No preset values for this base key</div>
                 </template>
               </div>
             </div>
           </div>
 
-          <div class="field"><div class="active-toggle-row"><div class="lab"><strong>เปิดใช้งาน value นี้</strong><span>รายการที่ปิดใช้งานจะไม่ถูกใช้ในการคำนวณ</span></div><label class="switch"><input type="checkbox" v-model="critFormModel.ACTIVE" true-value="Y" false-value="N"><span class="slider"></span></label></div></div>
+          <div class="field"><div class="active-toggle-row"><div class="lab"><strong>Status</strong></div><label class="switch"><input type="checkbox" v-model="critFormModel.ACTIVE" true-value="Y" false-value="N"><span class="slider"></span></label></div></div>
         </div>
 
         <div class="side-drawer-foot" v-if="critMode==='list'">
-          <button class="btn btn-ghost" @click="closeCritPanel">ปิด</button>
-          <button class="btn btn-primary" v-if="cfgEditable" @click="openAddCritForm">+ เพิ่ม value</button>
+          <button class="btn btn-ghost" @click="closeCritPanel">Close</button>
+          <button class="btn btn-primary" v-if="cfgEditable" @click="openAddCritForm">+ Add value</button>
         </div>
         <div class="side-drawer-foot" v-else>
-          <button class="btn btn-ghost" @click="backToCritList">ยกเลิก</button>
-          <button class="btn btn-primary" @click="saveCritValue">บันทึกข้อมูล</button>
+          <button class="btn btn-ghost" @click="backToCritList">Cancel</button>
+          <button class="btn btn-primary" @click="saveCritValue">Save</button>
         </div>
       </div>
     </div>
 
     <div class="modal-overlay" v-if="confirmDeleteCritVal" @click.self="confirmDeleteCritVal=null">
       <div class="modal-box">
-        <h3>ลบ value นี้ใช่หรือไม่?</h3>
-        <p>คุณกำลังจะลบ <strong>{{ confirmDeleteCritVal.VALUE }}</strong> ออกจาก {{ critParamRow?.PARAMETER_NAME }} ({{ cfgProgram }} / {{ cfgEntity }})</p>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmDeleteCritVal=null">ยกเลิก</button><button class="btn btn-danger" @click="confirmDeleteCritValRow">ยืนยันลบ</button></div>
+        <h3>Delete this value?</h3>
+        <p><strong>{{ confirmDeleteCritVal.VALUE }}</strong> · {{ critParamRow?.PARAMETER_NAME }}</p>
+        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmDeleteCritVal=null">Cancel</button><button class="btn btn-danger" @click="confirmDeleteCritValRow">Delete</button></div>
       </div>
     </div>
 
