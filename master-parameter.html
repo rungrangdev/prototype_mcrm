@@ -361,7 +361,7 @@
 <div id="app"></div>
 
 <script>
-const { createApp, ref, reactive, computed, onMounted } = Vue;
+const { createApp, ref, reactive, computed, watch, onMounted } = Vue;
 
 /* Base-key dictionary (dataType / example values) is shared with Lead
    Eligible Config via store.js so a parameter added here is usable there too. */
@@ -437,6 +437,21 @@ createApp({
     const programIdOf = (code) => MCRM.programIdOf(cfgEntity.value, cfgLeadType.value, code);
     const cfgProgramId = computed(() => programIdOf(cfgProgram.value));
     const programLabel = (p) => { const id = programIdOf(p.CODE); return (id ? id + ' · ' : '') + p.NAME + ' (' + p.CODE + ')'; };
+
+    /* Program ที่เลือกได้ = เฉพาะที่หน้า Program Setup กำหนดไว้ให้ Entity + Lead Type นี้
+       เช่น CRM_X_SELL_POOL + KA ได้ PG0001-PG0005, CRM_X_SELL_POOL + AY ได้ PG0006-PG0009 */
+    const assignments = MCRM.db.assignments;
+    const cfgProgramOptions = computed(() =>
+      assignments
+        .filter(a => a.ENTITY === cfgEntity.value && a.LEAD_TYPE === cfgLeadType.value)
+        .sort((a,b) => Number(a.ORDER) - Number(b.ORDER))
+        .map(a => programMaster.value.find(p => p.CODE === a.PROGRAM_CODE)
+                  || { CODE:a.PROGRAM_CODE, NAME:a.PROGRAM_CODE }));
+    /* เปลี่ยน Entity / Lead Type แล้ว Program เดิมอาจไม่อยู่ในชุดนี้ — เลื่อนไปตัวแรกให้ */
+    watch(cfgProgramOptions, (opts) => {
+      if (opts.some(p => p.CODE === cfgProgram.value)) return;
+      cfgProgram.value = opts.length ? opts[0].CODE : '';
+    }, { immediate:true });
     const cfgRecords = computed(() => paramConfigs.filter(c=>c.VERSION_ID===cfgVersionId.value && c.PROGRAM_CODE===cfgProgram.value && c.ENTITY===cfgEntity.value).sort((a,b)=>Number(a.ORDER)-Number(b.ORDER)));
 
     /* =========================================================
@@ -788,7 +803,7 @@ createApp({
     return {
       entityMaster, leadTypeMaster, programMaster, paramMaster, nameOf,
       quickAdd, openQuickAdd, saveQuickAdd,
-      cfgProgram, cfgEntity, cfgLeadType, cfgProgramId, programLabel, cfgRecords, showCfgForm, isEditingCfg, cfgFormModel,
+      cfgProgram, cfgEntity, cfgLeadType, cfgProgramId, cfgProgramOptions, programLabel, cfgRecords, showCfgForm, isEditingCfg, cfgFormModel,
       openAddCfg, openEditCfg, closeCfgForm, toggleCfgKey, removeCfgKeyAt, saveCfg, toggleCfgActive,
       confirmDeleteCfg, askDeleteCfg, confirmDeleteCfgRow, cfgPreview,
       cfgView, cfgVersionId, cfgVersions, openCfgSetup, backToCfgList,
@@ -924,7 +939,10 @@ createApp({
           </div>
           <div class="filter-field">
             <label>Program</label>
-            <select v-model="cfgProgram"><option v-for="p in programMaster" :key="p.CODE" :value="p.CODE">{{ programLabel(p) }}</option></select>
+            <select v-model="cfgProgram">
+              <option v-if="!cfgProgramOptions.length" value="">— ยังไม่ได้กำหนด Program ที่หน้า Program Setup —</option>
+              <option v-for="p in cfgProgramOptions" :key="p.CODE" :value="p.CODE">{{ programLabel(p) }}</option>
+            </select>
           </div>
           <div class="filter-field" style="min-width:120px;">
             <label>Program ID</label>
