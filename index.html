@@ -285,7 +285,8 @@ function openpage(pathmenu,page_name){
 
   const screen = document.getElementById('screen');
 
-  screen.src = filePath;
+  // ต่อท้ายด้วยเวลา เพื่อให้ iframe โหลดไฟล์ล่าสุดเสมอ ไม่ติดของเก่าใน cache
+  screen.src = filePath + '?v=' + Date.now();
 
 
   // pathmenu
