@@ -119,9 +119,11 @@
 .param-tag-field:hover{border-color:#D9A404}
 .param-chip{
   display:inline-flex;align-items:center;gap:4px;background:#FDF9E7;border:1px solid #EFE3B0;
-  border-radius:6px;padding:2px 7px;font-size:11px;color:#8A6D03;font-weight:600;max-width:170px;
+  border-radius:6px;padding:2px 7px;font-size:11px;color:#8A6D03;font-weight:600;max-width:210px;
 }
 .param-chip span.pctxt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Parameter ID ที่ออกจากหน้า Parameter Master Setup */
+.param-chip span.pcid{flex-shrink:0;font-family:'IBM Plex Mono',monospace;font-size:10px;background:#F6ECC2;border-radius:4px;padding:0 4px;}
 .param-chip-x{cursor:pointer;color:#B4ACA5;font-size:10px;line-height:1;flex-shrink:0}
 .param-chip-x:hover{color:#D64C4C}
 .param-ph{font-size:11.5px;color:#B4ACA5}
@@ -134,6 +136,7 @@
 .param-dd .dd-opt{display:flex;align-items:center;gap:8px;padding:7px 11px;font-size:12px;cursor:pointer;color:#374151}
 .param-dd .dd-opt:hover{background:#FDF9E7}
 .param-dd .dd-opt input{accent-color:#D9A404;width:13px;height:13px;flex-shrink:0}
+.param-dd .dd-id{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8A6D03;background:#FDF9E7;border:1px solid #EFE3B0;border-radius:4px;padding:0 4px;margin-right:6px;}
 .param-dd .dd-empty{padding:11px;font-size:11.5px;color:#B4ACA5;font-style:italic}
 
 /* ===== Validation box: multi-select Validation Code ===== */
@@ -267,14 +270,24 @@ createApp({
     const ENTITIES   = computed(() => rows.filter(r=>r.TYPE==='ENTITY' && r.ACTIVE==='Y').map(r=>({code:r.CODE,name:r.NAME})));
     const PROGRAMS   = computed(() => rows.filter(r=>r.TYPE==='PROGRAM' && r.ACTIVE==='Y').map(r=>({code:r.CODE,name:r.NAME})));
     const paramConfigs = MCRM.db.paramConfigs;
-    function getParamList(program, entity){
+    /* Parameter ของ version ที่ box นี้เลือกไว้ — มาพร้อม Parameter ID
+       (P00001...) ที่ออกให้จากหน้า Parameter Master Setup */
+    function getParamList(program, entity, versionId){
       if(!program || !entity) return [];
-      return paramConfigs.filter(c=>c.PROGRAM_CODE===program && c.ENTITY===entity && c.ACTIVE==='Y').map(c=>({code:c.PARAMETER_CODE, name:c.PARAMETER_NAME}));
+      return paramConfigs
+        .filter(c => c.PROGRAM_CODE===program && c.ENTITY===entity && c.ACTIVE==='Y'
+                  && (!versionId || c.VERSION_ID===versionId))
+        .map(c => ({ id:c.PARAMETER_ID || '', code:c.PARAMETER_CODE, name:c.PARAMETER_NAME }));
     }
     function paramNameOf(program, entity, code){
       const f = getParamList(program, entity).find(p=>p.code===code);
       return f ? f.name : code;
     }
+    /* Parameter ID ของพารามิเตอร์ตัวหนึ่ง (รหัสเดียวกันทุก version) */
+    const paramIdOf = (entity, program, code) => MCRM.parameterIdOf(entity, program, code);
+    /* Program ID ที่กำหนดไว้ใน Program Setup ของ Entity + Lead Type ของ box นี้ */
+    const programIdOf = (entity, leadType, code) => MCRM.programIdOf(entity, leadType, code);
+    const programLabel = (s, p) => { const id = programIdOf(s.entity, s.leadType, p.code); return (id ? id + ' · ' : '') + p.name; };
 
     /* ELIGIBLE steps pick a real Lead Eligible Config profile; PROFILE steps
        reference another saved workflow — both come straight from store.js. */
@@ -686,7 +699,7 @@ createApp({
 
     return {
       TYPES, SCH_MODES, WD_TH_SHORT, MIN_BOX_H, BOX_W, STROKE, STROKE_W,
-      LEAD_TYPES, ENTITIES, PROGRAMS, getParamList, paramNameOf,
+      LEAD_TYPES, ENTITIES, PROGRAMS, getParamList, paramNameOf, paramIdOf, programIdOf, programLabel,
       flows, CATEGORIES, DEFAULT_CATEGORY,
       selectableVersions, versionStatusOf, FLOW_STATUSES, flowStatusOf, flowStatusClass, setFlowStatus,
       canRunFlow, runBlockReason, cloneFlow,
@@ -835,12 +848,12 @@ createApp({
                 <div class="field-lbl">Program</div>
                 <select class="step-select" v-model="s.program" @change="onEntityOrProgramChange(s)">
                   <option value="">-- Select Program --</option>
-                  <option v-for="p in PROGRAMS" :key="p.code" :value="p.code">{{ p.name }}</option>
+                  <option v-for="p in PROGRAMS" :key="p.code" :value="p.code">{{ programLabel(s, p) }}</option>
                 </select>
                 <div class="field-lbl">Parameter (เลือกได้หลายรายการ)</div>
                 <div class="param-tag-field" @click.stop="toggleParamPicker(s, $event)">
                   <template v-if="s.params.length">
-                    <span class="param-chip" v-for="pc in s.params" :key="pc"><span class="pctxt">{{ paramNameOf(s.program,s.entity,pc) }}</span><span class="param-chip-x" @click.stop="removeParam(s,pc)">&times;</span></span>
+                    <span class="param-chip" v-for="pc in s.params" :key="pc" :title="(paramIdOf(s.entity,s.program,pc) || pc)+' · '+paramNameOf(s.program,s.entity,pc)"><span class="pcid" v-if="paramIdOf(s.entity,s.program,pc)">{{ paramIdOf(s.entity,s.program,pc) }}</span><span class="pctxt">{{ paramNameOf(s.program,s.entity,pc) }}</span><span class="param-chip-x" @click.stop="removeParam(s,pc)">&times;</span></span>
                   </template>
                   <span v-else class="param-ph">-- Select Parameter --</span>
                 </div>
@@ -883,11 +896,11 @@ createApp({
       <div class="param-dd" v-if="activeParamStep" :style="{left: paramPickerPos.left+'px', top: paramPickerPos.top+'px', minWidth: paramPickerPos.minWidth+'px'}" @click.stop>
         <div class="dd-empty" v-if="!activeParamStep.program || !activeParamStep.entity">กรุณาเลือก Entity และ Program ก่อน</div>
         <template v-else>
-          <div class="dd-opt" v-for="p in getParamList(activeParamStep.program, activeParamStep.entity)" :key="p.code" @click="toggleParamValue(activeParamStep, p.code)">
+          <div class="dd-opt" v-for="p in getParamList(activeParamStep.program, activeParamStep.entity, activeParamStep.versionId)" :key="p.code" @click="toggleParamValue(activeParamStep, p.code)">
             <input type="checkbox" :checked="activeParamStep.params.includes(p.code)" @click.stop="toggleParamValue(activeParamStep, p.code)">
-            <span>{{ p.name }}</span>
+            <span><span class="dd-id">{{ p.id || '—' }}</span>{{ p.name }}</span>
           </div>
-          <div class="dd-empty" v-if="!getParamList(activeParamStep.program, activeParamStep.entity).length">ไม่มี Parameter สำหรับ Program/Entity นี้</div>
+          <div class="dd-empty" v-if="!getParamList(activeParamStep.program, activeParamStep.entity, activeParamStep.versionId).length">ไม่มี Parameter สำหรับ Program/Entity นี้</div>
         </template>
       </div>
 

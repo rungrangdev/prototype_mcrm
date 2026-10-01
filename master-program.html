@@ -341,12 +341,12 @@ createApp({
 
     const showAssignForm = ref(false);
     const isEditingAssign = ref(false);
-    const assignFormModel = reactive({ PROGRAM_CODE:'', ORDER:'1', STATUS:'Y', CREATE_BY:'', CREATE_DATE:'', UPDATE_BY:'', UPDATE_DATE:'' });
+    const assignFormModel = reactive({ PROGRAM_ID:'', PROGRAM_CODE:'', ORDER:'1', STATUS:'Y', CREATE_BY:'', CREATE_DATE:'', UPDATE_BY:'', UPDATE_DATE:'' });
     const assignableProgramOptions = computed(() => programMaster.value.filter(p => isEditingAssign.value ? true : !assignRecords.value.some(a=>a.PROGRAM_CODE===p.CODE)));
 
     function openAddAssign(){
       isEditingAssign.value = false;
-      Object.assign(assignFormModel, { PROGRAM_CODE:'', ORDER:String((assignRecords.value.length+1)), STATUS:'Y' });
+      Object.assign(assignFormModel, { PROGRAM_ID:MCRM.nextProgramId(), PROGRAM_CODE:'', ORDER:String((assignRecords.value.length+1)), STATUS:'Y' });
       showAssignForm.value = true;
     }
     function openEditAssign(row){ isEditingAssign.value = true; Object.assign(assignFormModel, row); showAssignForm.value = true; }
@@ -407,10 +407,11 @@ createApp({
 
         <div class="table-wrap">
           <table class="data-table" v-if="assignRecords.length">
-            <thead><tr><th style="width:60px">No.</th><th>Program</th><th style="width:100px">Status</th><th style="width:90px"></th></tr></thead>
+            <thead><tr><th style="width:60px">No.</th><th style="width:130px">Program ID</th><th>Program</th><th style="width:100px">Status</th><th style="width:90px"></th></tr></thead>
             <tbody>
               <tr v-for="row in assignRecords" :key="row.PROGRAM_CODE">
                 <td><span class="order-pill">{{ row.ORDER }}</span></td>
+                <td><span class="code-pill">{{ row.PROGRAM_ID }}</span></td>
                 <td class="name-cell"><strong>{{ nameOf(programMaster, row.PROGRAM_CODE) }}</strong><span class="mono">{{ row.PROGRAM_CODE }}</span></td>
                 <td><label class="switch">{{row.STATUS}}</label></td>
                 <td>
@@ -449,6 +450,11 @@ createApp({
       <div class="side-drawer">
         <div class="side-drawer-head"><h3>{{ isEditingAssign ? 'แก้ไขโปรแกรม' : 'เพิ่มโปรแกรม' }} · {{ assignEntity }} / {{ assignLeadType }}</h3><button class="close-x" @click="closeAssignForm">✕</button></div>
         <div class="side-drawer-body">
+          <div class="field">
+            <label>Program ID</label>
+            <input type="text" :value="assignFormModel.PROGRAM_ID" readonly>
+            <div class="hint">รหัสประจำ Program ของ {{ assignEntity }} / {{ assignLeadType }} — ใช้อ้างอิงที่หน้า Parameter Master Setup และ Workflow Config</div>
+          </div>
           <div class="field">
             <div class="field-inline">
               <div class="field">

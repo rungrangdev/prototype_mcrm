@@ -433,6 +433,10 @@ createApp({
     const cfgProgram = ref('TOPUP');
     const cfgEntity = ref('KA');
     const cfgLeadType = ref('CRM_X_SELL_POOL');
+    /* Program ID มาจาก Program Setup (1 รหัส ต่อ 1 Entity + Lead Type + Program) */
+    const programIdOf = (code) => MCRM.programIdOf(cfgEntity.value, cfgLeadType.value, code);
+    const cfgProgramId = computed(() => programIdOf(cfgProgram.value));
+    const programLabel = (p) => { const id = programIdOf(p.CODE); return (id ? id + ' · ' : '') + p.NAME + ' (' + p.CODE + ')'; };
     const cfgRecords = computed(() => paramConfigs.filter(c=>c.VERSION_ID===cfgVersionId.value && c.PROGRAM_CODE===cfgProgram.value && c.ENTITY===cfgEntity.value).sort((a,b)=>Number(a.ORDER)-Number(b.ORDER)));
 
     /* =========================================================
@@ -607,11 +611,11 @@ createApp({
 
     const showCfgForm = ref(false);
     const isEditingCfg = ref(false);
-    const cfgFormModel = reactive({ PARAMETER_CODE:'', PARAMETER_NAME:'', ORDER:'1', ACTIVE:'Y', KEY_BASE:[] });
+    const cfgFormModel = reactive({ PARAMETER_ID:'', PARAMETER_CODE:'', PARAMETER_NAME:'', ORDER:'1', ACTIVE:'Y', KEY_BASE:[] });
     function slugify(s){ return s.trim().toUpperCase().replace(/[^A-Z0-9]+/g,'_').replace(/^_|_$/g,''); }
     function openAddCfg(){
       isEditingCfg.value = false;
-      Object.assign(cfgFormModel, { PARAMETER_CODE:'', PARAMETER_NAME:'', ORDER:String((cfgRecords.value.length+1)), ACTIVE:'Y', KEY_BASE:[] });
+      Object.assign(cfgFormModel, { PARAMETER_ID:'', PARAMETER_CODE:'', PARAMETER_NAME:'', ORDER:String((cfgRecords.value.length+1)), ACTIVE:'Y', KEY_BASE:[] });
       showCfgForm.value = true;
     }
     function openEditCfg(row){ isEditingCfg.value = true; Object.assign(cfgFormModel, { ...row, KEY_BASE:[...row.KEY_BASE] }); showCfgForm.value = true; }
@@ -630,7 +634,9 @@ createApp({
         paramConfigs[idx] = { ...paramConfigs[idx], ...cfgFormModel, PARAMETER_CODE:code, UPDATE_BY:'ADMIN', UPDATE_DATE:now() };
       } else {
         if (paramConfigs.some(c=>c.VERSION_ID===cfgVersionId.value && c.PROGRAM_CODE===cfgProgram.value && c.ENTITY===cfgEntity.value && c.PARAMETER_CODE===code)){ showToast('มีพารามิเตอร์นี้อยู่แล้ว', false); return; }
-        paramConfigs.push({ VERSION_ID:cfgVersionId.value, PROGRAM_CODE:cfgProgram.value, ENTITY:cfgEntity.value, ...cfgFormModel, PARAMETER_CODE:code, CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
+        paramConfigs.push({ VERSION_ID:cfgVersionId.value, PROGRAM_CODE:cfgProgram.value, ENTITY:cfgEntity.value, ...cfgFormModel,
+          PARAMETER_CODE:code, PARAMETER_ID:MCRM.parameterIdFor(cfgEntity.value, cfgProgram.value, code),
+          CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
       }
       showToast('บันทึกการตั้งค่าพารามิเตอร์เรียบร้อย');
       showCfgForm.value = false;
@@ -782,7 +788,7 @@ createApp({
     return {
       entityMaster, leadTypeMaster, programMaster, paramMaster, nameOf,
       quickAdd, openQuickAdd, saveQuickAdd,
-      cfgProgram, cfgEntity, cfgLeadType, cfgRecords, showCfgForm, isEditingCfg, cfgFormModel,
+      cfgProgram, cfgEntity, cfgLeadType, cfgProgramId, programLabel, cfgRecords, showCfgForm, isEditingCfg, cfgFormModel,
       openAddCfg, openEditCfg, closeCfgForm, toggleCfgKey, removeCfgKeyAt, saveCfg, toggleCfgActive,
       confirmDeleteCfg, askDeleteCfg, confirmDeleteCfgRow, cfgPreview,
       cfgView, cfgVersionId, cfgVersions, openCfgSetup, backToCfgList,
@@ -918,7 +924,11 @@ createApp({
           </div>
           <div class="filter-field">
             <label>Program</label>
-            <select v-model="cfgProgram"><option v-for="p in programMaster" :key="p.CODE" :value="p.CODE">{{ p.NAME }} ({{ p.CODE }})</option></select>
+            <select v-model="cfgProgram"><option v-for="p in programMaster" :key="p.CODE" :value="p.CODE">{{ programLabel(p) }}</option></select>
+          </div>
+          <div class="filter-field" style="min-width:120px;">
+            <label>Program ID</label>
+            <input type="text" :value="cfgProgramId || '—'" readonly>
           </div>
           <div class="filter-field">
             <label>Entity (gecid)</label>
@@ -927,10 +937,11 @@ createApp({
         </div>
         <div class="table-wrap">
           <table class="data-table" v-if="cfgRecords.length">
-            <thead><tr><th style="width:60px">ลำดับ</th><th style="width:180px">ชื่อพารามิเตอร์</th><th>Base Key ที่ใช้</th><th style="width:90px">ใช้งาน</th><th style="width:90px">จัดการ</th></tr></thead>
+            <thead><tr><th style="width:60px">ลำดับ</th><th style="width:120px">Parameter ID</th><th style="width:180px">ชื่อพารามิเตอร์</th><th>Base Key ที่ใช้</th><th style="width:90px">ใช้งาน</th><th style="width:90px">จัดการ</th></tr></thead>
             <tbody>
               <tr v-for="row in cfgRecords" :key="row.PARAMETER_CODE">
                 <td><span class="order-pill">{{ row.ORDER }}</span></td>
+                <td><span class="code-pill">{{ row.PARAMETER_ID }}</span></td>
                 <td class="name-cell"><strong>{{ row.PARAMETER_NAME }}</strong><span class="mono">{{ row.PARAMETER_CODE }}</span></td>
                 <td>
                   <div class="key-chip-row">
@@ -1041,6 +1052,7 @@ createApp({
       <div class="side-drawer">
         <div class="side-drawer-head"><h3>{{ isEditingCfg ? 'Parameter' : 'Parameter' }} · {{ cfgProgram }} / {{ cfgEntity }}</h3><button class="close-x" @click="closeCfgForm">✕</button></div>
         <div class="side-drawer-body">
+          <div class="field"><label>Parameter ID</label><input type="text" :value="cfgFormModel.PARAMETER_ID || 'ระบบออกรหัสให้เมื่อบันทึก'" readonly></div>
           <div class="field"><label>ชื่อพารามิเตอร์</label><input type="text" v-model="cfgFormModel.PARAMETER_NAME" placeholder="เช่น Topup Option, Flat rate OPTT1"></div>
           <div class="field"><label>ลำดับการแสดงผล (ORDER)</label><input type="number" v-model="cfgFormModel.ORDER" readonly></div>
           <div class="field">
