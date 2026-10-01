@@ -113,6 +113,9 @@
   td{padding:12px;border-bottom:1px solid var(--border);vertical-align:middle;}
   tr:hover td{background:var(--surface-alt);}
   .code-pill{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12.5px;background:#EEF1F6;padding:3px 9px;border-radius:6px;color:var(--primary-dark);}
+  .status-text{font-size:13px;font-weight:600;}
+  .status-text.is-active{color:var(--success);}
+  .status-text.is-inactive{color:var(--text-secondary);}
   .order-pill{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-secondary);}
   .name-cell strong{display:block;}
   .name-cell span{color:var(--text-secondary);font-size:12.5px;}
@@ -362,7 +365,6 @@ createApp({
       showToast('บันทึกการกำหนดโปรแกรมเรียบร้อย');
       showAssignForm.value = false;
     }
-    function toggleAssignStatus(row){ row.STATUS = row.STATUS==='Y'?'N':'Y'; row.UPDATE_BY='ADMIN'; row.UPDATE_DATE=now(); showToast(row.STATUS==='Y'?'เปิดใช้งานโปรแกรมแล้ว':'ปิดใช้งานโปรแกรมแล้ว'); }
     const confirmDeleteAssign = ref(null);
     function askDeleteAssign(row){ confirmDeleteAssign.value = row; }
     function confirmDeleteAssignRow(){
@@ -379,7 +381,7 @@ createApp({
       entityMaster, leadTypeMaster, programMaster, nameOf,
       quickAdd, openQuickAdd, saveQuickAdd,
       assignEntity, assignLeadType, assignRecords, showAssignForm, isEditingAssign, assignFormModel, assignableProgramOptions,
-      openAddAssign, openEditAssign, closeAssignForm, saveAssign, toggleAssignStatus, confirmDeleteAssign, askDeleteAssign, confirmDeleteAssignRow,
+      openAddAssign, openEditAssign, closeAssignForm, saveAssign, confirmDeleteAssign, askDeleteAssign, confirmDeleteAssignRow,
       toast
     };
   },
@@ -413,7 +415,7 @@ createApp({
                 <td><span class="order-pill">{{ row.ORDER }}</span></td>
                 <td><span class="code-pill">{{ row.PROGRAM_ID }}</span></td>
                 <td class="name-cell"><strong>{{ nameOf(programMaster, row.PROGRAM_CODE) }}</strong><span class="mono">{{ row.PROGRAM_CODE }}</span></td>
-                <td><label class="switch">{{row.STATUS}}</label></td>
+                <td><span class="status-text" :class="row.STATUS==='Y' ? 'is-active' : 'is-inactive'">{{ row.STATUS==='Y' ? 'Active' : 'Inactive' }}</span></td>
                 <td>
                     <div class="dropdown-container">
                         <button class="btn-dots" onclick="toggleDropdown(event, this)">⋮</button>
