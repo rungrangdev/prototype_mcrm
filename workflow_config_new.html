@@ -170,6 +170,18 @@
 .result-tbl{width:100%;border-collapse:collapse}
 .result-tbl th,.result-tbl td{border:1px solid #ddd;padding:8px;text-align:left}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#3D3835;color:#fff;padding:10px 20px;border-radius:8px;font-size:13.5px;box-shadow:0 4px 14px rgba(0,0,0,.25);z-index:9998;}
+
+  /* ---- confirm dialog : หน้าตาเดียวกันทุกหน้า ---- */
+  .confirm-box{background:#fff;border-radius:14px;padding:28px 32px;width:380px;max-width:92vw;
+    box-shadow:0 12px 40px rgba(46,42,39,.22);text-align:center;}
+  .confirm-box p{margin:0 0 22px;font-size:15px;line-height:1.6;color:#333;}
+  .confirm-actions{display:flex;justify-content:center;gap:12px;}
+  .confirm-actions button{min-width:120px;padding:11px 18px;border-radius:8px;font-family:inherit;
+    font-size:15px;font-weight:600;cursor:pointer;border:2px solid #FFD400;transition:.12s;}
+  .confirm-actions .cancel{background:#fff;color:#1A1A1A;}
+  .confirm-actions .cancel:hover{background:#FFFBEA;}
+  .confirm-actions .ok{background:#FFD400;color:#1A1A1A;}
+  .confirm-actions .ok:hover{background:#EFC400;}
 </style>
 
 <div id="app"></div>
@@ -995,19 +1007,17 @@ createApp({
 
     <!-- Run flow confirm (list page) -->
     <div class="modal-overlay" v-if="confirmRunFlow" @click.self="confirmRunFlow=null">
-      <div class="modal-box">
-        <h3>Run Flow</h3>
-        <p>Are you sure you want to run the flow "{{ confirmRunFlow.flow_name }}"?</p>
-        <div class="modal-actions"><button class="btn-ghost" @click="confirmRunFlow=null">Cancel</button><button class="btn-run" @click="confirmRunFlowYes">Yes, run it!</button></div>
+      <div class="confirm-box">
+        <p>Are you sure you want to run "{{ confirmRunFlow.flow_name }}"?</p>
+        <div class="confirm-actions"><button class="cancel" @click="confirmRunFlow=null">Cancel</button><button class="ok" @click="confirmRunFlowYes">Confirm</button></div>
       </div>
     </div>
 
     <!-- Delete flow confirm (list page) -->
     <div class="modal-overlay" v-if="confirmDeleteFlow" @click.self="confirmDeleteFlow=null">
-      <div class="modal-box">
-        <h3>Delete this flow?</h3>
-        <p>You are about to delete <strong>{{ confirmDeleteFlow.flow_id }}</strong> ({{ confirmDeleteFlow.flow_name }}). This cannot be undone.</p>
-        <div class="modal-actions"><button class="btn-ghost" @click="confirmDeleteFlow=null">Cancel</button><button class="btn-danger" @click="confirmDeleteFlowYes">Delete</button></div>
+      <div class="confirm-box">
+        <p>Are you sure you want to delete "{{ confirmDeleteFlow.flow_name }}"?</p>
+        <div class="confirm-actions"><button class="cancel" @click="confirmDeleteFlow=null">Cancel</button><button class="ok" @click="confirmDeleteFlowYes">Confirm</button></div>
       </div>
     </div>
 

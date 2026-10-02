@@ -283,6 +283,18 @@
     background-color: #f5f5f5;
     cursor: not-allowed;
   }
+
+  /* ---- confirm dialog : หน้าตาเดียวกันทุกหน้า ---- */
+  .confirm-box{background:#fff;border-radius:14px;padding:28px 32px;width:380px;max-width:92vw;
+    box-shadow:0 12px 40px rgba(46,42,39,.22);text-align:center;}
+  .confirm-box p{margin:0 0 22px;font-size:15px;line-height:1.6;color:#333;}
+  .confirm-actions{display:flex;justify-content:center;gap:12px;}
+  .confirm-actions button{min-width:120px;padding:11px 18px;border-radius:8px;font-family:inherit;
+    font-size:15px;font-weight:600;cursor:pointer;border:2px solid #FFD400;transition:.12s;}
+  .confirm-actions .cancel{background:#fff;color:#1A1A1A;}
+  .confirm-actions .cancel:hover{background:#FFFBEA;}
+  .confirm-actions .ok{background:#FFD400;color:#1A1A1A;}
+  .confirm-actions .ok:hover{background:#EFC400;}
 </style>
 </head>
 <body>
@@ -449,10 +461,9 @@ createApp({
     </div>
 
     <div class="modal-overlay" v-if="confirmDeleteAssign" @click.self="confirmDeleteAssign=null">
-      <div class="modal-box">
-        <h3>Delete this program?</h3>
-        <p><strong>{{ nameOf(programMaster, confirmDeleteAssign.PROGRAM_CODE) }}</strong> · {{ assignEntity }} / {{ assignLeadType }}</p>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmDeleteAssign=null">Cancel</button><button class="btn btn-danger" @click="confirmDeleteAssignRow">Delete</button></div>
+      <div class="confirm-box">
+        <p>Are you sure you want to delete "{{ nameOf(programMaster, confirmDeleteAssign.PROGRAM_CODE) }}"?</p>
+        <div class="confirm-actions"><button class="cancel" @click="confirmDeleteAssign=null">Cancel</button><button class="ok" @click="confirmDeleteAssignRow">Confirm</button></div>
       </div>
     </div>
 

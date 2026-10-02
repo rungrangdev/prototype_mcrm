@@ -141,6 +141,18 @@ table.data-table tbody tr:hover{background:var(--surface-alt);}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--primary-dark);color:#fff;padding:12px 20px;border-radius:8px;font-size:13.5px;box-shadow:var(--shadow-md);z-index:80;display:flex;align-items:center;gap:10px;}
 .toast .tick{color:#6FE3A6;font-weight:700;}
 input[readonly]{background-color:#f5f5f5;cursor:not-allowed;}
+
+  /* ---- confirm dialog : หน้าตาเดียวกันทุกหน้า ---- */
+  .confirm-box{background:#fff;border-radius:14px;padding:28px 32px;width:380px;max-width:92vw;
+    box-shadow:0 12px 40px rgba(46,42,39,.22);text-align:center;}
+  .confirm-box p{margin:0 0 22px;font-size:15px;line-height:1.6;color:#333;}
+  .confirm-actions{display:flex;justify-content:center;gap:12px;}
+  .confirm-actions button{min-width:120px;padding:11px 18px;border-radius:8px;font-family:inherit;
+    font-size:15px;font-weight:600;cursor:pointer;border:2px solid #FFD400;transition:.12s;}
+  .confirm-actions .cancel{background:#fff;color:#1A1A1A;}
+  .confirm-actions .cancel:hover{background:#FFFBEA;}
+  .confirm-actions .ok{background:#FFD400;color:#1A1A1A;}
+  .confirm-actions .ok:hover{background:#EFC400;}
 </style>
 </head>
 <body>
@@ -473,10 +485,9 @@ createApp({
     </div>
 
     <div class="modal-overlay" v-if="confirmDeleteCrit" @click.self="confirmDeleteCrit=null">
-      <div class="modal-box">
-        <h3>ลบรายการนี้ใช่หรือไม่?</h3>
-        <p>คุณกำลังจะลบ <strong>{{ confirmDeleteCrit.VALUE }}</strong> ของ {{ critParameter }} ({{ critEntity }} / {{ critLeadType }})</p>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmDeleteCrit=null">ยกเลิก</button><button class="btn btn-danger" @click="confirmDeleteCritRow">ยืนยันลบ</button></div>
+      <div class="confirm-box">
+        <p>Are you sure you want to delete "{{ confirmDeleteCrit.VALUE }}"?</p>
+        <div class="confirm-actions"><button class="cancel" @click="confirmDeleteCrit=null">Cancel</button><button class="ok" @click="confirmDeleteCritRow">Confirm</button></div>
       </div>
     </div>
 

@@ -298,6 +298,18 @@
     .field-group select{width:100%;padding:9px 12px;border:1px solid #E4E7EF !important;border-radius:8px;font-size:13.5px;font-family:inherit;color:#1E2433;background:#FBFCFE}
     .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
     .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1E2433;color:#fff;padding:10px 20px;border-radius:8px;font-size:13.5px;box-shadow:0 4px 14px rgba(0,0,0,.25);z-index:9998;}
+
+  /* ---- confirm dialog : หน้าตาเดียวกันทุกหน้า ---- */
+  .confirm-box{background:#fff;border-radius:14px;padding:28px 32px;width:380px;max-width:92vw;
+    box-shadow:0 12px 40px rgba(46,42,39,.22);text-align:center;}
+  .confirm-box p{margin:0 0 22px;font-size:15px;line-height:1.6;color:#333;}
+  .confirm-actions{display:flex;justify-content:center;gap:12px;}
+  .confirm-actions button{min-width:120px;padding:11px 18px;border-radius:8px;font-family:inherit;
+    font-size:15px;font-weight:600;cursor:pointer;border:2px solid #FFD400;transition:.12s;}
+  .confirm-actions .cancel{background:#fff;color:#1A1A1A;}
+  .confirm-actions .cancel:hover{background:#FFFBEA;}
+  .confirm-actions .ok{background:#FFD400;color:#1A1A1A;}
+  .confirm-actions .ok:hover{background:#EFC400;}
 </style>
 
 <div id="app"></div>
@@ -811,10 +823,9 @@ createApp({
 
     <!-- Register lead confirm -->
     <div class="modal-overlay" v-if="confirmRegister" @click.self="confirmRegister=null">
-      <div class="modal-box">
-        <h3>Register Lead</h3>
-        <p>Are you sure you want to register a lead from transaction "{{ confirmRegister.trans_id }}" ({{ confirmRegister.flow_name }})?</p>
-        <div class="modal-actions"><button class="btn-ghost" @click="confirmRegister=null">Cancel</button><button class="btn-run" @click="confirmRegisterYes">Yes</button></div>
+      <div class="confirm-box">
+        <p>Are you sure you want to register a lead from {{ confirmRegister.trans_id }}?</p>
+        <div class="confirm-actions"><button class="cancel" @click="confirmRegister=null">Cancel</button><button class="ok" @click="confirmRegisterYes">Confirm</button></div>
       </div>
     </div>
 

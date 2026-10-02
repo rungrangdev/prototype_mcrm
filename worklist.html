@@ -100,6 +100,18 @@ input, textarea, select { border: none !important; }
 .btn-danger{background:#DC2626;color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
 .btn-danger:hover{background:#b91c1c}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1E2433;color:#fff;padding:10px 20px;border-radius:8px;font-size:13.5px;box-shadow:0 4px 14px rgba(0,0,0,.25);z-index:9998;}
+
+  /* ---- confirm dialog : หน้าตาเดียวกันทุกหน้า ---- */
+  .confirm-box{background:#fff;border-radius:14px;padding:28px 32px;width:380px;max-width:92vw;
+    box-shadow:0 12px 40px rgba(46,42,39,.22);text-align:center;}
+  .confirm-box p{margin:0 0 22px;font-size:15px;line-height:1.6;color:#333;}
+  .confirm-actions{display:flex;justify-content:center;gap:12px;}
+  .confirm-actions button{min-width:120px;padding:11px 18px;border-radius:8px;font-family:inherit;
+    font-size:15px;font-weight:600;cursor:pointer;border:2px solid #FFD400;transition:.12s;}
+  .confirm-actions .cancel{background:#fff;color:#1A1A1A;}
+  .confirm-actions .cancel:hover{background:#FFFBEA;}
+  .confirm-actions .ok{background:#FFD400;color:#1A1A1A;}
+  .confirm-actions .ok:hover{background:#EFC400;}
 </style>
 
 <div id="app"></div>
@@ -216,10 +228,9 @@ createApp({
     </div>
 
     <div class="modal-overlay" v-if="confirmDeleteLead" @click.self="confirmDeleteLead=null">
-      <div class="modal-box">
-        <h3>Delete this lead?</h3>
-        <p>You are about to remove <strong>{{ confirmDeleteLead.lead_id }}</strong> ({{ confirmDeleteLead.lead_name }}) from the worklist.</p>
-        <div class="modal-actions"><button class="btn-ghost" @click="confirmDeleteLead=null">ยกเลิก</button><button class="btn-danger" @click="confirmDelete">Delete</button></div>
+      <div class="confirm-box">
+        <p>Are you sure you want to delete "{{ confirmDeleteLead.lead_id }}"?</p>
+        <div class="confirm-actions"><button class="cancel" @click="confirmDeleteLead=null">Cancel</button><button class="ok" @click="confirmDelete">Confirm</button></div>
       </div>
     </div>
 

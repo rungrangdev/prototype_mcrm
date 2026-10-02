@@ -358,6 +358,18 @@
     background-color: #f5f5f5;
     cursor: not-allowed;
   }
+
+  /* ---- confirm dialog : หน้าตาเดียวกันทุกหน้า ---- */
+  .confirm-box{background:#fff;border-radius:14px;padding:28px 32px;width:380px;max-width:92vw;
+    box-shadow:0 12px 40px rgba(46,42,39,.22);text-align:center;}
+  .confirm-box p{margin:0 0 22px;font-size:15px;line-height:1.6;color:#333;}
+  .confirm-actions{display:flex;justify-content:center;gap:12px;}
+  .confirm-actions button{min-width:120px;padding:11px 18px;border-radius:8px;font-family:inherit;
+    font-size:15px;font-weight:600;cursor:pointer;border:2px solid #FFD400;transition:.12s;}
+  .confirm-actions .cancel{background:#fff;color:#1A1A1A;}
+  .confirm-actions .cancel:hover{background:#FFFBEA;}
+  .confirm-actions .ok{background:#FFD400;color:#1A1A1A;}
+  .confirm-actions .ok:hover{background:#EFC400;}
 </style>
 </head>
 <body>
@@ -1003,31 +1015,30 @@ createApp({
     </div>
 
     <div class="modal-overlay" v-if="confirmSubmitVersion" @click.self="confirmSubmitVersion=null">
-      <div class="modal-box">
-        <h3>Submit {{ confirmSubmitVersion.VERSION_ID }} for approval?</h3>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmSubmitVersion=null">Cancel</button><button class="btn btn-primary" @click="confirmSubmitVersionYes">Submit</button></div>
+      <div class="confirm-box">
+        <p>Are you sure you want to submit {{ confirmSubmitVersion.VERSION_ID }} for approval?</p>
+        <div class="confirm-actions"><button class="cancel" @click="confirmSubmitVersion=null">Cancel</button><button class="ok" @click="confirmSubmitVersionYes">Confirm</button></div>
       </div>
     </div>
 
     <div class="modal-overlay" v-if="confirmApproveVersion" @click.self="confirmApproveVersion=null">
-      <div class="modal-box">
-        <h3>Approve {{ confirmApproveVersion.VERSION_ID }}?</h3>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmApproveVersion=null">Cancel</button><button class="btn btn-primary" @click="confirmApproveVersionYes">Approve</button></div>
+      <div class="confirm-box">
+        <p>Are you sure you want to approve {{ confirmApproveVersion.VERSION_ID }}?</p>
+        <div class="confirm-actions"><button class="cancel" @click="confirmApproveVersion=null">Cancel</button><button class="ok" @click="confirmApproveVersionYes">Confirm</button></div>
       </div>
     </div>
 
     <div class="modal-overlay" v-if="confirmActivateVersion" @click.self="confirmActivateVersion=null">
-      <div class="modal-box">
-        <h3>Activate {{ confirmActivateVersion.VERSION_ID }}?</h3>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmActivateVersion=null">Cancel</button><button class="btn btn-primary" @click="confirmActivateVersionYes">Active</button></div>
+      <div class="confirm-box">
+        <p>Are you sure you want to activate {{ confirmActivateVersion.VERSION_ID }}?</p>
+        <div class="confirm-actions"><button class="cancel" @click="confirmActivateVersion=null">Cancel</button><button class="ok" @click="confirmActivateVersionYes">Confirm</button></div>
       </div>
     </div>
 
     <div class="modal-overlay" v-if="confirmDeleteVersion" @click.self="confirmDeleteVersion=null">
-      <div class="modal-box">
-        <h3>Delete {{ confirmDeleteVersion.VERSION_ID }}?</h3>
-        <p>{{ versionParamCount(confirmDeleteVersion) }} parameters and their values will be deleted.</p>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmDeleteVersion=null">Cancel</button><button class="btn btn-danger" @click="confirmDeleteVersionYes">Delete</button></div>
+      <div class="confirm-box">
+        <p>Are you sure you want to delete {{ confirmDeleteVersion.VERSION_ID }} and its {{ versionParamCount(confirmDeleteVersion) }} parameters?</p>
+        <div class="confirm-actions"><button class="cancel" @click="confirmDeleteVersion=null">Cancel</button><button class="ok" @click="confirmDeleteVersionYes">Confirm</button></div>
       </div>
     </div>
 
@@ -1073,10 +1084,9 @@ createApp({
     </div>
 
     <div class="modal-overlay" v-if="confirmDeleteCfg" @click.self="confirmDeleteCfg=null">
-      <div class="modal-box">
-        <h3>Delete this parameter?</h3>
-        <p><strong>{{ confirmDeleteCfg.PARAMETER_NAME }}</strong> · {{ cfgProgram }} / {{ cfgEntity }}</p>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmDeleteCfg=null">Cancel</button><button class="btn btn-danger" @click="confirmDeleteCfgRow">Delete</button></div>
+      <div class="confirm-box">
+        <p>Are you sure you want to delete "{{ confirmDeleteCfg.PARAMETER_NAME }}"?</p>
+        <div class="confirm-actions"><button class="cancel" @click="confirmDeleteCfg=null">Cancel</button><button class="ok" @click="confirmDeleteCfgRow">Confirm</button></div>
       </div>
     </div>
 
@@ -1220,10 +1230,9 @@ createApp({
     </div>
 
     <div class="modal-overlay" v-if="confirmDeleteCritVal" @click.self="confirmDeleteCritVal=null">
-      <div class="modal-box">
-        <h3>Delete this value?</h3>
-        <p><strong>{{ confirmDeleteCritVal.VALUE }}</strong> · {{ critParamRow?.PARAMETER_NAME }}</p>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="confirmDeleteCritVal=null">Cancel</button><button class="btn btn-danger" @click="confirmDeleteCritValRow">Delete</button></div>
+      <div class="confirm-box">
+        <p>Are you sure you want to delete "{{ confirmDeleteCritVal.VALUE }}"?</p>
+        <div class="confirm-actions"><button class="cancel" @click="confirmDeleteCritVal=null">Cancel</button><button class="ok" @click="confirmDeleteCritValRow">Confirm</button></div>
       </div>
     </div>
 
