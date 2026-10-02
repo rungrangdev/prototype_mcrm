@@ -1008,7 +1008,7 @@ createApp({
     <!-- Run flow confirm (list page) -->
     <div class="modal-overlay" v-if="confirmRunFlow" @click.self="confirmRunFlow=null">
       <div class="confirm-box">
-        <p>Are you sure you want to run "{{ confirmRunFlow.flow_name }}"?</p>
+        <p>Are you sure you want to run this workflow?</p>
         <div class="confirm-actions"><button class="cancel" @click="confirmRunFlow=null">Cancel</button><button class="ok" @click="confirmRunFlowYes">Confirm</button></div>
       </div>
     </div>
@@ -1016,7 +1016,7 @@ createApp({
     <!-- Delete flow confirm (list page) -->
     <div class="modal-overlay" v-if="confirmDeleteFlow" @click.self="confirmDeleteFlow=null">
       <div class="confirm-box">
-        <p>Are you sure you want to delete "{{ confirmDeleteFlow.flow_name }}"?</p>
+        <p>Are you sure you want to delete this workflow?</p>
         <div class="confirm-actions"><button class="cancel" @click="confirmDeleteFlow=null">Cancel</button><button class="ok" @click="confirmDeleteFlowYes">Confirm</button></div>
       </div>
     </div>

@@ -824,7 +824,7 @@ createApp({
     <!-- Register lead confirm -->
     <div class="modal-overlay" v-if="confirmRegister" @click.self="confirmRegister=null">
       <div class="confirm-box">
-        <p>Are you sure you want to register a lead from {{ confirmRegister.trans_id }}?</p>
+        <p>Are you sure you want to register this lead?</p>
         <div class="confirm-actions"><button class="cancel" @click="confirmRegister=null">Cancel</button><button class="ok" @click="confirmRegisterYes">Confirm</button></div>
       </div>
     </div>

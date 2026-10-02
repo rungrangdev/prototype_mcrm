@@ -599,7 +599,6 @@ createApp({
       showToast(`${v.VERSION_ID} deleted`);
     }
 
-    const versionParamCount = (v) => paramConfigs.filter(c => c.VERSION_ID === v.VERSION_ID).length;
 
     /* ---- ตัวกรองเหนือตาราง version ---- */
     const VERSION_STATUSES = ['Open','Waiting for approve','Approve','Reject','Active','Inactive'];
@@ -806,7 +805,7 @@ createApp({
       openAddCfg, openEditCfg, closeCfgForm, toggleCfgKey, removeCfgKeyAt, saveCfg,
       confirmDeleteCfg, askDeleteCfg, confirmDeleteCfgRow, cfgPreview,
       cfgView, cfgVersionId, cfgVersions, openCfgSetup, backToCfgList,
-      cfgVersionStatus, cfgEditable, pagePerm, versionParamCount, verStatusText, verStatusClass,
+      cfgVersionStatus, cfgEditable, pagePerm, verStatusText, verStatusClass,
       cloneForm, askCloneVersion, confirmCloneVersion,
       rejectForm, askRejectVersion, confirmRejectVersion,
       VERSION_STATUSES, verFilterLeadType, verFilterStatus, filteredVersions,
@@ -1016,28 +1015,28 @@ createApp({
 
     <div class="modal-overlay" v-if="confirmSubmitVersion" @click.self="confirmSubmitVersion=null">
       <div class="confirm-box">
-        <p>Are you sure you want to submit {{ confirmSubmitVersion.VERSION_ID }} for approval?</p>
+        <p>Are you sure you want to submit this version for approval?</p>
         <div class="confirm-actions"><button class="cancel" @click="confirmSubmitVersion=null">Cancel</button><button class="ok" @click="confirmSubmitVersionYes">Confirm</button></div>
       </div>
     </div>
 
     <div class="modal-overlay" v-if="confirmApproveVersion" @click.self="confirmApproveVersion=null">
       <div class="confirm-box">
-        <p>Are you sure you want to approve {{ confirmApproveVersion.VERSION_ID }}?</p>
+        <p>Are you sure you want to approve this version?</p>
         <div class="confirm-actions"><button class="cancel" @click="confirmApproveVersion=null">Cancel</button><button class="ok" @click="confirmApproveVersionYes">Confirm</button></div>
       </div>
     </div>
 
     <div class="modal-overlay" v-if="confirmActivateVersion" @click.self="confirmActivateVersion=null">
       <div class="confirm-box">
-        <p>Are you sure you want to activate {{ confirmActivateVersion.VERSION_ID }}?</p>
+        <p>Are you sure you want to activate this version?</p>
         <div class="confirm-actions"><button class="cancel" @click="confirmActivateVersion=null">Cancel</button><button class="ok" @click="confirmActivateVersionYes">Confirm</button></div>
       </div>
     </div>
 
     <div class="modal-overlay" v-if="confirmDeleteVersion" @click.self="confirmDeleteVersion=null">
       <div class="confirm-box">
-        <p>Are you sure you want to delete {{ confirmDeleteVersion.VERSION_ID }} and its {{ versionParamCount(confirmDeleteVersion) }} parameters?</p>
+        <p>Are you sure you want to delete this version?</p>
         <div class="confirm-actions"><button class="cancel" @click="confirmDeleteVersion=null">Cancel</button><button class="ok" @click="confirmDeleteVersionYes">Confirm</button></div>
       </div>
     </div>
@@ -1085,7 +1084,7 @@ createApp({
 
     <div class="modal-overlay" v-if="confirmDeleteCfg" @click.self="confirmDeleteCfg=null">
       <div class="confirm-box">
-        <p>Are you sure you want to delete "{{ confirmDeleteCfg.PARAMETER_NAME }}"?</p>
+        <p>Are you sure you want to delete this parameter?</p>
         <div class="confirm-actions"><button class="cancel" @click="confirmDeleteCfg=null">Cancel</button><button class="ok" @click="confirmDeleteCfgRow">Confirm</button></div>
       </div>
     </div>
@@ -1231,7 +1230,7 @@ createApp({
 
     <div class="modal-overlay" v-if="confirmDeleteCritVal" @click.self="confirmDeleteCritVal=null">
       <div class="confirm-box">
-        <p>Are you sure you want to delete "{{ confirmDeleteCritVal.VALUE }}"?</p>
+        <p>Are you sure you want to delete this value?</p>
         <div class="confirm-actions"><button class="cancel" @click="confirmDeleteCritVal=null">Cancel</button><button class="ok" @click="confirmDeleteCritValRow">Confirm</button></div>
       </div>
     </div>

@@ -960,7 +960,7 @@ createApp({
     <!-- Delete profile confirm -->
     <div class="modal-overlay" v-if="confirmDeleteRec" @click.self="confirmDeleteRec=null">
       <div class="confirm-box">
-        <p>Are you sure you want to delete "{{ confirmDeleteRec.code }}"?</p>
+        <p>Are you sure you want to delete this profile?</p>
         <div class="confirm-actions"><button class="cancel" @click="confirmDeleteRec=null">Cancel</button><button class="ok" @click="confirmDeleteEligible">Confirm</button></div>
       </div>
     </div>

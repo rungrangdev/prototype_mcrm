@@ -462,7 +462,7 @@ createApp({
 
     <div class="modal-overlay" v-if="confirmDeleteAssign" @click.self="confirmDeleteAssign=null">
       <div class="confirm-box">
-        <p>Are you sure you want to delete "{{ nameOf(programMaster, confirmDeleteAssign.PROGRAM_CODE) }}"?</p>
+        <p>Are you sure you want to delete this program?</p>
         <div class="confirm-actions"><button class="cancel" @click="confirmDeleteAssign=null">Cancel</button><button class="ok" @click="confirmDeleteAssignRow">Confirm</button></div>
       </div>
     </div>

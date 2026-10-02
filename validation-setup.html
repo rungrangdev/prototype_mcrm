@@ -756,7 +756,7 @@ createApp({
     <!-- ================= DELETE CONFIRM ================= -->
     <div class="modal-overlay" v-if="confirmDelete" @click.self="confirmDelete=null">
       <div class="confirm-box">
-        <p>Are you sure you want to delete "{{ confirmDelete.validation_name }}"?</p>
+        <p>Are you sure you want to delete this validation?</p>
         <div class="confirm-actions"><button class="cancel" @click="confirmDelete=null">Cancel</button><button class="ok" @click="confirmDeleteYes">Confirm</button></div>
       </div>
     </div>

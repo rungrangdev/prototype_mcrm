@@ -486,7 +486,7 @@ createApp({
 
     <div class="modal-overlay" v-if="confirmDeleteCrit" @click.self="confirmDeleteCrit=null">
       <div class="confirm-box">
-        <p>Are you sure you want to delete "{{ confirmDeleteCrit.VALUE }}"?</p>
+        <p>Are you sure you want to delete this record?</p>
         <div class="confirm-actions"><button class="cancel" @click="confirmDeleteCrit=null">Cancel</button><button class="ok" @click="confirmDeleteCritRow">Confirm</button></div>
       </div>
     </div>
