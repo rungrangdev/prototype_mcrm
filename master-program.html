@@ -320,18 +320,8 @@ createApp({
     const programMaster = computed(() => rows.filter(r=>r.TYPE==='PROGRAM' && r.ACTIVE==='Y').sort((a,b)=>Number(a.ORDER)-Number(b.ORDER)));
     const nameOf = MCRM.nameOf;
 
-    /* ---- quick-add a new Program into the shared catalog without leaving this form ---- */
-    const quickAdd = reactive({ show:false, type:'', typeLabel:'', CODE:'', NAME:'' });
-    function openQuickAdd(type, label){ Object.assign(quickAdd, { show:true, type, typeLabel:label, CODE:'', NAME:'' }); }
-    function saveQuickAdd(){
-      const code = quickAdd.CODE.trim();
-      if (!code || !quickAdd.NAME.trim()){ showToast('Code and name are required', false); return; }
-      if (rows.some(r=>r.TYPE===quickAdd.type && r.CODE===code)){ showToast('That code already exists', false); return; }
-      const count = rows.filter(r=>r.TYPE===quickAdd.type).length;
-      rows.push({ TYPE:quickAdd.type, CODE:code, NAME:quickAdd.NAME.trim(), DESCRIPTION:'', ORDER:String((count+1)), ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
-      showToast(`"${quickAdd.NAME}" added to the catalog`);
-      quickAdd.show = false;
-    }
+    /* Program ใหม่เพิ่มได้ที่หน้า Master Data Manager ที่เดียว หน้านี้ทำได้แค่
+       หยิบของที่มีอยู่แล้วในแคตตาล็อกมาผูกกับ Entity + Lead Type */
 
     /* =========================================================
        Program Setup — which PROGRAMs are enabled per ENTITY + LEAD_TYPE
@@ -379,7 +369,6 @@ createApp({
 
     return {
       entityMaster, leadTypeMaster, programMaster, nameOf,
-      quickAdd, openQuickAdd, saveQuickAdd,
       assignEntity, assignLeadType, assignRecords, showAssignForm, isEditingAssign, assignFormModel, assignableProgramOptions,
       openAddAssign, openEditAssign, closeAssignForm, saveAssign, confirmDeleteAssign, askDeleteAssign, confirmDeleteAssignRow,
       toast
@@ -437,15 +426,6 @@ createApp({
       </section>
     </div>
 
-    <div class="modal-overlay" v-if="quickAdd.show" @click.self="quickAdd.show=false">
-      <div class="modal-box">
-        <h3>New {{ quickAdd.typeLabel }}</h3>
-        <div class="field"><label>Code</label><input type="text" v-model="quickAdd.CODE" placeholder="e.g. TOPUP"></div>
-        <div class="field"><label>Name</label><input type="text" v-model="quickAdd.NAME"></div>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="quickAdd.show=false">Cancel</button><button class="btn btn-primary" @click="saveQuickAdd">Add</button></div>
-      </div>
-    </div>
-
     <div class="overlay" v-if="showAssignForm" @click.self="closeAssignForm">
       <div class="side-drawer">
         <div class="side-drawer-head"><h3>Program · {{ assignEntity }} / {{ assignLeadType }}</h3><button class="close-x" @click="closeAssignForm">✕</button></div>
@@ -455,16 +435,11 @@ createApp({
             <input type="text" :value="assignFormModel.PROGRAM_ID" readonly>
           </div>
           <div class="field">
-            <div class="field-inline">
-              <div class="field">
-                <label>Program</label>
-                <select v-model="assignFormModel.PROGRAM_CODE" :disabled="isEditingAssign">
-                  <option value="" disabled>— Select Program —</option>
-                  <option v-for="p in assignableProgramOptions" :key="p.CODE" :value="p.CODE">{{ p.NAME }} ({{ p.CODE }})</option>
-                </select>
-              </div>
-              <button class="btn-icon-sm" title="Add Program" @click="openQuickAdd('PROGRAM','Program')">+</button>
-            </div>
+            <label>Program</label>
+            <select v-model="assignFormModel.PROGRAM_CODE" :disabled="isEditingAssign">
+              <option value="" disabled>— Select Program —</option>
+              <option v-for="p in assignableProgramOptions" :key="p.CODE" :value="p.CODE">{{ p.NAME }} ({{ p.CODE }})</option>
+            </select>
           </div>
           <div class="field"><label>Order</label><input type="number" v-model="assignFormModel.ORDER"></div>
           <div class="field"><div class="active-toggle-row"><div class="lab"><strong>Status</strong></div><label class="switch"><input type="checkbox" v-model="assignFormModel.STATUS" true-value="Y" false-value="N"><span class="slider"></span></label></div></div>
