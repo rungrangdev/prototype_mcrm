@@ -427,19 +427,8 @@ createApp({
     const paramMaster = computed(() => rows.filter(r=>r.TYPE==='PARAMETER' && r.ACTIVE==='Y').sort((a,b)=>Number(a.ORDER)-Number(b.ORDER)));
     const nameOf = MCRM.nameOf;
 
-    /* ---- quick-add a new Program / Parameter into the shared catalog without leaving this form ---- */
-    const quickAdd = reactive({ show:false, type:'', typeLabel:'', CODE:'', NAME:'' });
-    function openQuickAdd(type, label){ Object.assign(quickAdd, { show:true, type, typeLabel:label, CODE:'', NAME:'' }); }
-    function saveQuickAdd(){
-      const code = quickAdd.CODE.trim();
-      if (!code || !quickAdd.NAME.trim()){ showToast('Code and name are required', false); return; }
-      if (rows.some(r=>r.TYPE===quickAdd.type && r.CODE===code)){ showToast('That code already exists', false); return; }
-      const count = rows.filter(r=>r.TYPE===quickAdd.type).length;
-      rows.push({ TYPE:quickAdd.type, CODE:code, NAME:quickAdd.NAME.trim(), DESCRIPTION:'', ORDER:String((count+1)), ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
-      showToast(`"${quickAdd.NAME}" added to the catalog`);
-      quickAdd.show = false;
-    }
-
+    /* Base Key ใหม่เพิ่มได้ที่หน้า Master Data Manager ที่เดียว หน้านี้เลือกได้
+       เฉพาะที่มีอยู่แล้วในแคตตาล็อก */
     /* =========================================================
        Parameter Master Setup
        ========================================================= */
@@ -800,7 +789,6 @@ createApp({
 
     return {
       entityMaster, leadTypeMaster, programMaster, paramMaster, nameOf,
-      quickAdd, openQuickAdd, saveQuickAdd,
       cfgProgram, cfgEntity, cfgLeadType, cfgProgramId, cfgProgramOptions, programLabel, cfgRecords, showCfgForm, isEditingCfg, cfgFormModel,
       openAddCfg, openEditCfg, closeCfgForm, toggleCfgKey, removeCfgKeyAt, saveCfg,
       confirmDeleteCfg, askDeleteCfg, confirmDeleteCfgRow, cfgPreview,
@@ -1041,15 +1029,6 @@ createApp({
       </div>
     </div>
 
-    <div class="modal-overlay" v-if="quickAdd.show" @click.self="quickAdd.show=false">
-      <div class="modal-box">
-        <h3>New {{ quickAdd.typeLabel }}</h3>
-        <div class="field"><label>Code</label><input type="text" v-model="quickAdd.CODE" placeholder="e.g. TOPUP"></div>
-        <div class="field"><label>Name</label><input type="text" v-model="quickAdd.NAME"></div>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="quickAdd.show=false">Cancel</button><button class="btn btn-primary" @click="saveQuickAdd">Add</button></div>
-      </div>
-    </div>
-
     <div class="overlay" v-if="showCfgForm" @click.self="closeCfgForm">
       <div class="side-drawer">
         <div class="side-drawer-head"><h3>{{ isEditingCfg ? 'Parameter' : 'Parameter' }} · {{ cfgProgram }} / {{ cfgEntity }}</h3><button class="close-x" @click="closeCfgForm">✕</button></div>
@@ -1058,10 +1037,7 @@ createApp({
           <div class="field"><label>Parameter Name</label><input type="text" v-model="cfgFormModel.PARAMETER_NAME" placeholder="e.g. Topup Option, Flat rate OPTT1"></div>
           <div class="field"><label>Order</label><input type="number" v-model="cfgFormModel.ORDER" readonly></div>
           <div class="field">
-            <div class="field-inline" style="margin-bottom:10px;">
-              <label style="margin-bottom:0;">Base Key</label>
-              <button class="btn-icon-sm" title="Add Base Key" @click="openQuickAdd('PARAMETER','Base Key')">+</button>
-            </div>
+            <label>Base Key</label>
             <div class="keybuilder">
               <div class="key-option" v-for="p in paramMaster" :key="p.CODE" :class="{selected: cfgFormModel.KEY_BASE.includes(p.CODE)}" @click="toggleCfgKey(p.CODE)">
                 {{ p.NAME }} <span class="n" style="display:none;">{{ p.CODE }}</span>
