@@ -295,6 +295,17 @@
   .confirm-actions .cancel:hover{background:#FFFBEA;}
   .confirm-actions .ok{background:#FFD400;color:#1A1A1A;}
   .confirm-actions .ok:hover{background:#EFC400;}
+
+  /* ---- done dialog : popup แจ้งผลสำเร็จ ---- */
+  .done-box{background:#fff;border-radius:14px;padding:32px 36px;width:330px;max-width:92vw;
+    box-shadow:0 12px 40px rgba(46,42,39,.22);text-align:center;}
+  .done-box .tick-circle{width:56px;height:56px;border-radius:50%;background:#22A55B;margin:0 auto 20px;
+    display:flex;align-items:center;justify-content:center;}
+  .done-box h3{margin:0 0 8px;font-size:20px;font-weight:700;color:#1A1A1A;}
+  .done-box p{margin:0 0 24px;font-size:14px;color:#6B7280;line-height:1.6;}
+  .done-box button{width:100%;padding:13px 18px;border:none;border-radius:8px;background:#FFD400;
+    color:#1A1A1A;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:.12s;}
+  .done-box button:hover{background:#EFC400;}
 </style>
 </head>
 <body>
@@ -364,16 +375,21 @@ createApp({
       } else {
         assignments.push({ ENTITY:assignEntity.value, LEAD_TYPE:assignLeadType.value, ...assignFormModel, CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
       }
-      showToast('Program saved');
+      showDone(isEditingAssign.value ? 'Program updated successfully' : 'Program created successfully');
       showAssignForm.value = false;
     }
     const confirmDeleteAssign = ref(null);
     function askDeleteAssign(row){ confirmDeleteAssign.value = row; }
     function confirmDeleteAssignRow(){
       assignments.splice(assignments.findIndex(a=>a===confirmDeleteAssign.value),1);
-      showToast('Program deleted');
+      showDone('Program deleted successfully');
       confirmDeleteAssign.value = null;
     }
+
+    /* popup แจ้งผลสำเร็จ (Done) — ใช้แทน toast สำหรับรายการที่ทำสำเร็จ
+       ส่วน toast เหลือไว้สำหรับข้อความเตือน/กรอกข้อมูลไม่ครบ */
+    const done = reactive({ show:false, msg:'' });
+    function showDone(msg){ done.msg = msg; done.show = true; }
 
     const toast = reactive({ show:false, msg:'', ok:true });
     let toastTimer = null;
@@ -383,7 +399,7 @@ createApp({
       entityMaster, leadTypeMaster, programMaster, nameOf,
       assignEntity, assignLeadType, assignRecords, showAssignForm, isEditingAssign, assignFormModel, assignableProgramOptions,
       openAddAssign, openEditAssign, closeAssignForm, saveAssign, confirmDeleteAssign, askDeleteAssign, confirmDeleteAssignRow,
-      toast
+      toast, done, showDone
     };
   },
   template: `
@@ -464,6 +480,18 @@ createApp({
       <div class="confirm-box">
         <p>Are you sure you want to delete this program?</p>
         <div class="confirm-actions"><button class="cancel" @click="confirmDeleteAssign=null">Cancel</button><button class="ok" @click="confirmDeleteAssignRow">Confirm</button></div>
+      </div>
+    </div>
+
+    <!-- popup แจ้งผลสำเร็จ -->
+    <div class="modal-overlay" v-if="done.show" @click.self="done.show=false">
+      <div class="done-box">
+        <div class="tick-circle">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12.5 9.5 18 20 7"/></svg>
+        </div>
+        <h3>Done</h3>
+        <p>{{ done.msg }}</p>
+        <button @click="done.show=false">Close</button>
       </div>
     </div>
 

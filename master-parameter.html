@@ -370,6 +370,17 @@
   .confirm-actions .cancel:hover{background:#FFFBEA;}
   .confirm-actions .ok{background:#FFD400;color:#1A1A1A;}
   .confirm-actions .ok:hover{background:#EFC400;}
+
+  /* ---- done dialog : popup แจ้งผลสำเร็จ ---- */
+  .done-box{background:#fff;border-radius:14px;padding:32px 36px;width:330px;max-width:92vw;
+    box-shadow:0 12px 40px rgba(46,42,39,.22);text-align:center;}
+  .done-box .tick-circle{width:56px;height:56px;border-radius:50%;background:#22A55B;margin:0 auto 20px;
+    display:flex;align-items:center;justify-content:center;}
+  .done-box h3{margin:0 0 8px;font-size:20px;font-weight:700;color:#1A1A1A;}
+  .done-box p{margin:0 0 24px;font-size:14px;color:#6B7280;line-height:1.6;}
+  .done-box button{width:100%;padding:13px 18px;border:none;border-radius:8px;background:#FFD400;
+    color:#1A1A1A;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:.12s;}
+  .done-box button:hover{background:#EFC400;}
 </style>
 </head>
 <body>
@@ -516,7 +527,7 @@ createApp({
         CLONED_FROM:v.VERSION_ID, REJECT_REASON:'',
         CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now(),
       });
-      showToast(`Cloned ${v.VERSION_ID} to ${id} (status Open)`);
+      showDone('Version cloned successfully');
     }
 
     /* Submit : ล็อกไม่ให้แก้ไขต่อ รอการอนุมัติ */
@@ -528,7 +539,7 @@ createApp({
       v.REJECT_REASON = '';
       v.UPDATE_BY = 'ADMIN'; v.UPDATE_DATE = now();
       confirmSubmitVersion.value = null;
-      showToast(`${v.VERSION_ID} submitted for approval`);
+      showDone('Version submitted successfully');
     }
 
     /* Approve : แค่ผ่านการอนุมัติ ยังไม่เริ่มใช้งานและยังไม่แตะ version ต้นทาง */
@@ -539,7 +550,7 @@ createApp({
       v.STATUS = 'Approve';
       v.UPDATE_BY = 'ADMIN'; v.UPDATE_DATE = now();
       confirmApproveVersion.value = null;
-      showToast(`${v.VERSION_ID} approved, waiting to be activated`);
+      showDone('Version approved successfully');
     }
 
     /* Reject : ตีกลับให้แก้ พร้อมเหตุผล — กลับไปแก้แล้ว Submit ใหม่ได้ */
@@ -552,7 +563,7 @@ createApp({
       v.REJECT_REASON = rejectForm.reason.trim();
       v.UPDATE_BY = 'ADMIN'; v.UPDATE_DATE = now();
       rejectForm.show = false;
-      showToast(`${v.VERSION_ID} rejected`);
+      showDone('Version rejected successfully');
     }
 
     /* Active : เริ่มใช้งานจริง ตอนนี้ค่อยดัน version ต้นทางที่ถูก clone มาเป็น Inactive */
@@ -569,8 +580,7 @@ createApp({
       v.STATUS = 'Active';
       v.UPDATE_BY = 'ADMIN'; v.UPDATE_DATE = now();
       confirmActivateVersion.value = null;
-      showToast(replaced.length ? `${v.VERSION_ID} is now Active, ${replaced.map(x=>x.VERSION_ID).join(', ')} set to Inactive`
-                                : `${v.VERSION_ID} is now Active`);
+      showDone('Version activated successfully');
     }
 
     /* Delete : ลบได้เฉพาะ version ที่ยัง Open พร้อมข้อมูลที่ผูกอยู่ */
@@ -585,7 +595,7 @@ createApp({
       for (let i = criteriaRows.length-1; i >= 0; i--) if (criteriaRows[i].VERSION_ID === v.VERSION_ID) criteriaRows.splice(i,1);
       cfgVersions.splice(cfgVersions.findIndex(x => x === v), 1);
       confirmDeleteVersion.value = null;
-      showToast(`${v.VERSION_ID} deleted`);
+      showDone('Version deleted successfully');
     }
 
 
@@ -641,14 +651,14 @@ createApp({
           PARAMETER_CODE:code, PARAMETER_ID:MCRM.parameterIdFor(cfgEntity.value, cfgProgram.value, code),
           CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
       }
-      showToast('Parameter saved');
+      showDone(isEditingCfg.value ? 'Parameter updated successfully' : 'Parameter created successfully');
       showCfgForm.value = false;
     }
     const confirmDeleteCfg = ref(null);
     function askDeleteCfg(row){ confirmDeleteCfg.value = row; }
     function confirmDeleteCfgRow(){
       paramConfigs.splice(paramConfigs.findIndex(c=>c===confirmDeleteCfg.value),1);
-      showToast('Parameter deleted');
+      showDone('Parameter deleted successfully');
       confirmDeleteCfg.value = null;
     }
     const cfgPreview = computed(() => ({
@@ -762,7 +772,7 @@ createApp({
           VALUE:val, ORDER:critFormModel.ORDER, ACTIVE:critFormModel.ACTIVE,
           KEY_VALUES:JSON.parse(JSON.stringify(critFormModel.KEY_VALUES)),
           UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
-        showToast(`"${val}" saved`);
+        showDone('Value updated successfully');
       } else {
         criteriaRows.push({
           VERSION_ID: cfgVersionId.value,
@@ -770,7 +780,7 @@ createApp({
           VALUE:val, ORDER:critFormModel.ORDER, ACTIVE:critFormModel.ACTIVE,
           KEY_VALUES:JSON.parse(JSON.stringify(critFormModel.KEY_VALUES)),
           CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
-        showToast(`"${val}" added`);
+        showDone('Value created successfully');
       }
       closePicker();
       critMode.value = 'list';
@@ -779,9 +789,14 @@ createApp({
     function askDeleteCritVal(row){ confirmDeleteCritVal.value = row; }
     function confirmDeleteCritValRow(){
       criteriaRows.splice(criteriaRows.findIndex(r=>r===confirmDeleteCritVal.value),1);
-      showToast('Value deleted');
+      showDone('Value deleted successfully');
       confirmDeleteCritVal.value = null;
     }
+
+    /* popup แจ้งผลสำเร็จ (Done) — ใช้แทน toast สำหรับรายการที่ทำสำเร็จ
+       ส่วน toast เหลือไว้สำหรับข้อความเตือน/กรอกข้อมูลไม่ครบ */
+    const done = reactive({ show:false, msg:'' });
+    function showDone(msg){ done.msg = msg; done.show = true; }
 
     const toast = reactive({ show:false, msg:'', ok:true });
     let toastTimer = null;
@@ -808,7 +823,7 @@ createApp({
       openSetValue, closeCritPanel, isEditingCrit, critFormModel,
       openAddCritForm, openEditCritForm, backToCritList, saveCritValue,
       confirmDeleteCritVal, askDeleteCritVal, confirmDeleteCritValRow,
-      toast
+      toast, done, showDone
     };
   },
   template: `
@@ -1208,6 +1223,18 @@ createApp({
       <div class="confirm-box">
         <p>Are you sure you want to delete this value?</p>
         <div class="confirm-actions"><button class="cancel" @click="confirmDeleteCritVal=null">Cancel</button><button class="ok" @click="confirmDeleteCritValRow">Confirm</button></div>
+      </div>
+    </div>
+
+    <!-- popup แจ้งผลสำเร็จ -->
+    <div class="modal-overlay" v-if="done.show" @click.self="done.show=false">
+      <div class="done-box">
+        <div class="tick-circle">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12.5 9.5 18 20 7"/></svg>
+        </div>
+        <h3>Done</h3>
+        <p>{{ done.msg }}</p>
+        <button @click="done.show=false">Close</button>
       </div>
     </div>
 
