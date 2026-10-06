@@ -99,8 +99,6 @@ input, textarea, select { border: none !important; }
 .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
 .btn-danger{background:#DC2626;color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
 .btn-danger:hover{background:#b91c1c}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1E2433;color:#fff;padding:10px 20px;border-radius:8px;font-size:13.5px;box-shadow:0 4px 14px rgba(0,0,0,.25);z-index:9998;}
-
   /* ---- confirm dialog : หน้าตาเดียวกันทุกหน้า ---- */
   .confirm-box{background:#fff;border-radius:14px;padding:28px 32px;width:380px;max-width:92vw;
     box-shadow:0 12px 40px rgba(46,42,39,.22);text-align:center;}
@@ -112,6 +110,24 @@ input, textarea, select { border: none !important; }
   .confirm-actions .cancel:hover{background:#FFFBEA;}
   .confirm-actions .ok{background:#FFD400;color:#1A1A1A;}
   .confirm-actions .ok:hover{background:#EFC400;}
+  /* ---- popup แจ้งผล : Done = สำเร็จ, Alert = ผิดเงื่อนไข ---- */
+  .notice-box{background:#fff;border-radius:14px;padding:32px 36px;width:340px;max-width:92vw;
+    box-shadow:0 12px 40px rgba(46,42,39,.22);text-align:center;}
+  .notice-box .notice-icon{width:56px;height:56px;border-radius:50%;background:#22A55B;margin:0 auto 20px;
+    display:flex;align-items:center;justify-content:center;}
+  .notice-box.alert .notice-icon{background:#D64545;}
+  .notice-box h3{margin:0 0 8px;font-size:20px;font-weight:700;color:#1A1A1A;}
+  .notice-box p{margin:0 0 24px;font-size:14px;color:#6B7280;line-height:1.6;word-break:break-word;}
+  .notice-box button{width:100%;padding:13px 18px;border:none;border-radius:8px;background:#FFD400;
+    color:#1A1A1A;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:.12s;}
+  .notice-box button:hover{background:#EFC400;}
+  /* ---- ช่องที่กรอกไม่ครบ : กรอบแดง + ข้อความใต้ช่อง ---- */
+  .has-error, .has-error input, .has-error select, .has-error textarea{border-color:#D64545 !important;}
+  .field-error{margin-top:6px;font-size:12px;color:#D64545;line-height:1.5;}
+  .req{color:#D64545;}
+  /* ---- หน้าที่ไม่มีข้อมูล ---- */
+  .empty-state .empty-art{display:block;margin:0 auto 10px;}
+  .empty-state h3{color:#4B4B4B;font-size:15px;font-weight:700;margin:0;}
 </style>
 
 <div id="app"></div>
@@ -167,18 +183,20 @@ createApp({
       const row = confirmDeleteLead.value;
       worklist.splice(worklist.findIndex(w => w === row), 1);
       confirmDeleteLead.value = null;
-      showToast(`ลบ Lead "${row.lead_id}" แล้ว`);
+      showDone('Lead deleted successfully');
     }
 
-    const toast = reactive({ show:false, msg:'', ok:true });
-    let toastTimer = null;
-    function showToast(msg, ok=true){ toast.msg=msg; toast.ok=ok; toast.show=true; clearTimeout(toastTimer); toastTimer=setTimeout(()=>toast.show=false,2600); }
+    /* popup แจ้งผล : showDone = ทำรายการสำเร็จ, showAlert = ผิดเงื่อนไข
+       ส่วนช่องที่กรอกไม่ครบจะขึ้นกรอบแดงใต้ช่องแทน ไม่ใช้ popup */
+    const notice = reactive({ show:false, kind:'done', title:'Done', msg:'' });
+    function showDone(msg){ Object.assign(notice, { show:true, kind:'done',  title:'Done',  msg }); }
+    function showAlert(msg){ Object.assign(notice, { show:true, kind:'alert', title:'Alert', msg }); }
 
     return {
       worklist,
       statusLabel, statusPillClass,
       viewLead, confirmDeleteLead, askDelete, confirmDelete,
-      toast,
+      notice, showDone, showAlert,
     };
   },
   template: `
@@ -200,7 +218,30 @@ createApp({
           </tr>
         </thead>
         <tbody>
-          <tr v-if="!worklist.length"><td colspan="12" class="wl-empty">Data Not Found</td></tr>
+          <tr v-if="!worklist.length"><td colspan="12" class="wl-empty">
+            <div class="empty-state">
+            <svg class="empty-art" viewBox="0 0 160 150" width="150" height="140" aria-hidden="true">
+              <rect x="38" y="22" width="78" height="86" rx="8" fill="#FFF3C4"/>
+              <rect x="50" y="36" width="54" height="7" rx="3.5" fill="#FFD95C"/>
+              <rect x="50" y="50" width="42" height="7" rx="3.5" fill="#FFE68A"/>
+              <rect x="50" y="64" width="50" height="7" rx="3.5" fill="#FFE68A"/>
+              <rect x="18" y="52" width="40" height="56" rx="6" fill="#fff" stroke="#FFE08A" stroke-width="2"/>
+              <rect x="26" y="64" width="16" height="6" rx="3" fill="#FFD95C"/>
+              <rect x="26" y="76" width="24" height="5" rx="2.5" fill="#FFECA8"/>
+              <rect x="26" y="86" width="20" height="5" rx="2.5" fill="#FFECA8"/>
+              <rect x="96" y="14" width="36" height="19" rx="9.5" fill="#FFF3C4"/>
+              <circle cx="107" cy="23.5" r="2.4" fill="#FFC93C"/><circle cx="114" cy="23.5" r="2.4" fill="#FFC93C"/><circle cx="121" cy="23.5" r="2.4" fill="#FFC93C"/>
+              <circle cx="92" cy="82" r="26" fill="#FFFBEA" stroke="#FFC93C" stroke-width="6"/>
+              <line x1="111" y1="101" x2="126" y2="118" stroke="#FFC93C" stroke-width="9" stroke-linecap="round"/>
+              <line x1="83" y1="73" x2="101" y2="91" stroke="#F0474B" stroke-width="7" stroke-linecap="round"/>
+              <line x1="101" y1="73" x2="83" y2="91" stroke="#F0474B" stroke-width="7" stroke-linecap="round"/>
+              <circle cx="30" cy="40" r="2" fill="#FFE08A"/>
+              <circle cx="128" cy="62" r="2.5" fill="#FFE08A"/>
+              <circle cx="70" cy="120" r="2" fill="#FFE08A"/>
+            </svg>
+            <h3>Data not found</h3>
+            </div>
+          </td></tr>
           <tr v-for="row in worklist" :key="row.lead_id">
             <td align="center" class="cell-id">{{ row.lead_id }}</td>
             <td><div class="cell-name">{{ row.lead_name }}</div><div class="cell-sub" v-if="row.lead_sub && row.lead_sub!==row.lead_name">{{ row.lead_sub }}</div></td>
@@ -234,7 +275,18 @@ createApp({
       </div>
     </div>
 
-    <div class="toast" v-if="toast.show">{{ toast.msg }}</div>
+    <!-- popup แจ้งผล (Done / Alert) -->
+    <div class="modal-overlay" v-if="notice.show" @click.self="notice.show=false">
+      <div class="notice-box" :class="notice.kind">
+        <div class="notice-icon">
+          <svg v-if="notice.kind==='done'" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12.5 9.5 18 20 7"/></svg>
+          <svg v-else width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="14"/><line x1="12" y1="18.5" x2="12" y2="18.6"/></svg>
+        </div>
+        <h3>{{ notice.title }}</h3>
+        <p>{{ notice.msg }}</p>
+        <button @click="notice.show=false">Close</button>
+      </div>
+    </div>
   </div>
   `
 }).mount('#app');

@@ -436,9 +436,6 @@
   .modal-box .warn-box{background:rgba(209,84,75,.1);color:#9A3131;border-radius:8px;padding:10px 12px;font-size:12.5px;margin-bottom:18px;}
   .modal-actions{display:flex;justify-content:flex-end;gap:10px;}
 
-  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--brown-darker);color:#fff;padding:12px 20px;border-radius:8px;font-size:13.5px;box-shadow:var(--shadow-md);z-index:99999;display:flex;align-items:center;gap:10px;}
-  .toast .tick{color:#6FE3A6;font-weight:700;}
-
   /* ---- confirm dialog : หน้าตาเดียวกันทุกหน้า ---- */
   .confirm-box{background:#fff;border-radius:14px;padding:28px 32px;width:380px;max-width:92vw;
     box-shadow:0 12px 40px rgba(46,42,39,.22);text-align:center;}
@@ -450,6 +447,27 @@
   .confirm-actions .cancel:hover{background:#FFFBEA;}
   .confirm-actions .ok{background:#FFD400;color:#1A1A1A;}
   .confirm-actions .ok:hover{background:#EFC400;}
+  /* ---- popup แจ้งผล : Done = สำเร็จ, Alert = ผิดเงื่อนไข ---- */
+  .notice-box{background:#fff;border-radius:14px;padding:32px 36px;width:340px;max-width:92vw;
+    box-shadow:0 12px 40px rgba(46,42,39,.22);text-align:center;}
+  .notice-box .notice-icon{width:56px;height:56px;border-radius:50%;background:#22A55B;margin:0 auto 20px;
+    display:flex;align-items:center;justify-content:center;}
+  .notice-box.alert .notice-icon{background:#D64545;}
+  .notice-box h3{margin:0 0 8px;font-size:20px;font-weight:700;color:#1A1A1A;}
+  .notice-box p{margin:0 0 24px;font-size:14px;color:#6B7280;line-height:1.6;word-break:break-word;}
+  .notice-box button{width:100%;padding:13px 18px;border:none;border-radius:8px;background:#FFD400;
+    color:#1A1A1A;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:.12s;}
+  .notice-box button:hover{background:#EFC400;}
+  /* ---- ช่องที่กรอกไม่ครบ : กรอบแดง + ข้อความใต้ช่อง ---- */
+  .has-error, .has-error input, .has-error select, .has-error textarea{border-color:#D64545 !important;}
+  .field-error{margin-top:6px;font-size:12px;color:#D64545;line-height:1.5;}
+  .req{color:#D64545;}
+  /* ---- หน้าที่ไม่มีข้อมูล ---- */
+  .empty-state .empty-art{display:block;margin:0 auto 10px;}
+  .empty-state h3{color:#4B4B4B;font-size:15px;font-weight:700;margin:0;}
+  /* ---- ปุ่มยืนยันใน modal / drawer : สีเหลืองชุดเดียวกับ popup ---- */
+  .btn-yellow{background:#FFD400 !important;color:#1A1A1A !important;border:none;}
+  .btn-yellow:hover{background:#EFC400 !important;}
 </style>
 </head>
 <body>
@@ -514,19 +532,23 @@ createApp({
       showPanel.value = true;
     }
     function closePanel(){ showPanel.value = false; }
+    /* ช่องที่ยังกรอกไม่ครบ : เก็บข้อความไว้แสดงใต้ช่องนั้น ๆ */
+    const itemErr = reactive({ CODE:'', NAME:'' });
+    const catErr  = reactive({ CODE:'', NAME:'' });
     function saveItem(){
       const code = formModel.CODE.trim();
       const name = formModel.NAME.trim();
-      if (!code){ showToast('กรุณากรอกรหัส (Code)', false); return; }
-      if (!name){ showToast('กรุณากรอกชื่อ (Name)', false); return; }
+      itemErr.CODE = ''; itemErr.NAME = '';
+      if (!code){ itemErr.CODE = 'Code is required'; return; }
+      if (!name){ itemErr.NAME = 'Name is required'; return; }
       if (isEditing.value){
         const idx = rows.findIndex(r => r.TYPE === activeKey.value && r.CODE === code);
         rows[idx] = { ...rows[idx], NAME:name, DESCRIPTION:formModel.DESCRIPTION.trim(), DEPEND_ON:formModel.DEPEND_ON, ACTIVE:formModel.ACTIVE, UPDATE_BY:'ADMIN', UPDATE_DATE:now() };
-        showToast(`บันทึกการแก้ไข "${name}" เรียบร้อย`);
+        showDone('Master Data updated successfully');
       } else {
-        if (rows.some(r => r.TYPE === activeKey.value && r.CODE.toLowerCase() === code.toLowerCase())){ showToast('รหัสนี้มีอยู่แล้วในหมวดหมู่นี้', false); return; }
+        if (rows.some(r => r.TYPE === activeKey.value && r.CODE.toLowerCase() === code.toLowerCase())){ showAlert('That code already exists in this category'); return; }
         rows.push({ TYPE:activeKey.value, CODE:code, NAME:name, DESCRIPTION:formModel.DESCRIPTION.trim(), ORDER:formModel.ORDER, ACTIVE:formModel.ACTIVE, DEPEND_ON:formModel.DEPEND_ON, CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
-        showToast(`เพิ่ม "${name}" เรียบร้อย`);
+        showDone('Master Data created successfully');
       }
       showPanel.value = false;
     }
@@ -539,32 +561,37 @@ createApp({
     function confirmDelete(){
       const item = confirmDeleteItem.value;
       if (blockingDependents.value.length){
-        showToast('ไม่สามารถลบได้ เนื่องจากมีรายการอื่นอ้างอิงอยู่ กรุณาปิดใช้งานแทนการลบ', false);
+        showAlert('Cannot delete this record because other records depend on it. Disable it instead.');
         confirmDeleteItem.value = null;
         return;
       }
       rows.splice(rows.findIndex(r => r === item), 1);
-      showToast(`ลบ "${item.NAME}" ออกจากระบบแล้ว`);
+      showDone('Master Data deleted successfully');
       confirmDeleteItem.value = null;
     }
 
     /* ---- add a brand-new category (SYS_TYPE) ---- */
     const showAddCategory = ref(false);
     const categoryForm = reactive({ CODE:'', NAME:'', DESCRIPTION:'' });
-    function openAddCategory(){ Object.assign(categoryForm, { CODE:'', NAME:'', DESCRIPTION:'' }); showAddCategory.value = true; }
+    function openAddCategory(){ Object.assign(categoryForm, { CODE:'', NAME:'', DESCRIPTION:'' }); catErr.CODE = ''; catErr.NAME = ''; showAddCategory.value = true; }
     function saveCategory(){
       const code = categoryForm.CODE.trim().toUpperCase().replace(/\s+/g,'_');
-      if (!code || !categoryForm.NAME.trim()){ showToast('กรุณากรอกรหัสและชื่อหมวดหมู่', false); return; }
-      if (rows.some(r => r.TYPE === 'SYS_TYPE' && r.CODE === code)){ showToast('มีหมวดหมู่นี้อยู่แล้ว', false); return; }
+      catErr.CODE = ''; catErr.NAME = '';
+      if (!code) catErr.CODE = 'Code is required';
+      if (!categoryForm.NAME.trim()) catErr.NAME = 'Name is required';
+      if (catErr.CODE || catErr.NAME) return;
+      if (rows.some(r => r.TYPE === 'SYS_TYPE' && r.CODE === code)){ showAlert('That category already exists'); return; }
       rows.push({ TYPE:'SYS_TYPE', CODE:code, NAME:categoryForm.NAME.trim(), DESCRIPTION:categoryForm.DESCRIPTION.trim(), ORDER:String(categories.value.length+1), ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
       activeKey.value = code;
       showAddCategory.value = false;
-      showToast(`สร้างหมวดหมู่ "${categoryForm.NAME}" เรียบร้อย`);
+      showDone('Category created successfully');
     }
 
-    const toast = reactive({ show:false, msg:'', ok:true });
-    let toastTimer = null;
-    function showToast(msg, ok=true){ toast.msg=msg; toast.ok=ok; toast.show=true; clearTimeout(toastTimer); toastTimer=setTimeout(()=>toast.show=false,2600); }
+    /* popup แจ้งผล : showDone = ทำรายการสำเร็จ, showAlert = ผิดเงื่อนไข
+       ส่วนช่องที่กรอกไม่ครบจะขึ้นกรอบแดงใต้ช่องแทน ไม่ใช้ popup */
+    const notice = reactive({ show:false, kind:'done', title:'Done', msg:'' });
+    function showDone(msg){ Object.assign(notice, { show:true, kind:'done',  title:'Done',  msg }); }
+    function showAlert(msg){ Object.assign(notice, { show:true, kind:'alert', title:'Alert', msg }); }
 
     return {
       categories, activeKey, activeCategory, itemCount, activeItemCount, selectCategory,
@@ -572,7 +599,7 @@ createApp({
       showPanel, isEditing, formModel, dependOptions, openAddPanel, openEditPanel, closePanel, saveItem,
       confirmDeleteItem, askDelete, cancelDelete, blockingDependents, confirmDelete,
       showAddCategory, categoryForm, openAddCategory, saveCategory,
-      toast
+      notice, showDone, showAlert, itemErr, catErr,
     };
   },
   template: `
@@ -657,7 +684,28 @@ createApp({
               </tr>
             </tbody>
           </table>
-          <div class="empty-state" v-else>No results found</div>
+          <div class="empty-state" v-else>
+            <svg class="empty-art" viewBox="0 0 160 150" width="150" height="140" aria-hidden="true">
+              <rect x="38" y="22" width="78" height="86" rx="8" fill="#FFF3C4"/>
+              <rect x="50" y="36" width="54" height="7" rx="3.5" fill="#FFD95C"/>
+              <rect x="50" y="50" width="42" height="7" rx="3.5" fill="#FFE68A"/>
+              <rect x="50" y="64" width="50" height="7" rx="3.5" fill="#FFE68A"/>
+              <rect x="18" y="52" width="40" height="56" rx="6" fill="#fff" stroke="#FFE08A" stroke-width="2"/>
+              <rect x="26" y="64" width="16" height="6" rx="3" fill="#FFD95C"/>
+              <rect x="26" y="76" width="24" height="5" rx="2.5" fill="#FFECA8"/>
+              <rect x="26" y="86" width="20" height="5" rx="2.5" fill="#FFECA8"/>
+              <rect x="96" y="14" width="36" height="19" rx="9.5" fill="#FFF3C4"/>
+              <circle cx="107" cy="23.5" r="2.4" fill="#FFC93C"/><circle cx="114" cy="23.5" r="2.4" fill="#FFC93C"/><circle cx="121" cy="23.5" r="2.4" fill="#FFC93C"/>
+              <circle cx="92" cy="82" r="26" fill="#FFFBEA" stroke="#FFC93C" stroke-width="6"/>
+              <line x1="111" y1="101" x2="126" y2="118" stroke="#FFC93C" stroke-width="9" stroke-linecap="round"/>
+              <line x1="83" y1="73" x2="101" y2="91" stroke="#F0474B" stroke-width="7" stroke-linecap="round"/>
+              <line x1="101" y1="73" x2="83" y2="91" stroke="#F0474B" stroke-width="7" stroke-linecap="round"/>
+              <circle cx="30" cy="40" r="2" fill="#FFE08A"/>
+              <circle cx="128" cy="62" r="2.5" fill="#FFE08A"/>
+              <circle cx="70" cy="120" r="2" fill="#FFE08A"/>
+            </svg>
+            <h3>Data not found</h3>
+          </div>
         </div>
       </main>
     </div>
@@ -671,12 +719,16 @@ createApp({
         </div>
         <div class="side-panel-body">
           <div class="field-group">
-            <label class="field-label">Code <span style="color:red">*</span></label>
-            <input type="text" class="form-control" v-model="formModel.CODE" :readonly="isEditing">
+            <label class="field-label">Code <span class="req">*</span></label>
+            <input type="text" class="form-control" v-model="formModel.CODE" :readonly="isEditing"
+                   :class="{'has-error': itemErr.CODE}" @input="itemErr.CODE=''">
+            <div class="field-error" v-if="itemErr.CODE">{{ itemErr.CODE }}</div>
           </div>
           <div class="field-group">
-            <label class="field-label">Name <span style="color:red">*</span></label>
-            <input type="text" class="form-control" v-model="formModel.NAME">
+            <label class="field-label">Name <span class="req">*</span></label>
+            <input type="text" class="form-control" v-model="formModel.NAME"
+                   :class="{'has-error': itemErr.NAME}" @input="itemErr.NAME=''">
+            <div class="field-error" v-if="itemErr.NAME">{{ itemErr.NAME }}</div>
           </div>
           <div class="field-group">
             <label class="field-label">Description</label>
@@ -703,7 +755,7 @@ createApp({
         </div>
         <div class="panel-footer">
           <button type="button" class="btn-ghost" @click="closePanel">Cancel</button>
-          <button type="button" class="btn-brown" @click="saveItem">Save</button>
+          <button type="button" class="btn-brown btn-yellow" @click="saveItem">Save</button>
         </div>
       </div>
     </div>
@@ -713,10 +765,16 @@ createApp({
       <div class="modal-box">
         <h3>Add New Category</h3>
         <p>หมวดหมู่ใหม่จะกลายเป็นเมนูใหม่ในแถบซ้าย และสามารถเพิ่มรายการย่อยภายในได้ทันที</p>
-        <div class="field-group"><label class="field-label">Code</label><input type="text" class="form-control" v-model="categoryForm.CODE" placeholder="เช่น LEAD_TYPE"></div>
-        <div class="field-group"><label class="field-label">Name</label><input type="text" class="form-control" v-model="categoryForm.NAME"></div>
+        <div class="field-group"><label class="field-label">Code <span class="req">*</span></label>
+          <input type="text" class="form-control" v-model="categoryForm.CODE" placeholder="e.g. LEAD_TYPE"
+                 :class="{'has-error': catErr.CODE}" @input="catErr.CODE=''">
+          <div class="field-error" v-if="catErr.CODE">{{ catErr.CODE }}</div></div>
+        <div class="field-group"><label class="field-label">Name <span class="req">*</span></label>
+          <input type="text" class="form-control" v-model="categoryForm.NAME"
+                 :class="{'has-error': catErr.NAME}" @input="catErr.NAME=''">
+          <div class="field-error" v-if="catErr.NAME">{{ catErr.NAME }}</div></div>
         <div class="field-group"><label class="field-label">Description</label><textarea class="form-control" v-model="categoryForm.DESCRIPTION"></textarea></div>
-        <div class="modal-actions"><button class="btn-ghost" @click="showAddCategory=false">Cancel</button><button class="btn-brown" @click="saveCategory">Create</button></div>
+        <div class="modal-actions"><button class="btn-ghost" @click="showAddCategory=false">Cancel</button><button class="btn-brown btn-yellow" @click="saveCategory">Create</button></div>
       </div>
     </div>
 
@@ -729,7 +787,18 @@ createApp({
       </div>
     </div>
 
-    <div class="toast" v-if="toast.show"><span class="tick">{{ toast.ok ? '✓' : '!' }}</span> {{ toast.msg }}</div>
+    <!-- popup แจ้งผล (Done / Alert) -->
+    <div class="modal-overlay" v-if="notice.show" @click.self="notice.show=false">
+      <div class="notice-box" :class="notice.kind">
+        <div class="notice-icon">
+          <svg v-if="notice.kind==='done'" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12.5 9.5 18 20 7"/></svg>
+          <svg v-else width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="14"/><line x1="12" y1="18.5" x2="12" y2="18.6"/></svg>
+        </div>
+        <h3>{{ notice.title }}</h3>
+        <p>{{ notice.msg }}</p>
+        <button @click="notice.show=false">Close</button>
+      </div>
+    </div>
   </div>
   `
 }).mount('#app');

@@ -311,12 +311,6 @@ input,textarea,select{font-family:inherit}
 .btn-danger{background:#D64C4C;color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
 .btn-danger:hover{background:#c33e3e}
 
-.toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);
-  background:#5B4F4B;color:#fff;font-size:12.5px;font-weight:600;padding:9px 22px;border-radius:999px;
-  opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;z-index:9998;
-  box-shadow:0 4px 14px rgba(46,42,39,.25)}
-.toast.show{opacity:1}
-
   /* ---- confirm dialog : หน้าตาเดียวกันทุกหน้า ---- */
   .confirm-box{background:#fff;border-radius:14px;padding:28px 32px;width:380px;max-width:92vw;
     box-shadow:0 12px 40px rgba(46,42,39,.22);text-align:center;}
@@ -328,6 +322,26 @@ input,textarea,select{font-family:inherit}
   .confirm-actions .cancel:hover{background:#FFFBEA;}
   .confirm-actions .ok{background:#FFD400;color:#1A1A1A;}
   .confirm-actions .ok:hover{background:#EFC400;}
+  /* ---- popup แจ้งผล : Done = สำเร็จ, Alert = ผิดเงื่อนไข ---- */
+  .notice-box{background:#fff;border-radius:14px;padding:32px 36px;width:340px;max-width:92vw;
+    box-shadow:0 12px 40px rgba(46,42,39,.22);text-align:center;}
+  .notice-box .notice-icon{width:56px;height:56px;border-radius:50%;background:#22A55B;margin:0 auto 20px;
+    display:flex;align-items:center;justify-content:center;}
+  .notice-box.alert .notice-icon{background:#D64545;}
+  .notice-box.info .notice-icon{background:#5B4F4B;color:#fff;font-weight:700;font-size:14px;}
+  .notice-box.info p{font-family:Consolas,'Courier New',monospace;font-size:12.5px;text-align:left;color:#3D3835;}
+  .notice-box h3{margin:0 0 8px;font-size:20px;font-weight:700;color:#1A1A1A;}
+  .notice-box p{margin:0 0 24px;font-size:14px;color:#6B7280;line-height:1.6;word-break:break-word;}
+  .notice-box button{width:100%;padding:13px 18px;border:none;border-radius:8px;background:#FFD400;
+    color:#1A1A1A;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:.12s;}
+  .notice-box button:hover{background:#EFC400;}
+  /* ---- ช่องที่กรอกไม่ครบ : กรอบแดง + ข้อความใต้ช่อง ---- */
+  .has-error, .has-error input, .has-error select, .has-error textarea{border-color:#D64545 !important;}
+  .field-error{margin-top:6px;font-size:12px;color:#D64545;line-height:1.5;}
+  .req{color:#D64545;}
+  /* ---- ปุ่มยืนยันใน modal / drawer : สีเหลืองชุดเดียวกับ popup ---- */
+  .btn-yellow{background:#FFD400 !important;color:#1A1A1A !important;border:none;}
+  .btn-yellow:hover{background:#EFC400 !important;}
 </style>
 
 <div id="app"></div>
@@ -466,17 +480,22 @@ createApp({
     const eligibleNames = MCRM.db.eligibleNames;
     const eligibleProfiles = MCRM.db.eligibleProfiles;
 
+    /* ช่องที่ยังกรอกไม่ครบ : เก็บข้อความไว้แสดงใต้ช่องนั้น ๆ */
+    const optErr  = reactive({ value:'' });
+    const recErr  = reactive({ name:'', profile:'' });
+
     const showAddOption = reactive({ show:false, target:'', label:'', value:'' });
-    function openAddOption(target, label){ Object.assign(showAddOption, { show:true, target, label, value:'' }); }
+    function openAddOption(target, label){ optErr.value=''; Object.assign(showAddOption, { show:true, target, label, value:'' }); }
     function saveAddOption(){
       const v = showAddOption.value.trim();
-      if (!v){ showToast('กรุณากรอกชื่อ'); return; }
+      optErr.value = '';
+      if (!v){ optErr.value = 'This field is required'; return; }
       const list = showAddOption.target === 'name' ? eligibleNames : eligibleProfiles;
-      if (list.includes(v)){ showToast('มีรายการนี้อยู่แล้ว'); return; }
+      if (list.includes(v)){ showAlert('That item already exists'); return; }
       list.push(v);
       if (currentRec.value){ if (showAddOption.target === 'name') currentRec.value.name = v; else currentRec.value.profile = v; }
       showAddOption.show = false;
-      showToast('เพิ่มรายการเรียบร้อย');
+      showDone('Item created successfully');
     }
 
     /* ---- navigation ---- */
@@ -507,7 +526,10 @@ createApp({
     function saveProfile(asNew){
       const rec = currentRec.value;
       if (!rec) return;
-      if (!rec.name || !rec.profile){ showToast('Select Lead Data Set and Lead Repository before saving'); return; }
+      recErr.name = ''; recErr.profile = '';
+      if (!rec.name) recErr.name = 'Lead Data Set is required';
+      if (!rec.profile) recErr.profile = 'Lead Repository is required';
+      if (recErr.name || recErr.profile) return;
       const issues = collectIssues(rec.groups);
       if (issues.length){ openValidate(issues, 'Fix these before saving'); return; }
 
@@ -524,7 +546,7 @@ createApp({
       }
 
       currentRec.value.updated = nowStr();
-      showToast(asNew ? currentRec.value.code + ' saved as new profile' : currentRec.value.code + ' saved');
+      showDone(asNew ? 'Profile saved as a new profile successfully' : 'Profile saved successfully');
     }
 
     /* ---- delete profile (list page) ---- */
@@ -533,7 +555,7 @@ createApp({
     function confirmDeleteEligible(){
       const rec = confirmDeleteRec.value;
       eligibles.splice(eligibles.findIndex(r => r === rec), 1);
-      showToast(`ลบ "${rec.code}" ออกจากระบบแล้ว`);
+      showDone('Profile deleted successfully');
       confirmDeleteRec.value = null;
     }
 
@@ -541,10 +563,10 @@ createApp({
     function toggleGroupCollapse(gid){ collapsedGroups[gid] = !collapsedGroups[gid]; }
     function newBlankCond(){ return { uid:uid(), fieldId:'', label:'Select condition', dataType:TXT, op:'=', vals:[], enabled:true }; }
 
-    function addCond(g){ const c = newBlankCond(); c.type = 'cond'; g.items.push(c); showToast('Condition added'); }
-    function addNestedGroup(g){ g.items.push({ type:'group', uid:uid(), label:'Nested Group', connector:'AND', enabled:true, conds:[newBlankCond()] }); showToast('Group added'); }
+    function addCond(g){ const c = newBlankCond(); c.type = 'cond'; g.items.push(c); }
+    function addNestedGroup(g){ g.items.push({ type:'group', uid:uid(), label:'Nested Group', connector:'AND', enabled:true, conds:[newBlankCond()] }); }
     function deleteItem(g, i){ g.items.splice(i,1); }
-    function addCondToNestedGroup(grp){ grp.conds.push(newBlankCond()); showToast('Condition added'); }
+    function addCondToNestedGroup(grp){ grp.conds.push(newBlankCond()); }
     function deleteNestedCond(grp, ci){ grp.conds.splice(ci,1); }
     function setNestedConn(grp, val){ grp.connector = val; }
 
@@ -644,9 +666,12 @@ createApp({
     function validateLogic(){ openValidate(collectIssues(groups.value), 'Validate Logic'); }
 
     /* ---- toast ---- */
-    const toast = reactive({ show:false, msg:'' });
-    let toastTimer = null;
-    function showToast(msg){ toast.msg = msg; toast.show = true; clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.show = false, 2400); }
+    /* popup แจ้งผล : showDone = ทำรายการสำเร็จ, showAlert = ผิดเงื่อนไข
+       ส่วนช่องที่กรอกไม่ครบจะขึ้นกรอบแดงใต้ช่องแทน ไม่ใช้ popup */
+    const notice = reactive({ show:false, kind:'done', title:'Done', msg:'' });
+    function showDone(msg){ Object.assign(notice, { show:true, kind:'done',  title:'Done',  msg }); }
+    function showAlert(msg){ Object.assign(notice, { show:true, kind:'alert', title:'Alert', msg }); }
+    function showInfo(title, msg){ Object.assign(notice, { show:true, kind:'info', title, msg }); }
 
     return {
       eligibles, currentRec, pageView, groups, collapsedGroups,
@@ -660,7 +685,7 @@ createApp({
       pickerCond, pickerSearch, togglePicker, closePicker, pickerOptions, toggleVal, removeVal, freeMultiInput,
       isMulti, NUM,
       sqlOf, sqlModal, showSql, closeSql, validateLogic,
-      toast, showToast, nextCode, opsFor,
+      notice, showDone, showAlert, showInfo, optErr, recErr, nextCode, opsFor,
     };
   },
   template: `
@@ -713,24 +738,26 @@ createApp({
               <div class="code-big"><span>{{ currentRec.isNew ? nextCode() : currentRec.code }}</span><span class="new-tag" v-if="currentRec.isNew">Unsaved</span></div>
             </div>
             <div>
-              <div class="flabel">Lead Data Set (Source)</div>
+              <div class="flabel">Lead Data Set (Source) <span class="req">*</span></div>
               <div class="field-with-add">
-                <select class="finput" v-model="currentRec.name">
+                <select class="finput" v-model="currentRec.name" :class="{'has-error': recErr.name}" @change="recErr.name=''">
                   <option value="">— Select —</option>
                   <option v-for="n in eligibleNames" :key="n" :value="n">{{ n }}</option>
                 </select>
                 <button type="button" style="display:none;" class="btn-icon-sm" title="Add new name" @click="openAddOption('name','Lead Data Set')">+</button>
               </div>
+              <div class="field-error" v-if="recErr.name">{{ recErr.name }}</div>
             </div>
             <div>
-              <div class="flabel">Lead Repository (Target)</div>
+              <div class="flabel">Lead Repository (Target) <span class="req">*</span></div>
               <div class="field-with-add">
-                <select class="finput" v-model="currentRec.profile">
+                <select class="finput" v-model="currentRec.profile" :class="{'has-error': recErr.profile}" @change="recErr.profile=''">
                   <option value="">— Select —</option>
                   <option v-for="p in eligibleProfiles" :key="p" :value="p">{{ p }}</option>
                 </select>
                 <button type="button" style="display:none;" class="btn-icon-sm" title="Add new profile" @click="openAddOption('profile','Lead Repository')">+</button>
               </div>
+              <div class="field-error" v-if="recErr.profile">{{ recErr.profile }}</div>
             </div>
           </div>
           <div class="meta-row meta-row-bottom">
@@ -844,7 +871,7 @@ createApp({
                               <input v-else class="free-input" :type="c.dataType===NUM ? 'number' : 'text'" v-model="c.vals[0]" :placeholder="condField(c)?.hint || 'value'">
                             </template>
 
-                            <button class="code-btn" @click="showToast(sqlOf(c))">&lt;/&gt;</button>
+                            <button class="code-btn" @click="showInfo('SQL', sqlOf(c))">&lt;/&gt;</button>
                             <button class="nested-del-btn" @click="deleteNestedCond(item,ci)">&#128465;</button>
                           </div>
                         </div>
@@ -904,7 +931,7 @@ createApp({
                       <input v-else class="free-input" :type="item.dataType===NUM ? 'number' : 'text'" v-model="item.vals[0]" :placeholder="condField(item)?.hint || 'value'">
                     </template>
 
-                    <button class="code-btn" @click="showToast(sqlOf(item))">&lt;/&gt;</button>
+                    <button class="code-btn" @click="showInfo('SQL', sqlOf(item))">&lt;/&gt;</button>
                     <button class="cond-del" @click="deleteItem(g,i)">&#128465;</button>
                   </div>
                 </div>
@@ -952,8 +979,10 @@ createApp({
       <div class="modal-box">
         <h3>Add {{ showAddOption.label }}</h3>
         <p>This will be added to the shared list and reusable on every profile.</p>
-        <div class="field-group"><label>{{ showAddOption.label }}</label><input class="finput" v-model="showAddOption.value" style="width:100%"></div>
-        <div class="modal-actions"><button class="btn-ghost" @click="showAddOption.show=false">Cancel</button><button class="btn-run" @click="saveAddOption">Add</button></div>
+        <div class="field-group"><label>{{ showAddOption.label }} <span class="req">*</span></label>
+          <input class="finput" v-model="showAddOption.value" style="width:100%" :class="{'has-error': optErr.value}" @input="optErr.value=''">
+          <div class="field-error" v-if="optErr.value">{{ optErr.value }}</div></div>
+        <div class="modal-actions"><button class="btn-ghost" @click="showAddOption.show=false">Cancel</button><button class="btn-run btn-yellow" @click="saveAddOption">Add</button></div>
       </div>
     </div>
 
@@ -965,7 +994,19 @@ createApp({
       </div>
     </div>
 
-    <div class="toast" :class="{show: toast.show}">{{ toast.msg }}</div>
+    <!-- popup แจ้งผล (Done / Alert) -->
+    <div class="modal-overlay" v-if="notice.show" @click.self="notice.show=false">
+      <div class="notice-box" :class="notice.kind">
+        <div class="notice-icon">
+          <svg v-if="notice.kind==='done'" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12.5 9.5 18 20 7"/></svg>
+          <span v-else-if="notice.kind==='info'">&lt;/&gt;</span>
+          <svg v-else width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="14"/><line x1="12" y1="18.5" x2="12" y2="18.6"/></svg>
+        </div>
+        <h3>{{ notice.title }}</h3>
+        <p>{{ notice.msg }}</p>
+        <button @click="notice.show=false">Close</button>
+      </div>
+    </div>
   </div>
   `
 }).mount('#app');

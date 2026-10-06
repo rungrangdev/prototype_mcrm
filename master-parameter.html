@@ -262,9 +262,6 @@
   .modal-box .warn-box{background:var(--danger-soft);color:#9A3131;border-radius:8px;padding:10px 12px;font-size:12.5px;margin-bottom:18px;}
   .modal-actions{display:flex;justify-content:flex-end;gap:10px;}
 
-  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--primary-dark);color:#fff;padding:12px 20px;border-radius:8px;font-size:13.5px;box-shadow:var(--shadow-md);z-index:80;display:flex;align-items:center;gap:10px;}
-  .toast .tick{color:#6FE3A6;font-weight:700;}
-
   table.data-table{
     width: 100%;
     border-collapse: collapse;
@@ -371,16 +368,27 @@
   .confirm-actions .ok{background:#FFD400;color:#1A1A1A;}
   .confirm-actions .ok:hover{background:#EFC400;}
 
-  /* ---- done dialog : popup แจ้งผลสำเร็จ ---- */
-  .done-box{background:#fff;border-radius:14px;padding:32px 36px;width:330px;max-width:92vw;
+  /* ---- popup แจ้งผล : Done = สำเร็จ, Alert = ผิดเงื่อนไข ---- */
+  .notice-box{background:#fff;border-radius:14px;padding:32px 36px;width:340px;max-width:92vw;
     box-shadow:0 12px 40px rgba(46,42,39,.22);text-align:center;}
-  .done-box .tick-circle{width:56px;height:56px;border-radius:50%;background:#22A55B;margin:0 auto 20px;
+  .notice-box .notice-icon{width:56px;height:56px;border-radius:50%;background:#22A55B;margin:0 auto 20px;
     display:flex;align-items:center;justify-content:center;}
-  .done-box h3{margin:0 0 8px;font-size:20px;font-weight:700;color:#1A1A1A;}
-  .done-box p{margin:0 0 24px;font-size:14px;color:#6B7280;line-height:1.6;}
-  .done-box button{width:100%;padding:13px 18px;border:none;border-radius:8px;background:#FFD400;
+  .notice-box.alert .notice-icon{background:#D64545;}
+  .notice-box h3{margin:0 0 8px;font-size:20px;font-weight:700;color:#1A1A1A;}
+  .notice-box p{margin:0 0 24px;font-size:14px;color:#6B7280;line-height:1.6;word-break:break-word;}
+  .notice-box button{width:100%;padding:13px 18px;border:none;border-radius:8px;background:#FFD400;
     color:#1A1A1A;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:.12s;}
-  .done-box button:hover{background:#EFC400;}
+  .notice-box button:hover{background:#EFC400;}
+  /* ---- ช่องที่กรอกไม่ครบ : กรอบแดง + ข้อความใต้ช่อง ---- */
+  .has-error, .has-error input, .has-error select, .has-error textarea{border-color:#D64545 !important;}
+  .field-error{margin-top:6px;font-size:12px;color:#D64545;line-height:1.5;}
+  .req{color:#D64545;}
+  /* ---- ปุ่มยืนยันใน modal / drawer : สีเหลืองชุดเดียวกับ popup ---- */
+  .btn-yellow{background:#FFD400 !important;color:#1A1A1A !important;border:none;}
+  .btn-yellow:hover{background:#EFC400 !important;}
+  /* ---- หน้าที่ไม่มีข้อมูล ---- */
+  .empty-state .empty-art{display:block;margin:0 auto 10px;}
+  .empty-state h3{color:#4B4B4B;font-size:15px;font-weight:700;margin:0;}
 </style>
 </head>
 <body>
@@ -503,12 +511,18 @@ createApp({
     /* Clone : ถามชื่อ version ก่อน แล้วค่อยคัดลอกทั้งชุด
        clone ซ้ำได้ไม่จำกัด — ตอน Set Active จะ Inactive ทุก version
        ของ lead type นั้นอยู่แล้ว จึงไม่มีทางมี Active พร้อมกันหลายแถว */
+    /* ช่องที่ยังกรอกไม่ครบ : เก็บข้อความไว้แสดงใต้ช่องนั้น ๆ */
+    const cloneErr  = reactive({ name:'' });
+    const rejectErr = reactive({ reason:'' });
+    const cfgErr    = reactive({ PARAMETER_NAME:'', KEY_BASE:'' });
+    const critErr   = reactive({ VALUE:'', keys:{} });
     const cloneForm = reactive({ show:false, source:null, name:'' });
     function askCloneVersion(v){
+      cloneErr.name = '';
       Object.assign(cloneForm, { show:true, source:v, name:'' });
     }
     function confirmCloneVersion(){
-      if (!cloneForm.name.trim()){ showToast('Version Name is required', false); return; }
+      if (!cloneForm.name.trim()){ cloneErr.name = 'Version Name is required'; return; }
       cloneVersion(cloneForm.source, cloneForm.name.trim());
       cloneForm.show = false;
     }
@@ -555,9 +569,9 @@ createApp({
 
     /* Reject : ตีกลับให้แก้ พร้อมเหตุผล — กลับไปแก้แล้ว Submit ใหม่ได้ */
     const rejectForm = reactive({ show:false, target:null, reason:'' });
-    function askRejectVersion(v){ Object.assign(rejectForm, { show:true, target:v, reason:'' }); }
+    function askRejectVersion(v){ rejectErr.reason = ''; Object.assign(rejectForm, { show:true, target:v, reason:'' }); }
     function confirmRejectVersion(){
-      if (!rejectForm.reason.trim()){ showToast('Reject reason is required', false); return; }
+      if (!rejectForm.reason.trim()){ rejectErr.reason = 'Reason is required'; return; }
       const v = rejectForm.target;
       v.STATUS = 'Reject';
       v.REJECT_REASON = rejectForm.reason.trim();
@@ -586,7 +600,7 @@ createApp({
     /* Delete : ลบได้เฉพาะ version ที่ยัง Open พร้อมข้อมูลที่ผูกอยู่ */
     const confirmDeleteVersion = ref(null);
     function askDeleteVersion(v){
-      if (verStatusText(v.STATUS) !== 'Open') { showToast('Only a version with status Open can be deleted', false); return; }
+      if (verStatusText(v.STATUS) !== 'Open') { showAlert('Only a version with status Open can be deleted'); return; }
       confirmDeleteVersion.value = v;
     }
     function confirmDeleteVersionYes(){
@@ -629,24 +643,27 @@ createApp({
     function openAddCfg(){
       isEditingCfg.value = false;
       Object.assign(cfgFormModel, { PARAMETER_ID:'', PARAMETER_CODE:'', PARAMETER_NAME:'', ORDER:String((cfgRecords.value.length+1)), ACTIVE:'Y', KEY_BASE:[] });
+      cfgErr.PARAMETER_NAME = ''; cfgErr.KEY_BASE = '';
       showCfgForm.value = true;
     }
-    function openEditCfg(row){ isEditingCfg.value = true; Object.assign(cfgFormModel, { ...row, KEY_BASE:[...row.KEY_BASE] }); showCfgForm.value = true; }
+    function openEditCfg(row){ isEditingCfg.value = true; Object.assign(cfgFormModel, { ...row, KEY_BASE:[...row.KEY_BASE] }); cfgErr.PARAMETER_NAME = ''; cfgErr.KEY_BASE = ''; showCfgForm.value = true; }
     function closeCfgForm(){ showCfgForm.value = false; }
     function toggleCfgKey(code){
+      cfgErr.KEY_BASE = '';
       const i = cfgFormModel.KEY_BASE.indexOf(code);
       if (i>=0) cfgFormModel.KEY_BASE.splice(i,1); else cfgFormModel.KEY_BASE.push(code);
     }
     function removeCfgKeyAt(i){ cfgFormModel.KEY_BASE.splice(i,1); }
     function saveCfg(){
-      if (!cfgFormModel.PARAMETER_NAME.trim()){ showToast('Parameter Name is required', false); return; }
-      if (!cfgFormModel.KEY_BASE.length){ showToast('Select at least one base key', false); return; }
+      cfgErr.PARAMETER_NAME = ''; cfgErr.KEY_BASE = '';
+      if (!cfgFormModel.PARAMETER_NAME.trim()){ cfgErr.PARAMETER_NAME = 'Parameter Name is required'; return; }
+      if (!cfgFormModel.KEY_BASE.length){ cfgErr.KEY_BASE = 'At least one Base Key is required'; return; }
       const code = isEditingCfg.value ? cfgFormModel.PARAMETER_CODE : slugify(cfgFormModel.PARAMETER_NAME);
       if (isEditingCfg.value){
         const idx = paramConfigs.findIndex(c=>c.VERSION_ID===cfgVersionId.value && c.PROGRAM_CODE===cfgProgram.value && c.ENTITY===cfgEntity.value && c.PARAMETER_CODE===code);
         paramConfigs[idx] = { ...paramConfigs[idx], ...cfgFormModel, PARAMETER_CODE:code, UPDATE_BY:'ADMIN', UPDATE_DATE:now() };
       } else {
-        if (paramConfigs.some(c=>c.VERSION_ID===cfgVersionId.value && c.PROGRAM_CODE===cfgProgram.value && c.ENTITY===cfgEntity.value && c.PARAMETER_CODE===code)){ showToast('That parameter already exists', false); return; }
+        if (paramConfigs.some(c=>c.VERSION_ID===cfgVersionId.value && c.PROGRAM_CODE===cfgProgram.value && c.ENTITY===cfgEntity.value && c.PARAMETER_CODE===code)){ showAlert('That parameter already exists'); return; }
         paramConfigs.push({ VERSION_ID:cfgVersionId.value, PROGRAM_CODE:cfgProgram.value, ENTITY:cfgEntity.value, ...cfgFormModel,
           PARAMETER_CODE:code, PARAMETER_ID:MCRM.parameterIdFor(cfgEntity.value, cfgProgram.value, code),
           CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
@@ -697,6 +714,7 @@ createApp({
     function kvRemove(k, v){ kvSet(k, kvArr(k).filter(x => x !== v)); }
     function kvClear(k){ kvSet(k, []); }
     function onKvOpChange(k){
+      critErr.keys[k] = '';
       const c = critFormModel.KEY_VALUES[k];
       closePicker();
       if (c.op === 'N/A'){ c.value = ''; return; }
@@ -741,6 +759,7 @@ createApp({
       const kv = {};
       critBaseKeys.value.forEach(k => kv[k] = { op:'N/A', value:'' });
       Object.assign(critFormModel, { VALUE:'', ORDER:String(critList.value.length+1), ACTIVE:'Y', KEY_VALUES:kv });
+      critErr.VALUE = ''; critErr.keys = {};
       closePicker();
       critMode.value = 'form';
     }
@@ -749,23 +768,25 @@ createApp({
       const kv = {};
       critBaseKeys.value.forEach(k => kv[k] = row.KEY_VALUES[k] ? { ...row.KEY_VALUES[k] } : { op:'N/A', value:'' });
       Object.assign(critFormModel, { VALUE:row.VALUE, ORDER:row.ORDER, ACTIVE:row.ACTIVE, KEY_VALUES:kv });
+      critErr.VALUE = ''; critErr.keys = {};
       closePicker();
       critMode.value = 'form';
     }
     function backToCritList(){ closePicker(); critMode.value = 'list'; }
     function saveCritValue(){
       const val = critFormModel.VALUE.trim();
-      if (!val){ showToast('Value is required', false); return; }
+      critErr.VALUE = ''; critErr.keys = {};
+      if (!val){ critErr.VALUE = 'Value is required'; return; }
       const dup = criteriaRows.some(r => r !== editingCritRow.value && r.VERSION_ID===cfgVersionId.value &&
         r.PROGRAM_CODE===cfgProgram.value && r.ENTITY===cfgEntity.value &&
         r.PARAMETER_CODE===critParamRow.value.PARAMETER_CODE && r.VALUE===val);
-      if (dup){ showToast('That value already exists for this parameter', false); return; }
+      if (dup){ showAlert('That value already exists for this parameter'); return; }
       /* ตรวจว่า op ที่ไม่ใช่ N/A ต้องมีค่า */
       const missing = critBaseKeys.value.filter(k => {
         const c = critFormModel.KEY_VALUES[k];
         return c.op !== 'N/A' && !String(c.value).trim();
       });
-      if (missing.length){ showToast(`Missing value for ${missing.map(k=>nameOf(paramMaster.value,k)).join(', ')}`, false); return; }
+      if (missing.length){ missing.forEach(k => critErr.keys[k] = 'Value is required'); return; }
 
       if (isEditingCrit.value){
         Object.assign(editingCritRow.value, {
@@ -793,14 +814,11 @@ createApp({
       confirmDeleteCritVal.value = null;
     }
 
-    /* popup แจ้งผลสำเร็จ (Done) — ใช้แทน toast สำหรับรายการที่ทำสำเร็จ
-       ส่วน toast เหลือไว้สำหรับข้อความเตือน/กรอกข้อมูลไม่ครบ */
-    const done = reactive({ show:false, msg:'' });
-    function showDone(msg){ done.msg = msg; done.show = true; }
-
-    const toast = reactive({ show:false, msg:'', ok:true });
-    let toastTimer = null;
-    function showToast(msg, ok=true){ toast.msg=msg; toast.ok=ok; toast.show=true; clearTimeout(toastTimer); toastTimer=setTimeout(()=>toast.show=false,2600); }
+    /* popup แจ้งผล : showDone = ทำรายการสำเร็จ, showAlert = ผิดเงื่อนไข
+       ส่วนช่องที่กรอกไม่ครบจะขึ้นกรอบแดงใต้ช่องแทน ไม่ใช้ popup */
+    const notice = reactive({ show:false, kind:'done', title:'Done', msg:'' });
+    function showDone(msg){ Object.assign(notice, { show:true, kind:'done',  title:'Done',  msg }); }
+    function showAlert(msg){ Object.assign(notice, { show:true, kind:'alert', title:'Alert', msg }); }
 
     return {
       entityMaster, leadTypeMaster, programMaster, paramMaster, nameOf,
@@ -809,7 +827,7 @@ createApp({
       confirmDeleteCfg, askDeleteCfg, confirmDeleteCfgRow, cfgPreview,
       cfgView, cfgVersionId, cfgVersions, openCfgSetup, backToCfgList,
       cfgVersionStatus, cfgEditable, pagePerm, verStatusText, verStatusClass,
-      cloneForm, askCloneVersion, confirmCloneVersion,
+      cloneForm, cloneErr, rejectErr, cfgErr, critErr, askCloneVersion, confirmCloneVersion,
       rejectForm, askRejectVersion, confirmRejectVersion,
       VERSION_STATUSES, verFilterLeadType, verFilterStatus, filteredVersions,
       confirmSubmitVersion, askSubmitVersion, confirmSubmitVersionYes,
@@ -823,7 +841,7 @@ createApp({
       openSetValue, closeCritPanel, isEditingCrit, critFormModel,
       openAddCritForm, openEditCritForm, backToCritList, saveCritValue,
       confirmDeleteCritVal, askDeleteCritVal, confirmDeleteCritValRow,
-      toast, done, showDone
+      notice, showDone, showAlert,
     };
   },
   template: `
@@ -902,9 +920,26 @@ createApp({
             </tbody>
           </table>
           <div v-else class="empty-state">
-            <div class="glyph"></div>
-            <h3 v-if="cfgVersions.length">No version matches the filter</h3>
-            <h3 v-else>No version yet</h3>
+            <svg class="empty-art" viewBox="0 0 160 150" width="150" height="140" aria-hidden="true">
+              <rect x="38" y="22" width="78" height="86" rx="8" fill="#FFF3C4"/>
+              <rect x="50" y="36" width="54" height="7" rx="3.5" fill="#FFD95C"/>
+              <rect x="50" y="50" width="42" height="7" rx="3.5" fill="#FFE68A"/>
+              <rect x="50" y="64" width="50" height="7" rx="3.5" fill="#FFE68A"/>
+              <rect x="18" y="52" width="40" height="56" rx="6" fill="#fff" stroke="#FFE08A" stroke-width="2"/>
+              <rect x="26" y="64" width="16" height="6" rx="3" fill="#FFD95C"/>
+              <rect x="26" y="76" width="24" height="5" rx="2.5" fill="#FFECA8"/>
+              <rect x="26" y="86" width="20" height="5" rx="2.5" fill="#FFECA8"/>
+              <rect x="96" y="14" width="36" height="19" rx="9.5" fill="#FFF3C4"/>
+              <circle cx="107" cy="23.5" r="2.4" fill="#FFC93C"/><circle cx="114" cy="23.5" r="2.4" fill="#FFC93C"/><circle cx="121" cy="23.5" r="2.4" fill="#FFC93C"/>
+              <circle cx="92" cy="82" r="26" fill="#FFFBEA" stroke="#FFC93C" stroke-width="6"/>
+              <line x1="111" y1="101" x2="126" y2="118" stroke="#FFC93C" stroke-width="9" stroke-linecap="round"/>
+              <line x1="83" y1="73" x2="101" y2="91" stroke="#F0474B" stroke-width="7" stroke-linecap="round"/>
+              <line x1="101" y1="73" x2="83" y2="91" stroke="#F0474B" stroke-width="7" stroke-linecap="round"/>
+              <circle cx="30" cy="40" r="2" fill="#FFE08A"/>
+              <circle cx="128" cy="62" r="2.5" fill="#FFE08A"/>
+              <circle cx="70" cy="120" r="2" fill="#FFE08A"/>
+            </svg>
+            <h3>Data not found</h3>
           </div>
         </div>
       </section>
@@ -983,11 +1018,26 @@ createApp({
             </tbody>
           </table>
           <div v-else class="empty-state">
-            <div class="glyph"></div>
-            <h3>No parameters yet</h3>
-            <template v-if="cfgEditable">
-              <button class="btn btn-primary" style="margin-top:12px" @click="openAddCfg">+ Add</button>
-            </template>
+            <svg class="empty-art" viewBox="0 0 160 150" width="150" height="140" aria-hidden="true">
+              <rect x="38" y="22" width="78" height="86" rx="8" fill="#FFF3C4"/>
+              <rect x="50" y="36" width="54" height="7" rx="3.5" fill="#FFD95C"/>
+              <rect x="50" y="50" width="42" height="7" rx="3.5" fill="#FFE68A"/>
+              <rect x="50" y="64" width="50" height="7" rx="3.5" fill="#FFE68A"/>
+              <rect x="18" y="52" width="40" height="56" rx="6" fill="#fff" stroke="#FFE08A" stroke-width="2"/>
+              <rect x="26" y="64" width="16" height="6" rx="3" fill="#FFD95C"/>
+              <rect x="26" y="76" width="24" height="5" rx="2.5" fill="#FFECA8"/>
+              <rect x="26" y="86" width="20" height="5" rx="2.5" fill="#FFECA8"/>
+              <rect x="96" y="14" width="36" height="19" rx="9.5" fill="#FFF3C4"/>
+              <circle cx="107" cy="23.5" r="2.4" fill="#FFC93C"/><circle cx="114" cy="23.5" r="2.4" fill="#FFC93C"/><circle cx="121" cy="23.5" r="2.4" fill="#FFC93C"/>
+              <circle cx="92" cy="82" r="26" fill="#FFFBEA" stroke="#FFC93C" stroke-width="6"/>
+              <line x1="111" y1="101" x2="126" y2="118" stroke="#FFC93C" stroke-width="9" stroke-linecap="round"/>
+              <line x1="83" y1="73" x2="101" y2="91" stroke="#F0474B" stroke-width="7" stroke-linecap="round"/>
+              <line x1="101" y1="73" x2="83" y2="91" stroke="#F0474B" stroke-width="7" stroke-linecap="round"/>
+              <circle cx="30" cy="40" r="2" fill="#FFE08A"/>
+              <circle cx="128" cy="62" r="2.5" fill="#FFE08A"/>
+              <circle cx="70" cy="120" r="2" fill="#FFE08A"/>
+            </svg>
+            <h3>Data not found</h3>
           </div>
         </div>
       </section>
@@ -998,10 +1048,12 @@ createApp({
         <h3>Clone {{ cloneForm.source.VERSION_ID }}</h3>
 
         <div class="field">
-          <label>Version Name <span style="color:var(--danger)">*</span></label>
-          <input type="text" v-model="cloneForm.name" placeholder="e.g. Rate update Q4" @keyup.enter="confirmCloneVersion">
+          <label>Version Name <span class="req">*</span></label>
+          <input type="text" v-model="cloneForm.name" placeholder="e.g. Rate update Q4"
+                 :class="{'has-error': cloneErr.name}" @input="cloneErr.name=''" @keyup.enter="confirmCloneVersion">
+          <div class="field-error" v-if="cloneErr.name">{{ cloneErr.name }}</div>
         </div>
-        <div class="modal-actions"><button class="btn btn-ghost" @click="cloneForm.show=false">Cancel</button><button class="btn btn-primary" @click="confirmCloneVersion">Clone</button></div>
+        <div class="modal-actions"><button class="btn btn-ghost" @click="cloneForm.show=false">Cancel</button><button class="btn btn-yellow" @click="confirmCloneVersion">Clone</button></div>
       </div>
     </div>
 
@@ -1009,8 +1061,10 @@ createApp({
       <div class="modal-box">
         <h3>Reject {{ rejectForm.target.VERSION_ID }}?</h3>
         <div class="field">
-          <label>Reason <span style="color:var(--danger)">*</span></label>
-          <textarea v-model="rejectForm.reason" placeholder="Reject reason"></textarea>
+          <label>Reason <span class="req">*</span></label>
+          <textarea v-model="rejectForm.reason" placeholder="Reject reason"
+                    :class="{'has-error': rejectErr.reason}" @input="rejectErr.reason=''"></textarea>
+          <div class="field-error" v-if="rejectErr.reason">{{ rejectErr.reason }}</div>
         </div>
         <div class="modal-actions"><button class="btn btn-ghost" @click="rejectForm.show=false">Cancel</button><button class="btn btn-danger" @click="confirmRejectVersion">Reject</button></div>
       </div>
@@ -1049,15 +1103,20 @@ createApp({
         <div class="side-drawer-head"><h3>{{ isEditingCfg ? 'Parameter' : 'Parameter' }} · {{ cfgProgram }} / {{ cfgEntity }}</h3><button class="close-x" @click="closeCfgForm">✕</button></div>
         <div class="side-drawer-body">
           <div class="field"><label>Parameter ID</label><input type="text" :value="cfgFormModel.PARAMETER_ID || 'Auto-generated on save'" readonly></div>
-          <div class="field"><label>Parameter Name</label><input type="text" v-model="cfgFormModel.PARAMETER_NAME" placeholder="e.g. Topup Option, Flat rate OPTT1"></div>
+          <div class="field"><label>Parameter Name <span class="req">*</span></label>
+            <input type="text" v-model="cfgFormModel.PARAMETER_NAME" placeholder="e.g. Topup Option, Flat rate OPTT1"
+                   :class="{'has-error': cfgErr.PARAMETER_NAME}" @input="cfgErr.PARAMETER_NAME=''">
+            <div class="field-error" v-if="cfgErr.PARAMETER_NAME">{{ cfgErr.PARAMETER_NAME }}</div>
+          </div>
           <div class="field"><label>Order</label><input type="number" v-model="cfgFormModel.ORDER" readonly></div>
           <div class="field">
-            <label>Base Key</label>
-            <div class="keybuilder">
+            <label>Base Key <span class="req">*</span></label>
+            <div class="keybuilder" :class="{'has-error': cfgErr.KEY_BASE}">
               <div class="key-option" v-for="p in paramMaster" :key="p.CODE" :class="{selected: cfgFormModel.KEY_BASE.includes(p.CODE)}" @click="toggleCfgKey(p.CODE)">
                 {{ p.NAME }} <span class="n" style="display:none;">{{ p.CODE }}</span>
               </div>
             </div>
+            <div class="field-error" v-if="cfgErr.KEY_BASE">{{ cfgErr.KEY_BASE }}</div>
             <div class="selected-keys-box">
               <span v-if="!cfgFormModel.KEY_BASE.length" class="placeholder">No base key selected</span>
               <span class="sel-chip" v-for="(k,i) in cfgFormModel.KEY_BASE" :key="k"><span class="idx">{{ i+1 }}</span>{{ nameOf(paramMaster,k) }}<button @click="removeCfgKeyAt(i)">✕</button></span>
@@ -1069,7 +1128,7 @@ createApp({
           </div>
           <div class="field"><div class="active-toggle-row"><div class="lab"><strong>Status</strong></div><label class="switch"><input type="checkbox" v-model="cfgFormModel.ACTIVE" true-value="Y" false-value="N"><span class="slider"></span></label></div></div>
         </div>
-        <div class="side-drawer-foot"><button class="btn btn-ghost" @click="closeCfgForm">Cancel</button><button class="btn btn-primary" @click="saveCfg">Save</button></div>
+        <div class="side-drawer-foot"><button class="btn btn-ghost" @click="closeCfgForm">Cancel</button><button class="btn btn-yellow" @click="saveCfg">Save</button></div>
       </div>
     </div>
 
@@ -1119,15 +1178,38 @@ createApp({
               </div>
             </div>
           </div>
-          <div v-else class="crit-empty">No value yet</div>
+          <div v-else class="empty-state" style="padding:28px 20px">
+            <svg class="empty-art" viewBox="0 0 160 150" width="150" height="140" aria-hidden="true">
+              <rect x="38" y="22" width="78" height="86" rx="8" fill="#FFF3C4"/>
+              <rect x="50" y="36" width="54" height="7" rx="3.5" fill="#FFD95C"/>
+              <rect x="50" y="50" width="42" height="7" rx="3.5" fill="#FFE68A"/>
+              <rect x="50" y="64" width="50" height="7" rx="3.5" fill="#FFE68A"/>
+              <rect x="18" y="52" width="40" height="56" rx="6" fill="#fff" stroke="#FFE08A" stroke-width="2"/>
+              <rect x="26" y="64" width="16" height="6" rx="3" fill="#FFD95C"/>
+              <rect x="26" y="76" width="24" height="5" rx="2.5" fill="#FFECA8"/>
+              <rect x="26" y="86" width="20" height="5" rx="2.5" fill="#FFECA8"/>
+              <rect x="96" y="14" width="36" height="19" rx="9.5" fill="#FFF3C4"/>
+              <circle cx="107" cy="23.5" r="2.4" fill="#FFC93C"/><circle cx="114" cy="23.5" r="2.4" fill="#FFC93C"/><circle cx="121" cy="23.5" r="2.4" fill="#FFC93C"/>
+              <circle cx="92" cy="82" r="26" fill="#FFFBEA" stroke="#FFC93C" stroke-width="6"/>
+              <line x1="111" y1="101" x2="126" y2="118" stroke="#FFC93C" stroke-width="9" stroke-linecap="round"/>
+              <line x1="83" y1="73" x2="101" y2="91" stroke="#F0474B" stroke-width="7" stroke-linecap="round"/>
+              <line x1="101" y1="73" x2="83" y2="91" stroke="#F0474B" stroke-width="7" stroke-linecap="round"/>
+              <circle cx="30" cy="40" r="2" fill="#FFE08A"/>
+              <circle cx="128" cy="62" r="2.5" fill="#FFE08A"/>
+              <circle cx="70" cy="120" r="2" fill="#FFE08A"/>
+            </svg>
+            <h3>Data not found</h3>
+          </div>
         </div>
 
         <!-- โหมดฟอร์ม -->
         <div class="side-drawer-body" v-else>
           <div class="field-inline" style="margin-bottom:18px;">
             <div class="field">
-              <label>value</label>
-              <input type="text" v-model="critFormModel.VALUE" placeholder="e.g. TP_Option 1, LTV150">
+              <label>value <span class="req">*</span></label>
+              <input type="text" v-model="critFormModel.VALUE" placeholder="e.g. TP_Option 1, LTV150"
+                     :class="{'has-error': critErr.VALUE}" @input="critErr.VALUE=''">
+              <div class="field-error" v-if="critErr.VALUE">{{ critErr.VALUE }}</div>
             </div>
             <div class="field" style="max-width:110px;">
               <label>Order</label>
@@ -1148,7 +1230,7 @@ createApp({
                 <option v-for="o in kvOps(k)" :key="o" :value="o">{{ o }}</option>
               </select>
 
-              <div class="kv-value">
+              <div class="kv-value" :class="{'has-error': critErr.keys[k]}">
                 <!-- 1) ไม่ใช้เงื่อนไขนี้ -->
                 <input v-if="critFormModel.KEY_VALUES[k].op==='N/A'" type="text" disabled placeholder="Not used">
 
@@ -1201,6 +1283,7 @@ createApp({
                          :placeholder="kvIsMulti(critFormModel.KEY_VALUES[k].op) ? 'Comma separated, e.g. 10,20,30' : (kvIsNum(k) ? 'e.g. 50000' : 'Type a value')">
                   <div class="kv-hint">No preset values for this base key</div>
                 </template>
+                <div class="field-error" v-if="critErr.keys[k]">{{ critErr.keys[k] }}</div>
               </div>
             </div>
           </div>
@@ -1214,7 +1297,7 @@ createApp({
         </div>
         <div class="side-drawer-foot" v-else>
           <button class="btn btn-ghost" @click="backToCritList">Cancel</button>
-          <button class="btn btn-primary" @click="saveCritValue">Save</button>
+          <button class="btn btn-yellow" @click="saveCritValue">Save</button>
         </div>
       </div>
     </div>
@@ -1226,19 +1309,19 @@ createApp({
       </div>
     </div>
 
-    <!-- popup แจ้งผลสำเร็จ -->
-    <div class="modal-overlay" v-if="done.show" @click.self="done.show=false">
-      <div class="done-box">
-        <div class="tick-circle">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12.5 9.5 18 20 7"/></svg>
+
+    <!-- popup แจ้งผล (Done / Alert) -->
+    <div class="modal-overlay" v-if="notice.show" @click.self="notice.show=false">
+      <div class="notice-box" :class="notice.kind">
+        <div class="notice-icon">
+          <svg v-if="notice.kind==='done'" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12.5 9.5 18 20 7"/></svg>
+          <svg v-else width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="14"/><line x1="12" y1="18.5" x2="12" y2="18.6"/></svg>
         </div>
-        <h3>Done</h3>
-        <p>{{ done.msg }}</p>
-        <button @click="done.show=false">Close</button>
+        <h3>{{ notice.title }}</h3>
+        <p>{{ notice.msg }}</p>
+        <button @click="notice.show=false">Close</button>
       </div>
     </div>
-
-    <div class="toast" v-if="toast.show"><span class="tick">{{ toast.ok ? '✓' : '!' }}</span> {{ toast.msg }}</div>
   </div>
   `
 }).mount('#app');

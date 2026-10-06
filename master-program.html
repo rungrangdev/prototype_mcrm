@@ -189,9 +189,6 @@
   .modal-box .warn-box{background:var(--danger-soft);color:#9A3131;border-radius:8px;padding:10px 12px;font-size:12.5px;margin-bottom:18px;}
   .modal-actions{display:flex;justify-content:flex-end;gap:10px;}
 
-  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--primary-dark);color:#fff;padding:12px 20px;border-radius:8px;font-size:13.5px;box-shadow:var(--shadow-md);z-index:80;display:flex;align-items:center;gap:10px;}
-  .toast .tick{color:#6FE3A6;font-weight:700;}
-
   table.data-table{
     width: 100%;
     border-collapse: collapse;
@@ -296,16 +293,27 @@
   .confirm-actions .ok{background:#FFD400;color:#1A1A1A;}
   .confirm-actions .ok:hover{background:#EFC400;}
 
-  /* ---- done dialog : popup แจ้งผลสำเร็จ ---- */
-  .done-box{background:#fff;border-radius:14px;padding:32px 36px;width:330px;max-width:92vw;
+  /* ---- popup แจ้งผล : Done = สำเร็จ, Alert = ผิดเงื่อนไข ---- */
+  .notice-box{background:#fff;border-radius:14px;padding:32px 36px;width:340px;max-width:92vw;
     box-shadow:0 12px 40px rgba(46,42,39,.22);text-align:center;}
-  .done-box .tick-circle{width:56px;height:56px;border-radius:50%;background:#22A55B;margin:0 auto 20px;
+  .notice-box .notice-icon{width:56px;height:56px;border-radius:50%;background:#22A55B;margin:0 auto 20px;
     display:flex;align-items:center;justify-content:center;}
-  .done-box h3{margin:0 0 8px;font-size:20px;font-weight:700;color:#1A1A1A;}
-  .done-box p{margin:0 0 24px;font-size:14px;color:#6B7280;line-height:1.6;}
-  .done-box button{width:100%;padding:13px 18px;border:none;border-radius:8px;background:#FFD400;
+  .notice-box.alert .notice-icon{background:#D64545;}
+  .notice-box h3{margin:0 0 8px;font-size:20px;font-weight:700;color:#1A1A1A;}
+  .notice-box p{margin:0 0 24px;font-size:14px;color:#6B7280;line-height:1.6;word-break:break-word;}
+  .notice-box button{width:100%;padding:13px 18px;border:none;border-radius:8px;background:#FFD400;
     color:#1A1A1A;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:.12s;}
-  .done-box button:hover{background:#EFC400;}
+  .notice-box button:hover{background:#EFC400;}
+  /* ---- ช่องที่กรอกไม่ครบ : กรอบแดง + ข้อความใต้ช่อง ---- */
+  .has-error, .has-error input, .has-error select, .has-error textarea{border-color:#D64545 !important;}
+  .field-error{margin-top:6px;font-size:12px;color:#D64545;line-height:1.5;}
+  .req{color:#D64545;}
+  /* ---- ปุ่มยืนยันใน modal / drawer : สีเหลืองชุดเดียวกับ popup ---- */
+  .btn-yellow{background:#FFD400 !important;color:#1A1A1A !important;border:none;}
+  .btn-yellow:hover{background:#EFC400 !important;}
+  /* ---- หน้าที่ไม่มีข้อมูล ---- */
+  .empty-state .empty-art{display:block;margin:0 auto 10px;}
+  .empty-state h3{color:#4B4B4B;font-size:15px;font-weight:700;margin:0;}
 </style>
 </head>
 <body>
@@ -357,18 +365,23 @@ createApp({
 
     const showAssignForm = ref(false);
     const isEditingAssign = ref(false);
+    /* ช่องที่ยังกรอกไม่ครบ : เก็บข้อความไว้แสดงใต้ช่องนั้น ๆ */
+    const assignErr = reactive({ PROGRAM_CODE:'' });
+    function clearAssignErr(){ assignErr.PROGRAM_CODE = ''; }
     const assignFormModel = reactive({ PROGRAM_ID:'', PROGRAM_CODE:'', ORDER:'1', STATUS:'Y', CREATE_BY:'', CREATE_DATE:'', UPDATE_BY:'', UPDATE_DATE:'' });
     const assignableProgramOptions = computed(() => programMaster.value.filter(p => isEditingAssign.value ? true : !assignRecords.value.some(a=>a.PROGRAM_CODE===p.CODE)));
 
     function openAddAssign(){
       isEditingAssign.value = false;
       Object.assign(assignFormModel, { PROGRAM_ID:MCRM.nextProgramId(), PROGRAM_CODE:'', ORDER:String((assignRecords.value.length+1)), STATUS:'Y' });
+      clearAssignErr();
       showAssignForm.value = true;
     }
-    function openEditAssign(row){ isEditingAssign.value = true; Object.assign(assignFormModel, row); showAssignForm.value = true; }
+    function openEditAssign(row){ isEditingAssign.value = true; Object.assign(assignFormModel, row); clearAssignErr(); showAssignForm.value = true; }
     function closeAssignForm(){ showAssignForm.value = false; }
     function saveAssign(){
-      if (!assignFormModel.PROGRAM_CODE){ showToast('Please select a program', false); return; }
+      clearAssignErr();
+      if (!assignFormModel.PROGRAM_CODE){ assignErr.PROGRAM_CODE = 'Program is required'; return; }
       if (isEditingAssign.value){
         const idx = assignments.findIndex(a=>a.ENTITY===assignEntity.value && a.LEAD_TYPE===assignLeadType.value && a.PROGRAM_CODE===assignFormModel.PROGRAM_CODE);
         assignments[idx] = { ...assignments[idx], ...assignFormModel, UPDATE_BY:'ADMIN', UPDATE_DATE:now() };
@@ -386,20 +399,17 @@ createApp({
       confirmDeleteAssign.value = null;
     }
 
-    /* popup แจ้งผลสำเร็จ (Done) — ใช้แทน toast สำหรับรายการที่ทำสำเร็จ
-       ส่วน toast เหลือไว้สำหรับข้อความเตือน/กรอกข้อมูลไม่ครบ */
-    const done = reactive({ show:false, msg:'' });
-    function showDone(msg){ done.msg = msg; done.show = true; }
-
-    const toast = reactive({ show:false, msg:'', ok:true });
-    let toastTimer = null;
-    function showToast(msg, ok=true){ toast.msg=msg; toast.ok=ok; toast.show=true; clearTimeout(toastTimer); toastTimer=setTimeout(()=>toast.show=false,2600); }
+    /* popup แจ้งผล : showDone = ทำรายการสำเร็จ, showAlert = ผิดเงื่อนไข
+       ส่วนช่องที่กรอกไม่ครบจะขึ้นกรอบแดงใต้ช่องแทน ไม่ใช้ popup */
+    const notice = reactive({ show:false, kind:'done', title:'Done', msg:'' });
+    function showDone(msg){ Object.assign(notice, { show:true, kind:'done',  title:'Done',  msg }); }
+    function showAlert(msg){ Object.assign(notice, { show:true, kind:'alert', title:'Alert', msg }); }
 
     return {
       entityMaster, leadTypeMaster, programMaster, nameOf,
-      assignEntity, assignLeadType, assignRecords, showAssignForm, isEditingAssign, assignFormModel, assignableProgramOptions,
+      assignEntity, assignLeadType, assignRecords, showAssignForm, isEditingAssign, assignFormModel, assignErr, assignableProgramOptions,
       openAddAssign, openEditAssign, closeAssignForm, saveAssign, confirmDeleteAssign, askDeleteAssign, confirmDeleteAssignRow,
-      toast, done, showDone
+      notice, showDone, showAlert,
     };
   },
   template: `
@@ -446,9 +456,26 @@ createApp({
             </tbody>
           </table>
           <div v-else class="empty-state">
-            <div class="glyph"></div>
-            <h3>No program for {{ assignEntity }} / {{ assignLeadType }}</h3>
-            <button class="btn btn-primary" style="margin-top:12px" @click="openAddAssign">+ Add</button>
+            <svg class="empty-art" viewBox="0 0 160 150" width="150" height="140" aria-hidden="true">
+              <rect x="38" y="22" width="78" height="86" rx="8" fill="#FFF3C4"/>
+              <rect x="50" y="36" width="54" height="7" rx="3.5" fill="#FFD95C"/>
+              <rect x="50" y="50" width="42" height="7" rx="3.5" fill="#FFE68A"/>
+              <rect x="50" y="64" width="50" height="7" rx="3.5" fill="#FFE68A"/>
+              <rect x="18" y="52" width="40" height="56" rx="6" fill="#fff" stroke="#FFE08A" stroke-width="2"/>
+              <rect x="26" y="64" width="16" height="6" rx="3" fill="#FFD95C"/>
+              <rect x="26" y="76" width="24" height="5" rx="2.5" fill="#FFECA8"/>
+              <rect x="26" y="86" width="20" height="5" rx="2.5" fill="#FFECA8"/>
+              <rect x="96" y="14" width="36" height="19" rx="9.5" fill="#FFF3C4"/>
+              <circle cx="107" cy="23.5" r="2.4" fill="#FFC93C"/><circle cx="114" cy="23.5" r="2.4" fill="#FFC93C"/><circle cx="121" cy="23.5" r="2.4" fill="#FFC93C"/>
+              <circle cx="92" cy="82" r="26" fill="#FFFBEA" stroke="#FFC93C" stroke-width="6"/>
+              <line x1="111" y1="101" x2="126" y2="118" stroke="#FFC93C" stroke-width="9" stroke-linecap="round"/>
+              <line x1="83" y1="73" x2="101" y2="91" stroke="#F0474B" stroke-width="7" stroke-linecap="round"/>
+              <line x1="101" y1="73" x2="83" y2="91" stroke="#F0474B" stroke-width="7" stroke-linecap="round"/>
+              <circle cx="30" cy="40" r="2" fill="#FFE08A"/>
+              <circle cx="128" cy="62" r="2.5" fill="#FFE08A"/>
+              <circle cx="70" cy="120" r="2" fill="#FFE08A"/>
+            </svg>
+            <h3>Data not found</h3>
           </div>
         </div>
       </section>
@@ -463,16 +490,18 @@ createApp({
             <input type="text" :value="assignFormModel.PROGRAM_ID" readonly>
           </div>
           <div class="field">
-            <label>Program</label>
-            <select v-model="assignFormModel.PROGRAM_CODE" :disabled="isEditingAssign">
+            <label>Program <span class="req">*</span></label>
+            <select v-model="assignFormModel.PROGRAM_CODE" :disabled="isEditingAssign"
+                    :class="{'has-error': assignErr.PROGRAM_CODE}" @change="assignErr.PROGRAM_CODE=''">
               <option value="" disabled>— Select Program —</option>
               <option v-for="p in assignableProgramOptions" :key="p.CODE" :value="p.CODE">{{ p.NAME }} ({{ p.CODE }})</option>
             </select>
+            <div class="field-error" v-if="assignErr.PROGRAM_CODE">{{ assignErr.PROGRAM_CODE }}</div>
           </div>
           <div class="field"><label>Order</label><input type="number" v-model="assignFormModel.ORDER"></div>
           <div class="field"><div class="active-toggle-row"><div class="lab"><strong>Status</strong></div><label class="switch"><input type="checkbox" v-model="assignFormModel.STATUS" true-value="Y" false-value="N"><span class="slider"></span></label></div></div>
         </div>
-        <div class="side-drawer-foot"><button class="btn btn-ghost" @click="closeAssignForm">Cancel</button><button class="btn btn-primary" @click="saveAssign">Save</button></div>
+        <div class="side-drawer-foot"><button class="btn btn-ghost" @click="closeAssignForm">Cancel</button><button class="btn btn-yellow" @click="saveAssign">Save</button></div>
       </div>
     </div>
 
@@ -483,19 +512,19 @@ createApp({
       </div>
     </div>
 
-    <!-- popup แจ้งผลสำเร็จ -->
-    <div class="modal-overlay" v-if="done.show" @click.self="done.show=false">
-      <div class="done-box">
-        <div class="tick-circle">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12.5 9.5 18 20 7"/></svg>
+
+    <!-- popup แจ้งผล (Done / Alert) -->
+    <div class="modal-overlay" v-if="notice.show" @click.self="notice.show=false">
+      <div class="notice-box" :class="notice.kind">
+        <div class="notice-icon">
+          <svg v-if="notice.kind==='done'" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12.5 9.5 18 20 7"/></svg>
+          <svg v-else width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="14"/><line x1="12" y1="18.5" x2="12" y2="18.6"/></svg>
         </div>
-        <h3>Done</h3>
-        <p>{{ done.msg }}</p>
-        <button @click="done.show=false">Close</button>
+        <h3>{{ notice.title }}</h3>
+        <p>{{ notice.msg }}</p>
+        <button @click="notice.show=false">Close</button>
       </div>
     </div>
-
-    <div class="toast" v-if="toast.show"><span class="tick">{{ toast.ok ? '✓' : '!' }}</span> {{ toast.msg }}</div>
   </div>
   `
 }).mount('#app');

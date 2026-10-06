@@ -169,8 +169,6 @@
 .replace-textarea{width:100%;min-height:180px;font-family:monospace;font-size:12.5px;border:1px solid #E4DED7;border-radius:7px;padding:10px;color:#3D3835}
 .result-tbl{width:100%;border-collapse:collapse}
 .result-tbl th,.result-tbl td{border:1px solid #ddd;padding:8px;text-align:left}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#3D3835;color:#fff;padding:10px 20px;border-radius:8px;font-size:13.5px;box-shadow:0 4px 14px rgba(0,0,0,.25);z-index:9998;}
-
   /* ---- confirm dialog : หน้าตาเดียวกันทุกหน้า ---- */
   .confirm-box{background:#fff;border-radius:14px;padding:28px 32px;width:380px;max-width:92vw;
     box-shadow:0 12px 40px rgba(46,42,39,.22);text-align:center;}
@@ -182,6 +180,24 @@
   .confirm-actions .cancel:hover{background:#FFFBEA;}
   .confirm-actions .ok{background:#FFD400;color:#1A1A1A;}
   .confirm-actions .ok:hover{background:#EFC400;}
+  /* ---- popup แจ้งผล : Done = สำเร็จ, Alert = ผิดเงื่อนไข ---- */
+  .notice-box{background:#fff;border-radius:14px;padding:32px 36px;width:340px;max-width:92vw;
+    box-shadow:0 12px 40px rgba(46,42,39,.22);text-align:center;}
+  .notice-box .notice-icon{width:56px;height:56px;border-radius:50%;background:#22A55B;margin:0 auto 20px;
+    display:flex;align-items:center;justify-content:center;}
+  .notice-box.alert .notice-icon{background:#D64545;}
+  .notice-box h3{margin:0 0 8px;font-size:20px;font-weight:700;color:#1A1A1A;}
+  .notice-box p{margin:0 0 24px;font-size:14px;color:#6B7280;line-height:1.6;word-break:break-word;}
+  .notice-box button{width:100%;padding:13px 18px;border:none;border-radius:8px;background:#FFD400;
+    color:#1A1A1A;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:.12s;}
+  .notice-box button:hover{background:#EFC400;}
+  /* ---- ช่องที่กรอกไม่ครบ : กรอบแดง + ข้อความใต้ช่อง ---- */
+  .has-error, .has-error input, .has-error select, .has-error textarea{border-color:#D64545 !important;}
+  .field-error{margin-top:6px;font-size:12px;color:#D64545;line-height:1.5;}
+  .req{color:#D64545;}
+  /* ---- ปุ่มยืนยันใน modal / drawer : สีเหลืองชุดเดียวกับ popup ---- */
+  .btn-yellow{background:#FFD400 !important;color:#1A1A1A !important;border:none;}
+  .btn-yellow:hover{background:#EFC400 !important;}
 </style>
 
 <div id="app"></div>
@@ -318,7 +334,7 @@ createApp({
     const FLOW_STATUSES = ['Draft','Active','Inactive'];
     const flowStatusOf = (f) => f.STATUS || 'Draft';
     const flowStatusClass = (f) => 'fs-' + flowStatusOf(f).toLowerCase();
-    function setFlowStatus(f, st){ f.STATUS = st; showToast(`${f.flow_id} เป็น ${st} แล้ว`); }
+    function setFlowStatus(f, st){ f.STATUS = st; showDone('Flow status updated successfully'); }
 
     /* ---- Run Flow : ดูแค่ Eligible ส่วน parameter version ที่ยังไม่ Active
        ยังรันทดสอบได้ แต่จะไปติดตอน Register Lead ที่หน้า Execution Log ---- */
@@ -598,7 +614,7 @@ createApp({
       schedForm.custom = s.mode==='custom' ? (s.cron||DEFAULT_CRON) : (currentFlow.schedule||DEFAULT_CRON);
       showSchedule.value = true;
     }
-    function toggleSchDay(i){ const idx=schedForm.days.indexOf(i); if (idx>=0) schedForm.days.splice(idx,1); else schedForm.days.push(i); }
+    function toggleSchDay(i){ schedErr.days=''; const idx=schedForm.days.indexOf(i); if (idx>=0) schedForm.days.splice(idx,1); else schedForm.days.push(i); }
     function buildCronFromSch(f){
       switch (f.mode){
         case 'minute': return f.every>1 ? `*/${f.every} * * * *` : '* * * * *';
@@ -611,10 +627,15 @@ createApp({
     }
     const cronPreview = computed(() => buildCronFromSch(schedForm));
     const cronPreviewDesc = computed(() => cronDescribe(cronPreview.value));
+    /* ช่องที่ยังกรอกไม่ครบ : เก็บข้อความไว้แสดงใต้ช่องนั้น ๆ */
+    const schedErr = reactive({ days:'' });
+    const flowErr  = reactive({ flow_id:'' });
+
     function saveSchedule(){
-      if (schedForm.mode==='weekly' && !schedForm.days.length){ showToast('เลือกวันอย่างน้อย 1 วัน', false); return; }
+      schedErr.days = '';
+      if (schedForm.mode==='weekly' && !schedForm.days.length){ schedErr.days = 'Select at least one day'; return; }
       const cron = cronPreview.value;
-      if (schedForm.mode==='custom' && cron.split(/\s+/).length!==5){ showToast('Cron ต้องมี 5 ช่อง เช่น 0 1 * * *', false); return; }
+      if (schedForm.mode==='custom' && cron.split(/\s+/).length!==5){ showAlert('Cron must have 5 fields, e.g. 0 1 * * *'); return; }
       currentFlow.schedule = cron;
       showSchedule.value = false;
     }
@@ -642,12 +663,13 @@ createApp({
       const payload = buildPayload();
       outputText.value = JSON.stringify(payload, null, 4);
       showOutput.value = true;
-      if (!currentFlow.flow_id.trim()){ showToast('กรุณากรอก Flow ID เพื่อบันทึกเข้ารายการ', false); return; }
+      flowErr.flow_id = '';
+      if (!currentFlow.flow_id.trim()){ flowErr.flow_id = 'Flow ID is required'; return; }
       const idx = flows.findIndex(f => f.flow_id === currentFlow.flow_id);
       const record = { flow_id: payload.flow_id, flow_name: payload.flow_name, run_type: payload.run_type, schedule: payload.schedule,
                        STATUS: idx >= 0 ? flowStatusOf(flows[idx]) : 'Draft', steps: payload.steps };
       if (idx >= 0) flows[idx] = record; else flows.push(record);
-      showToast('บันทึก Flow เรียบร้อย');
+      showDone('Flow saved successfully');
     }
     function copyPayload(){
       navigator.clipboard.writeText(outputText.value).then(() => {
@@ -683,7 +705,7 @@ createApp({
     function confirmRunFlowYes(){
       const flow = confirmRunFlow.value;
       confirmRunFlow.value = null;
-      showToast(`The flow "${flow.flow_name}" is now running.`);
+      showDone('Flow is now running');
       setTimeout(() => { window.location.href = `workflow_management.html?create_flow_id=${flow.flow_id}`; }, 600);
     }
     /* Clone Workflow : คัดลอกทั้ง flow มาเป็นชุดใหม่สถานะ Draft */
@@ -693,7 +715,7 @@ createApp({
       copy.flow_name = f.flow_name + ' (copy)';
       copy.STATUS = 'Draft';
       flows.push(copy);
-      showToast(`Clone ${f.flow_id} เป็น ${copy.flow_id} แล้ว (สถานะ Draft)`);
+      showDone('Flow cloned successfully');
     }
 
     const confirmDeleteFlow = ref(null);
@@ -702,12 +724,14 @@ createApp({
       const flow = confirmDeleteFlow.value;
       flows.splice(flows.findIndex(f => f === flow), 1);
       confirmDeleteFlow.value = null;
-      showToast(`ลบ Flow "${flow.flow_id}" แล้ว`);
+      showDone('Flow deleted successfully');
     }
 
-    const toast = reactive({ show:false, msg:'', ok:true });
-    let toastTimer = null;
-    function showToast(msg, ok=true){ toast.msg=msg; toast.ok=ok; toast.show=true; clearTimeout(toastTimer); toastTimer=setTimeout(()=>toast.show=false,2600); }
+    /* popup แจ้งผล : showDone = ทำรายการสำเร็จ, showAlert = ผิดเงื่อนไข
+       ส่วนช่องที่กรอกไม่ครบจะขึ้นกรอบแดงใต้ช่องแทน ไม่ใช้ popup */
+    const notice = reactive({ show:false, kind:'done', title:'Done', msg:'' });
+    function showDone(msg){ Object.assign(notice, { show:true, kind:'done',  title:'Done',  msg }); }
+    function showAlert(msg){ Object.assign(notice, { show:true, kind:'alert', title:'Alert', msg }); }
 
     return {
       TYPES, SCH_MODES, WD_TH_SHORT, MIN_BOX_H, BOX_W, STROKE, STROKE_W,
@@ -723,11 +747,11 @@ createApp({
       canvasEl, setBoxRef, cols, boxHeights, layout, getPos, makePath, svgW, svgH, addBtnPos,
       draggingId, dragOverId, onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop,
       statusClass, badgeClass,
-      showSchedule, schedForm, openScheduleDialog, toggleSchDay, cronPreview, cronPreviewDesc, saveSchedule,
+      showSchedule, schedForm, schedErr, flowErr, openScheduleDialog, toggleSchDay, cronPreview, cronPreviewDesc, saveSchedule,
       outputText, showOutput, copyLabel, submitFlow, copyPayload,
       manualWarning, runFlow, resultModal, showResultModal, numberWithCommas, pad2,
       confirmRunFlow, askRunFlow, confirmRunFlowYes, confirmDeleteFlow, askDeleteFlow, confirmDeleteFlowYes,
-      toast,
+      notice, showDone, showAlert,
     };
   },
   template: `
@@ -779,8 +803,9 @@ createApp({
     <!-- ============ EDITOR PAGE ============ -->
     <div id="flow_area" class="page_all" v-if="pageView==='editor'">
       <div class="topbar">
-        <label>Flow ID</label>
-        <input v-model="currentFlow.flow_id">
+        <label>Flow ID <span class="req">*</span></label>
+        <input v-model="currentFlow.flow_id" :class="{'has-error': flowErr.flow_id}" @input="flowErr.flow_id=''">
+        <div class="field-error" v-if="flowErr.flow_id">{{ flowErr.flow_id }}</div>
         <label>Flow Name</label>
         <input v-model="currentFlow.flow_name" style="width:300px">
         <label>Run Type</label>
@@ -966,6 +991,7 @@ createApp({
           <div class="sch-days">
             <button type="button" class="sch-day" v-for="(n,i) in WD_TH_SHORT" :key="i" :class="{on: schedForm.days.includes(i)}" @click="toggleSchDay(i)">{{ n }}</button>
           </div>
+          <div class="field-error" v-if="schedErr.days">{{ schedErr.days }}</div>
           เวลา <input type="time" v-model="schedForm.time">
         </div>
         <div class="sch-panel" v-if="schedForm.mode==='monthly'">
@@ -980,7 +1006,7 @@ createApp({
           <span class="cp-code">{{ cronPreview }}</span>
           <span class="cp-desc">{{ cronPreviewDesc }}</span>
         </div>
-        <div class="modal-actions"><button class="btn-ghost" @click="showSchedule=false">ยกเลิก</button><button class="btn-run" @click="saveSchedule">ตกลง</button></div>
+        <div class="modal-actions"><button class="btn-ghost" @click="showSchedule=false">ยกเลิก</button><button class="btn-run btn-yellow" @click="saveSchedule">OK</button></div>
       </div>
     </div>
 
@@ -989,7 +1015,7 @@ createApp({
       <div class="modal-box">
         <h3>Manual Step Detected</h3>
         <p>Step {{ manualWarning.stepNo }}: {{ manualWarning.name }} is a manual step. Please complete it manually before proceeding.</p>
-        <div class="modal-actions"><button class="btn-run" @click="manualWarning.show=false">OK</button></div>
+        <div class="modal-actions"><button class="btn-run btn-yellow" @click="manualWarning.show=false">OK</button></div>
       </div>
     </div>
 
@@ -1001,7 +1027,7 @@ createApp({
           <thead><tr><th>Channel</th><th>Quantity</th></tr></thead>
           <tbody><tr v-for="r in resultModal.rows" :key="r.channel"><td width="100px">{{ r.channel }}</td><td>{{ numberWithCommas(r.qty) }}</td></tr></tbody>
         </table>
-        <div class="modal-actions"><button class="btn-run" @click="resultModal.show=false">Back</button></div>
+        <div class="modal-actions"><button class="btn-run btn-yellow" @click="resultModal.show=false">Back</button></div>
       </div>
     </div>
 
@@ -1021,7 +1047,18 @@ createApp({
       </div>
     </div>
 
-    <div class="toast" v-if="toast.show">{{ toast.msg }}</div>
+    <!-- popup แจ้งผล (Done / Alert) -->
+    <div class="modal-overlay" v-if="notice.show" @click.self="notice.show=false">
+      <div class="notice-box" :class="notice.kind">
+        <div class="notice-icon">
+          <svg v-if="notice.kind==='done'" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12.5 9.5 18 20 7"/></svg>
+          <svg v-else width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="14"/><line x1="12" y1="18.5" x2="12" y2="18.6"/></svg>
+        </div>
+        <h3>{{ notice.title }}</h3>
+        <p>{{ notice.msg }}</p>
+        <button @click="notice.show=false">Close</button>
+      </div>
+    </div>
   </div>
   `
 }).mount('#app');

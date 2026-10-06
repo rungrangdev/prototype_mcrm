@@ -297,8 +297,6 @@
     .field-group label{display:block;font-size:12.5px;font-weight:600;color:#4B5563;margin-bottom:6px}
     .field-group select{width:100%;padding:9px 12px;border:1px solid #E4E7EF !important;border-radius:8px;font-size:13.5px;font-family:inherit;color:#1E2433;background:#FBFCFE}
     .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
-    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1E2433;color:#fff;padding:10px 20px;border-radius:8px;font-size:13.5px;box-shadow:0 4px 14px rgba(0,0,0,.25);z-index:9998;}
-
   /* ---- confirm dialog : หน้าตาเดียวกันทุกหน้า ---- */
   .confirm-box{background:#fff;border-radius:14px;padding:28px 32px;width:380px;max-width:92vw;
     box-shadow:0 12px 40px rgba(46,42,39,.22);text-align:center;}
@@ -310,6 +308,24 @@
   .confirm-actions .cancel:hover{background:#FFFBEA;}
   .confirm-actions .ok{background:#FFD400;color:#1A1A1A;}
   .confirm-actions .ok:hover{background:#EFC400;}
+  /* ---- popup แจ้งผล : Done = สำเร็จ, Alert = ผิดเงื่อนไข ---- */
+  .notice-box{background:#fff;border-radius:14px;padding:32px 36px;width:340px;max-width:92vw;
+    box-shadow:0 12px 40px rgba(46,42,39,.22);text-align:center;}
+  .notice-box .notice-icon{width:56px;height:56px;border-radius:50%;background:#22A55B;margin:0 auto 20px;
+    display:flex;align-items:center;justify-content:center;}
+  .notice-box.alert .notice-icon{background:#D64545;}
+  .notice-box h3{margin:0 0 8px;font-size:20px;font-weight:700;color:#1A1A1A;}
+  .notice-box p{margin:0 0 24px;font-size:14px;color:#6B7280;line-height:1.6;word-break:break-word;}
+  .notice-box button{width:100%;padding:13px 18px;border:none;border-radius:8px;background:#FFD400;
+    color:#1A1A1A;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:.12s;}
+  .notice-box button:hover{background:#EFC400;}
+  /* ---- ช่องที่กรอกไม่ครบ : กรอบแดง + ข้อความใต้ช่อง ---- */
+  .has-error, .has-error input, .has-error select, .has-error textarea{border-color:#D64545 !important;}
+  .field-error{margin-top:6px;font-size:12px;color:#D64545;line-height:1.5;}
+  .req{color:#D64545;}
+  /* ---- ปุ่มยืนยันใน modal / drawer : สีเหลืองชุดเดียวกับ popup ---- */
+  .btn-yellow{background:#FFD400 !important;color:#1A1A1A !important;border:none;}
+  .btn-yellow:hover{background:#EFC400 !important;}
 </style>
 
 <div id="app"></div>
@@ -400,11 +416,11 @@ createApp({
     const createFlowId = ref('');
     function createTransaction(){
       const flow = flows.find(f => f.flow_id === createFlowId.value);
-      if (!flow){ showToast('กรุณาเลือก Flow', false); return; }
+      if (!flow){ showAlert('Flow not found'); return; }
       const now = MCRM.nowStr();
       const entry = { trans_id: nextTransId(), flow_id: flow.flow_id, flow_name: flow.flow_name, create_date: now, start_date: now, end_date: '', steps: flow.steps.map(normalizeStep) };
       executionLogs.push(entry);
-      showToast(`สร้าง Transaction "${entry.trans_id}" เรียบร้อย`);
+      showDone('Transaction created successfully');
     }
 
     /* ---- register a completed/running transaction as a worklist lead ---- */
@@ -423,7 +439,7 @@ createApp({
         flow_id: t.flow_id, flow_name: t.flow_name, tran_id: t.trans_id, suppression: '',
         submit_date: MCRM.nowStr(), complete_date: '', status: 'Wait',
       });
-      showToast(`Registered lead for "${t.flow_name}"`);
+      showDone('Lead registered successfully');
       setTimeout(() => { window.location.href = 'worklist.html'; }, 600);
     }
 
@@ -652,12 +668,14 @@ createApp({
        (ไว้เปิดดูผลลัพธ์ของกล่องที่ต้องรันจบก่อนถึงจะกดดูได้) */
     function completeAllSteps(){
       steps.value.forEach(s => s.status = 'Completed');
-      showToast('ทุกขั้นตอนถูกตั้งเป็น Completed แล้ว');
+      showDone('All steps set to Completed');
     }
 
-    const toast = reactive({ show:false, msg:'', ok:true });
-    let toastTimer = null;
-    function showToast(msg, ok=true){ toast.msg=msg; toast.ok=ok; toast.show=true; clearTimeout(toastTimer); toastTimer=setTimeout(()=>toast.show=false,2600); }
+    /* popup แจ้งผล : showDone = ทำรายการสำเร็จ, showAlert = ผิดเงื่อนไข
+       ส่วนช่องที่กรอกไม่ครบจะขึ้นกรอบแดงใต้ช่องแทน ไม่ใช้ popup */
+    const notice = reactive({ show:false, kind:'done', title:'Done', msg:'' });
+    function showDone(msg){ Object.assign(notice, { show:true, kind:'done',  title:'Done',  msg }); }
+    function showAlert(msg){ Object.assign(notice, { show:true, kind:'alert', title:'Alert', msg }); }
 
     /* ---- entry from Workflow Config's "Run Flow" (?create_flow_id=...) ---- */
     onMounted(() => {
@@ -683,7 +701,7 @@ createApp({
       validationModal, openStepValidation, closeStepValidation, exportStepValidation,
       flowStatus, currentStepLabel,
       manualWarning, runFlow, completeAllSteps, numberWithCommas, randomMin,
-      toast,
+      notice, showDone, showAlert,
     };
   },
   template: `
@@ -834,7 +852,7 @@ createApp({
       <div class="modal-box">
         <h3>Manual Step Detected</h3>
         <p>Step {{ manualWarning.stepNo }}: {{ manualWarning.name }} is a manual step. Please complete it manually before proceeding.</p>
-        <div class="modal-actions"><button class="btn-run" @click="manualWarning.show=false">OK</button></div>
+        <div class="modal-actions"><button class="btn-run btn-yellow" @click="manualWarning.show=false">OK</button></div>
       </div>
     </div>
 
@@ -973,7 +991,18 @@ createApp({
       </div>
     </div>
 
-    <div class="toast" v-if="toast.show">{{ toast.msg }}</div>
+    <!-- popup แจ้งผล (Done / Alert) -->
+    <div class="modal-overlay" v-if="notice.show" @click.self="notice.show=false">
+      <div class="notice-box" :class="notice.kind">
+        <div class="notice-icon">
+          <svg v-if="notice.kind==='done'" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12.5 9.5 18 20 7"/></svg>
+          <svg v-else width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="14"/><line x1="12" y1="18.5" x2="12" y2="18.6"/></svg>
+        </div>
+        <h3>{{ notice.title }}</h3>
+        <p>{{ notice.msg }}</p>
+        <button @click="notice.show=false">Close</button>
+      </div>
+    </div>
   </div>
   `
 }).mount('#app');
