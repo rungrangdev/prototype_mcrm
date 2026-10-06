@@ -1102,7 +1102,7 @@ createApp({
       <div class="side-drawer">
         <div class="side-drawer-head"><h3>{{ isEditingCfg ? 'Parameter' : 'Parameter' }} · {{ cfgProgram }} / {{ cfgEntity }}</h3><button class="close-x" @click="closeCfgForm">✕</button></div>
         <div class="side-drawer-body">
-          <div class="field"><label>Parameter ID</label><input type="text" :value="cfgFormModel.PARAMETER_ID || 'Auto-generated on save'" readonly></div>
+          <div class="field"><label>Parameter ID</label><input type="text" :value="cfgFormModel.PARAMETER_ID" placeholder="Auto generates by system." readonly></div>
           <div class="field"><label>Parameter Name <span class="req">*</span></label>
             <input type="text" v-model="cfgFormModel.PARAMETER_NAME" placeholder="e.g. Topup Option, Flat rate OPTT1"
                    :class="{'has-error': cfgErr.PARAMETER_NAME}" @input="cfgErr.PARAMETER_NAME=''">
