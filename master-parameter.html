@@ -522,7 +522,7 @@ createApp({
       Object.assign(cloneForm, { show:true, source:v, name:'' });
     }
     function confirmCloneVersion(){
-      if (!cloneForm.name.trim()){ cloneErr.name = 'Version Name is required'; return; }
+      if (!cloneForm.name.trim()){ cloneErr.name = 'Please enter Version Name.'; return; }
       cloneVersion(cloneForm.source, cloneForm.name.trim());
       cloneForm.show = false;
     }
@@ -571,7 +571,7 @@ createApp({
     const rejectForm = reactive({ show:false, target:null, reason:'' });
     function askRejectVersion(v){ rejectErr.reason = ''; Object.assign(rejectForm, { show:true, target:v, reason:'' }); }
     function confirmRejectVersion(){
-      if (!rejectForm.reason.trim()){ rejectErr.reason = 'Reason is required'; return; }
+      if (!rejectForm.reason.trim()){ rejectErr.reason = 'Please enter Reason.'; return; }
       const v = rejectForm.target;
       v.STATUS = 'Reject';
       v.REJECT_REASON = rejectForm.reason.trim();
@@ -656,7 +656,7 @@ createApp({
     function removeCfgKeyAt(i){ cfgFormModel.KEY_BASE.splice(i,1); }
     function saveCfg(){
       cfgErr.PARAMETER_NAME = ''; cfgErr.KEY_BASE = '';
-      if (!cfgFormModel.PARAMETER_NAME.trim()){ cfgErr.PARAMETER_NAME = 'Parameter Name is required'; return; }
+      if (!cfgFormModel.PARAMETER_NAME.trim()){ cfgErr.PARAMETER_NAME = 'Please enter Parameter Name.'; return; }
       if (!cfgFormModel.KEY_BASE.length){ cfgErr.KEY_BASE = 'At least one Base Key is required'; return; }
       const code = isEditingCfg.value ? cfgFormModel.PARAMETER_CODE : slugify(cfgFormModel.PARAMETER_NAME);
       if (isEditingCfg.value){
@@ -776,7 +776,7 @@ createApp({
     function saveCritValue(){
       const val = critFormModel.VALUE.trim();
       critErr.VALUE = ''; critErr.keys = {};
-      if (!val){ critErr.VALUE = 'Value is required'; return; }
+      if (!val){ critErr.VALUE = 'Please enter Value.'; return; }
       const dup = criteriaRows.some(r => r !== editingCritRow.value && r.VERSION_ID===cfgVersionId.value &&
         r.PROGRAM_CODE===cfgProgram.value && r.ENTITY===cfgEntity.value &&
         r.PARAMETER_CODE===critParamRow.value.PARAMETER_CODE && r.VALUE===val);
@@ -786,7 +786,7 @@ createApp({
         const c = critFormModel.KEY_VALUES[k];
         return c.op !== 'N/A' && !String(c.value).trim();
       });
-      if (missing.length){ missing.forEach(k => critErr.keys[k] = 'Value is required'); return; }
+      if (missing.length){ missing.forEach(k => critErr.keys[k] = `Please enter ${nameOf(paramMaster.value, k)}.`); return; }
 
       if (isEditingCrit.value){
         Object.assign(editingCritRow.value, {

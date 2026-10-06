@@ -555,10 +555,10 @@ createApp({
     /* ---- save ---- */
     function saveValidation(){
       clearValErr();
-      if (!cur.validation_name.trim()){ valErr.name = 'Validation Name is required'; return; }
+      if (!cur.validation_name.trim()){ valErr.name = 'Please enter Validation Name.'; return; }
       if (!cur.conditions.length){ valErr.conditions = 'At least one Condition is required'; return; }
       const bad = cur.conditions.findIndex(c => !c.expected.field || c.expected.value === '');
-      if (bad >= 0){ valErr.expected[cur.conditions[bad].code] = 'Expected Result is required'; return; }
+      if (bad >= 0){ valErr.expected[cur.conditions[bad].code] = 'Please enter Expected Result.'; return; }
 
       cur.update_date = MCRM.nowStr();
       cur.update_by = 'PRASERT.L';

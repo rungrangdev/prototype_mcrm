@@ -343,7 +343,7 @@ createApp({
     function saveCrit(){
       const val = critFormModel.VALUE.trim();
       critErr.VALUE = '';
-      if (!val){ critErr.VALUE = 'Value is required'; return; }
+      if (!val){ critErr.VALUE = 'Please enter Value.'; return; }
       const dup = criteriaRows.some(r =>
         r !== editingRow.value &&
         r.ENTITY===critEntity.value && r.LEAD_TYPE===critLeadType.value &&

@@ -373,7 +373,7 @@ createApp({
 
     function openAddAssign(){
       isEditingAssign.value = false;
-      Object.assign(assignFormModel, { PROGRAM_ID:MCRM.nextProgramId(), PROGRAM_CODE:'', ORDER:String((assignRecords.value.length+1)), STATUS:'Y' });
+      Object.assign(assignFormModel, { PROGRAM_ID:'', PROGRAM_CODE:'', ORDER:String((assignRecords.value.length+1)), STATUS:'Y' });
       clearAssignErr();
       showAssignForm.value = true;
     }
@@ -386,7 +386,9 @@ createApp({
         const idx = assignments.findIndex(a=>a.ENTITY===assignEntity.value && a.LEAD_TYPE===assignLeadType.value && a.PROGRAM_CODE===assignFormModel.PROGRAM_CODE);
         assignments[idx] = { ...assignments[idx], ...assignFormModel, UPDATE_BY:'ADMIN', UPDATE_DATE:now() };
       } else {
-        assignments.push({ ENTITY:assignEntity.value, LEAD_TYPE:assignLeadType.value, ...assignFormModel, CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
+        assignments.push({ ENTITY:assignEntity.value, LEAD_TYPE:assignLeadType.value, ...assignFormModel,
+          PROGRAM_ID:MCRM.nextProgramId(),   // ออกรหัสตอนบันทึก
+          CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
       }
       showDone(isEditingAssign.value ? 'Program updated successfully' : 'Program created successfully');
       showAssignForm.value = false;
@@ -487,7 +489,7 @@ createApp({
         <div class="side-drawer-body">
           <div class="field">
             <label>Program ID</label>
-            <input type="text" :value="assignFormModel.PROGRAM_ID" readonly>
+            <input type="text" :value="assignFormModel.PROGRAM_ID" placeholder="Auto generates by system." readonly>
           </div>
           <div class="field">
             <label>Program <span class="req">*</span></label>

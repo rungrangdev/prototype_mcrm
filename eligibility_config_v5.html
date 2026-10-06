@@ -489,7 +489,7 @@ createApp({
     function saveAddOption(){
       const v = showAddOption.value.trim();
       optErr.value = '';
-      if (!v){ optErr.value = 'This field is required'; return; }
+      if (!v){ optErr.value = `Please enter ${showAddOption.label}.`; return; }
       const list = showAddOption.target === 'name' ? eligibleNames : eligibleProfiles;
       if (list.includes(v)){ showAlert('That item already exists'); return; }
       list.push(v);
@@ -527,8 +527,8 @@ createApp({
       const rec = currentRec.value;
       if (!rec) return;
       recErr.name = ''; recErr.profile = '';
-      if (!rec.name) recErr.name = 'Lead Data Set is required';
-      if (!rec.profile) recErr.profile = 'Lead Repository is required';
+      if (!rec.name) recErr.name = 'Please select Lead Data Set.';
+      if (!rec.profile) recErr.profile = 'Please select Lead Repository.';
       if (recErr.name || recErr.profile) return;
       const issues = collectIssues(rec.groups);
       if (issues.length){ openValidate(issues, 'Fix these before saving'); return; }

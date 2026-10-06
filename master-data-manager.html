@@ -539,8 +539,8 @@ createApp({
       const code = formModel.CODE.trim();
       const name = formModel.NAME.trim();
       itemErr.CODE = ''; itemErr.NAME = '';
-      if (!code){ itemErr.CODE = 'Code is required'; return; }
-      if (!name){ itemErr.NAME = 'Name is required'; return; }
+      if (!code){ itemErr.CODE = 'Please enter Code.'; return; }
+      if (!name){ itemErr.NAME = 'Please enter Name.'; return; }
       if (isEditing.value){
         const idx = rows.findIndex(r => r.TYPE === activeKey.value && r.CODE === code);
         rows[idx] = { ...rows[idx], NAME:name, DESCRIPTION:formModel.DESCRIPTION.trim(), DEPEND_ON:formModel.DEPEND_ON, ACTIVE:formModel.ACTIVE, UPDATE_BY:'ADMIN', UPDATE_DATE:now() };
@@ -577,8 +577,8 @@ createApp({
     function saveCategory(){
       const code = categoryForm.CODE.trim().toUpperCase().replace(/\s+/g,'_');
       catErr.CODE = ''; catErr.NAME = '';
-      if (!code) catErr.CODE = 'Code is required';
-      if (!categoryForm.NAME.trim()) catErr.NAME = 'Name is required';
+      if (!code) catErr.CODE = 'Please enter Code.';
+      if (!categoryForm.NAME.trim()) catErr.NAME = 'Please enter Name.';
       if (catErr.CODE || catErr.NAME) return;
       if (rows.some(r => r.TYPE === 'SYS_TYPE' && r.CODE === code)){ showAlert('That category already exists'); return; }
       rows.push({ TYPE:'SYS_TYPE', CODE:code, NAME:categoryForm.NAME.trim(), DESCRIPTION:categoryForm.DESCRIPTION.trim(), ORDER:String(categories.value.length+1), ACTIVE:'Y', DEPEND_ON:'', CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });

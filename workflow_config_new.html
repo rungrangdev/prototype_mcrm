@@ -664,7 +664,7 @@ createApp({
       outputText.value = JSON.stringify(payload, null, 4);
       showOutput.value = true;
       flowErr.flow_id = '';
-      if (!currentFlow.flow_id.trim()){ flowErr.flow_id = 'Flow ID is required'; return; }
+      if (!currentFlow.flow_id.trim()){ flowErr.flow_id = 'Please enter Flow ID.'; return; }
       const idx = flows.findIndex(f => f.flow_id === currentFlow.flow_id);
       const record = { flow_id: payload.flow_id, flow_name: payload.flow_name, run_type: payload.run_type, schedule: payload.schedule,
                        STATUS: idx >= 0 ? flowStatusOf(flows[idx]) : 'Draft', steps: payload.steps };
