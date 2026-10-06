@@ -638,6 +638,8 @@ createApp({
 
     const showCfgForm = ref(false);
     const isEditingCfg = ref(false);
+    /* พารามิเตอร์และ value ในเวอร์ชันถือว่าใช้งานอยู่เสมอ (ACTIVE:'Y') — ถ้าไม่ใช้แล้วให้ลบทิ้ง
+       สถานะที่เหลือในหน้านี้มีแค่สถานะของ version เท่านั้น */
     const cfgFormModel = reactive({ PARAMETER_ID:'', PARAMETER_CODE:'', PARAMETER_NAME:'', ORDER:'1', ACTIVE:'Y', KEY_BASE:[] });
     function slugify(s){ return s.trim().toUpperCase().replace(/[^A-Z0-9]+/g,'_').replace(/^_|_$/g,''); }
     function openAddCfg(){
@@ -646,7 +648,7 @@ createApp({
       cfgErr.PARAMETER_NAME = ''; cfgErr.KEY_BASE = '';
       showCfgForm.value = true;
     }
-    function openEditCfg(row){ isEditingCfg.value = true; Object.assign(cfgFormModel, { ...row, KEY_BASE:[...row.KEY_BASE] }); cfgErr.PARAMETER_NAME = ''; cfgErr.KEY_BASE = ''; showCfgForm.value = true; }
+    function openEditCfg(row){ isEditingCfg.value = true; Object.assign(cfgFormModel, { ...row, ACTIVE:'Y', KEY_BASE:[...row.KEY_BASE] }); cfgErr.PARAMETER_NAME = ''; cfgErr.KEY_BASE = ''; showCfgForm.value = true; }
     function closeCfgForm(){ showCfgForm.value = false; }
     function toggleCfgKey(code){
       cfgErr.KEY_BASE = '';
@@ -766,7 +768,7 @@ createApp({
       isEditingCrit.value = true; editingCritRow.value = row;
       const kv = {};
       critBaseKeys.value.forEach(k => kv[k] = row.KEY_VALUES[k] ? { ...row.KEY_VALUES[k] } : { op:'N/A', value:'' });
-      Object.assign(critFormModel, { VALUE:row.VALUE, ORDER:row.ORDER, ACTIVE:row.ACTIVE, KEY_VALUES:kv });
+      Object.assign(critFormModel, { VALUE:row.VALUE, ORDER:row.ORDER, ACTIVE:'Y', KEY_VALUES:kv });
       critErr.VALUE = ''; critErr.keys = {};
       closePicker();
       critMode.value = 'form';
@@ -789,7 +791,7 @@ createApp({
 
       if (isEditingCrit.value){
         Object.assign(editingCritRow.value, {
-          VALUE:val, ORDER:critFormModel.ORDER, ACTIVE:critFormModel.ACTIVE,
+          VALUE:val, ORDER:critFormModel.ORDER, ACTIVE:'Y',
           KEY_VALUES:JSON.parse(JSON.stringify(critFormModel.KEY_VALUES)),
           UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
         showDone('Value updated successfully');
@@ -797,7 +799,7 @@ createApp({
         criteriaRows.push({
           VERSION_ID: cfgVersionId.value,
           PROGRAM_CODE:cfgProgram.value, ENTITY:cfgEntity.value, PARAMETER_CODE:critParamRow.value.PARAMETER_CODE,
-          VALUE:val, ORDER:critFormModel.ORDER, ACTIVE:critFormModel.ACTIVE,
+          VALUE:val, ORDER:critFormModel.ORDER, ACTIVE:'Y',
           KEY_VALUES:JSON.parse(JSON.stringify(critFormModel.KEY_VALUES)),
           CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
         showDone('Value created successfully');
@@ -987,7 +989,7 @@ createApp({
         </div>
         <div class="table-wrap">
           <table class="data-table" v-if="cfgRecords.length">
-            <thead><tr><th style="width:90px">Sequence</th><th style="width:120px">Parameter ID</th><th style="width:180px">Parameter Name</th><th>Base Key</th><th style="width:100px">Status</th><th style="width:90px"></th></tr></thead>
+            <thead><tr><th style="width:90px">Sequence</th><th style="width:120px">Parameter ID</th><th style="width:180px">Parameter Name</th><th>Base Key</th><th style="width:90px"></th></tr></thead>
             <tbody>
               <tr v-for="row in cfgRecords" :key="row.PARAMETER_CODE">
                 <td><span class="order-pill">{{ row.ORDER }}</span></td>
@@ -998,7 +1000,6 @@ createApp({
                     <span class="key-chip" v-for="(k,i) in row.KEY_BASE" :key="k"><span class="idx">{{ i+1 }}</span>{{ nameOf(paramMaster,k) }}</span>
                   </div>
                 </td>
-                <td><span class="status-text" :class="row.ACTIVE==='Y' ? 'is-active' : 'is-inactive'">{{ row.ACTIVE==='Y' ? 'Active' : 'Inactive' }}</span></td>
                 <td>
                     <div class="dropdown-container">
                         <button class="btn-dots" onclick="toggleDropdown(event, this)">⋮</button>
@@ -1125,7 +1126,6 @@ createApp({
               <div><b>key_base:</b> {{ cfgPreview.keyBase }}</div>
             </div>
           </div>
-          <div class="field"><div class="active-toggle-row"><div class="lab"><strong>Status</strong></div><label class="switch"><input type="checkbox" v-model="cfgFormModel.ACTIVE" true-value="Y" false-value="N"><span class="slider"></span></label></div></div>
         </div>
         <div class="side-drawer-foot"><button class="btn btn-ghost" @click="closeCfgForm">Cancel</button><button class="btn btn-yellow" @click="saveCfg">Save</button></div>
       </div>
@@ -1162,7 +1162,6 @@ createApp({
                 <div class="left">
                   <span class="order-pill">{{ r.ORDER }}</span>
                   <span class="value-pill">{{ r.VALUE }}</span>
-                  <span class="status-badge" :class="r.ACTIVE==='Y' ? 'y' : 'n'">{{ r.ACTIVE==='Y' ? 'Active' : 'Inactive' }}</span>
                 </div>
                 <div class="crit-item-actions" v-if="cfgEditable">
                   <button class="icon-btn" title="Edit" @click="openEditCritForm(r)">✎</button>
@@ -1287,7 +1286,6 @@ createApp({
             </div>
           </div>
 
-          <div class="field"><div class="active-toggle-row"><div class="lab"><strong>Status</strong></div><label class="switch"><input type="checkbox" v-model="critFormModel.ACTIVE" true-value="Y" false-value="N"><span class="slider"></span></label></div></div>
         </div>
 
         <div class="side-drawer-foot" v-if="critMode==='list'">
