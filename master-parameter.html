@@ -737,7 +737,6 @@ createApp({
 
     const criteriaRows = MCRM.db.criteriaRows;
 
-    const valueCount = (row) => criteriaRows.filter(r => r.VERSION_ID===cfgVersionId.value && r.PROGRAM_CODE===cfgProgram.value && r.ENTITY===cfgEntity.value && r.PARAMETER_CODE===row.PARAMETER_CODE).length;
 
     const showCritPanel = ref(false);
     const critMode = ref('list');        // 'list' | 'form'
@@ -834,7 +833,7 @@ createApp({
       confirmApproveVersion, askApproveVersion, confirmApproveVersionYes,
       confirmActivateVersion, askActivateVersion, confirmActivateVersionYes,
       confirmDeleteVersion, askDeleteVersion, confirmDeleteVersionYes,
-      KV_OPS, isNAkv, kvText, valueCount,
+      KV_OPS, isNAkv, kvText,
       kvOpts, kvOps, kvIsNum, kvIsMulti, kvArr, kvHas, kvOffList, kvToggle, kvRemove, kvClear, onKvOpChange,
       pickerKey, pickerSearch, togglePicker, closePicker, kvFiltered,
       showCritPanel, critMode, critParamRow, critBaseKeys, critList,
@@ -1006,10 +1005,10 @@ createApp({
 
                         <div class="dropdown-menu">
                             <template v-if="cfgEditable">
-                              <button class="icon-btn" title="" @click="openEditCfg(row)">Edit</button><button class="icon-btn" title="" @click="openSetValue(row)">Set value<span v-if="valueCount(row)" style="color:var(--text-secondary);font-size:12px;"> ({{ valueCount(row) }})</span></button><button class="icon-btn danger" title="" @click="askDeleteCfg(row)">Delete</button>
+                              <button class="icon-btn" title="" @click="openEditCfg(row)">Edit</button><button class="icon-btn" title="" @click="openSetValue(row)">Set value</button><button class="icon-btn danger" title="" @click="askDeleteCfg(row)">Delete</button>
                             </template>
                             <template v-else>
-                              <button class="icon-btn" title="" @click="openSetValue(row)">View value<span v-if="valueCount(row)" style="color:var(--text-secondary);font-size:12px;"> ({{ valueCount(row) }})</span></button>
+                              <button class="icon-btn" title="" @click="openSetValue(row)">View value</button>
                             </template>
                     </div>
                     </div>
