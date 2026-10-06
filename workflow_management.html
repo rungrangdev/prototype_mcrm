@@ -913,7 +913,7 @@ createApp({
           <span class="gen-note">{{ validationModal.note }}</span>
           <div style="display:flex;gap:8px">
             <button class="btn-ghost" @click="exportStepValidation">Export Results</button>
-            <button class="btn-run" @click="closeStepValidation">Close</button>
+            <button class="btn-run btn-yellow" @click="closeStepValidation">Close</button>
           </div>
         </div>
       </div>
@@ -941,7 +941,7 @@ createApp({
           </div>
           <div class="pm-empty" v-else>ขั้นตอนนี้ไม่ผูกกับ parameter — ทำงานด้วย logic ของตัวเอง</div>
         </div>
-        <div class="fmodal-foot"><span class="gen-note">Step · {{ paramModal.step.type }} · {{ paramModal.step.status }}</span><button class="btn-run" @click="closeStepParams">Close</button></div>
+        <div class="fmodal-foot"><span class="gen-note">Step · {{ paramModal.step.type }} · {{ paramModal.step.status }}</span><button class="btn-run btn-yellow" @click="closeStepParams">Close</button></div>
       </div>
     </div>
 
@@ -986,7 +986,7 @@ createApp({
         </div>
         <div class="fmodal-foot">
           <span class="gen-note">{{ funnelModal.note }}</span>
-          <div style="display:flex;gap:8px"><button class="btn-ghost" @click="exportStepFunnel">Export Results</button><button class="btn-run" @click="closeStepFunnel">Close</button></div>
+          <div style="display:flex;gap:8px"><button class="btn-ghost" @click="exportStepFunnel">Export Results</button><button class="btn-run btn-yellow" @click="closeStepFunnel">Close</button></div>
         </div>
       </div>
     </div>

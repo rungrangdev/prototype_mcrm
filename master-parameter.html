@@ -1292,7 +1292,7 @@ createApp({
 
         <div class="side-drawer-foot" v-if="critMode==='list'">
           <button class="btn btn-ghost" @click="closeCritPanel">Close</button>
-          <button class="btn btn-primary" v-if="cfgEditable" @click="openAddCritForm">+ Add value</button>
+          <button class="btn btn-yellow" v-if="cfgEditable" @click="openAddCritForm">+ Add value</button>
         </div>
         <div class="side-drawer-foot" v-else>
           <button class="btn btn-ghost" @click="backToCritList">Cancel</button>
