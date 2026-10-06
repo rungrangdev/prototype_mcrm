@@ -381,7 +381,7 @@ createApp({
     function closeAssignForm(){ showAssignForm.value = false; }
     function saveAssign(){
       clearAssignErr();
-      if (!assignFormModel.PROGRAM_CODE){ assignErr.PROGRAM_CODE = 'Program is required'; return; }
+      if (!assignFormModel.PROGRAM_CODE){ assignErr.PROGRAM_CODE = 'Please select a program.'; return; }
       if (isEditingAssign.value){
         const idx = assignments.findIndex(a=>a.ENTITY===assignEntity.value && a.LEAD_TYPE===assignLeadType.value && a.PROGRAM_CODE===assignFormModel.PROGRAM_CODE);
         assignments[idx] = { ...assignments[idx], ...assignFormModel, UPDATE_BY:'ADMIN', UPDATE_DATE:now() };
