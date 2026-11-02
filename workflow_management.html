@@ -198,14 +198,25 @@
       box-shadow:0 0 0 4px rgba(16,185,129,.15);}
     .term-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0;}
 
-    /* แถบหัวของหน้า View (Transaction + สถานะ) ตรึงไว้ตอนเลื่อนดู flow */
+    /* แถบหัวของหน้า View (Transaction + สถานะ) ตรึงไว้ตอนเลื่อนดู flow
+       สองแถวนี้รวมเป็นแถบเดียวกัน ไม่ใช่การ์ดลอยบนพื้นขาว */
     .detail-head{
       position:sticky; top:0; z-index:40;
       background:#FFFFFF;
-      box-shadow:0 2px 6px rgba(20,30,60,.08);
+      border-bottom:1px solid #E5E5E5;
+      box-shadow:0 2px 8px rgba(20,30,60,.06);
     }
-    .detail-head .topbar{margin-bottom:0;}
-    .detail-head .flow-note{margin:10px;}
+    .detail-head .topbar{
+      margin-bottom:0;
+      border-bottom:1px solid #F1F2F5;
+    }
+    .detail-head .flow-note{
+      margin:0; max-width:none;
+      background:transparent; border:none; box-shadow:none; border-radius:0;
+      padding:9px 20px;
+    }
+    .detail-head .flow-note .note-item{padding:2px 22px;}
+    .detail-head .flow-note .note-item:first-child{padding-left:0;}
 
     .flow-note{
       position: relative;
