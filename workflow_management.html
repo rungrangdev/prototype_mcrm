@@ -198,6 +198,15 @@
       box-shadow:0 0 0 4px rgba(16,185,129,.15);}
     .term-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0;}
 
+    /* แถบหัวของหน้า View (Transaction + สถานะ) ตรึงไว้ตอนเลื่อนดู flow */
+    .detail-head{
+      position:sticky; top:0; z-index:40;
+      background:#FFFFFF;
+      box-shadow:0 2px 6px rgba(20,30,60,.08);
+    }
+    .detail-head .topbar{margin-bottom:0;}
+    .detail-head .flow-note{margin:10px;}
+
     .flow-note{
       position: relative;
       display:flex;align-items:center;flex-wrap:wrap;
@@ -740,6 +749,7 @@ createApp({
 
     <!-- ============ EDITOR / VIEWER PAGE ============ -->
     <div id="flow_area" class="page_all" v-if="pageView==='editor' && currentTrans">
+      <div class="detail-head">
       <div class="topbar">
         <label>Transaction ID</label><input :value="currentTrans.trans_id" readonly>
         <label>Flow ID</label><input :value="currentTrans.flow_id" readonly>
@@ -756,6 +766,7 @@ createApp({
         <div class="note-item"><span class="note-lbl">Current Step</span><span class="note-val">{{ currentStepLabel }}</span></div>
         <div class="note-item"><span class="note-lbl">Start</span><span class="note-val">{{ currentTrans.start_date || '-' }}</span></div>
         <div class="note-item"><span class="note-lbl">End</span><span class="note-val" :class="{muted: !currentTrans.end_date}">{{ currentTrans.end_date || '-' }}</span></div>
+      </div>
       </div>
 
       <div class="canvas" id="canvas" ref="canvasEl">
