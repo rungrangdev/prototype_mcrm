@@ -625,7 +625,6 @@ createApp({
                    :class="{'has-error': formErr.PARAMETER_NAME}" @input="formErr.PARAMETER_NAME=''">
             <div class="field-error" v-if="formErr.PARAMETER_NAME">{{ formErr.PARAMETER_NAME }}</div>
           </div>
-          <div class="field"><label>Order</label><input type="number" v-model="formModel.ORDER"></div>
           <div class="field">
             <label>Base Key <span class="req">*</span></label>
             <div class="keybuilder" :class="{'has-error': formErr.KEY_BASE}">

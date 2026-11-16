@@ -1194,7 +1194,6 @@ createApp({
             <div class="field-error" v-if="cfgErr.PARAMETER_ID">{{ cfgErr.PARAMETER_ID }}</div>
           </div>
           <div class="field"><label>Parameter ID</label><input type="text" :value="cfgFormModel.PARAMETER_ID" placeholder="Select a parameter first." readonly></div>
-          <div class="field"><label>Order</label><input type="number" v-model="cfgFormModel.ORDER" readonly></div>
           <div class="field">
             <label>Base Key <span class="req">*</span></label>
             <div class="keybuilder" :class="{'has-error': cfgErr.KEY_BASE}" v-if="pickedParam">
@@ -1298,17 +1297,11 @@ createApp({
 
         <!-- โหมดฟอร์ม -->
         <div class="side-drawer-body" v-else>
-          <div class="field-inline" style="margin-bottom:18px;">
-            <div class="field">
-              <label>value <span class="req">*</span></label>
-              <input type="text" v-model="critFormModel.VALUE" placeholder="e.g. TP_Option 1, LTV150"
-                     :class="{'has-error': critErr.VALUE}" @input="critErr.VALUE=''">
-              <div class="field-error" v-if="critErr.VALUE">{{ critErr.VALUE }}</div>
-            </div>
-            <div class="field" style="max-width:110px;">
-              <label>Order</label>
-              <input type="number" v-model="critFormModel.ORDER">
-            </div>
+          <div class="field" style="margin-bottom:18px;">
+            <label>value <span class="req">*</span></label>
+            <input type="text" v-model="critFormModel.VALUE" placeholder="e.g. TP_Option 1, LTV150"
+                   :class="{'has-error': critErr.VALUE}" @input="critErr.VALUE=''">
+            <div class="field-error" v-if="critErr.VALUE">{{ critErr.VALUE }}</div>
           </div>
 
           <div class="field">
