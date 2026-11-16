@@ -480,6 +480,7 @@
                   "children": {
                     "campaign": true,
                     "program_setup": true,
+                    "parameter_setup": true,
                     "parameter_master_setup": true,
                     "validation_setup": true
                   },
@@ -578,6 +579,7 @@
                   "children": {
                     "campaign": true,
                     "program_setup": true,
+                    "parameter_setup": true,
                     "parameter_master_setup": true,
                     "validation_setup": true
                   },
@@ -676,6 +678,7 @@
                   "children": {
                     "campaign": false,
                     "program_setup": false,
+                    "parameter_setup": false,
                     "parameter_master_setup": false,
                     "validation_setup": false
                   },
@@ -774,6 +777,7 @@
                   "children": {
                     "campaign": false,
                     "program_setup": false,
+                    "parameter_setup": false,
                     "parameter_master_setup": false,
                     "validation_setup": false
                   },
@@ -872,6 +876,7 @@
                   "children": {
                     "campaign": false,
                     "program_setup": false,
+                    "parameter_setup": false,
                     "parameter_master_setup": true,
                     "validation_setup": false
                   },
@@ -970,6 +975,7 @@
                   "children": {
                     "campaign": false,
                     "program_setup": false,
+                    "parameter_setup": false,
                     "parameter_master_setup": true,
                     "validation_setup": false
                   },
@@ -1070,7 +1076,29 @@
       }
 
       db.executionLogs = buildExecutionLogsSeed(db.workflows);
+      db.parameters = buildParametersSeed(db.paramConfigs, db.cfgVersions);
       return db;
+    }
+
+    /* แคตตาล็อกกลางของพารามิเตอร์ (หน้า Parameter Setup) — 1 แถว ต่อ 1
+       Lead Type + Program + Entity + Parameter Code ไม่ผูกกับ version ใด
+       สร้างจากชุดข้อมูลตัวอย่างของ version แรก เพื่อให้ตรงกันตั้งแต่เริ่ม */
+    function buildParametersSeed(paramConfigs, cfgVersions) {
+      const leadTypeOf = (vid) => (cfgVersions.find(v => v.VERSION_ID === vid) || {}).LEAD_TYPE || 'CRM_X_SELL_POOL';
+      const out = [], seen = new Set();
+      (paramConfigs || []).forEach(c => {
+        const leadType = leadTypeOf(c.VERSION_ID);
+        const key = [leadType, c.ENTITY, c.PROGRAM_CODE, c.PARAMETER_CODE].join('|');
+        if (seen.has(key)) return;
+        seen.add(key);
+        out.push({
+          PARAMETER_ID: c.PARAMETER_ID, LEAD_TYPE: leadType, ENTITY: c.ENTITY, PROGRAM_CODE: c.PROGRAM_CODE,
+          PARAMETER_CODE: c.PARAMETER_CODE, PARAMETER_NAME: c.PARAMETER_NAME,
+          ORDER: c.ORDER, KEY_BASE: (c.KEY_BASE || []).slice(),
+          CREATE_BY: c.CREATE_BY, CREATE_DATE: c.CREATE_DATE, UPDATE_BY: c.UPDATE_BY, UPDATE_DATE: c.UPDATE_DATE,
+        });
+      });
+      return out;
     }
   
     /* Data saved by an older build is missing fields added since. Fill them in
@@ -1114,6 +1142,23 @@
         const key = paramKey(c);
         if (!taken.has(key)) taken.set(key, fmtId('P', ++maxP, 5));
         c.PARAMETER_ID = taken.get(key);
+      });
+      /* แคตตาล็อกพารามิเตอร์ : ข้อมูลเก่าไม่มี key นี้ หรือมีพารามิเตอร์ที่เพิ่ม
+         เข้า version ไว้ก่อนหน้าแต่ยังไม่อยู่ในแคตตาล็อก ให้เติมให้ครบ */
+      if (!Array.isArray(db.parameters)) db.parameters = [];
+      const leadTypeOf = (vid) => (versions.find(v => v.VERSION_ID === vid) || {}).LEAD_TYPE || 'CRM_X_SELL_POOL';
+      const known = new Set(db.parameters.map(x => [x.LEAD_TYPE, x.ENTITY, x.PROGRAM_CODE, x.PARAMETER_CODE].join('|')));
+      (Array.isArray(db.paramConfigs) ? db.paramConfigs : []).forEach(c => {
+        const leadType = leadTypeOf(c.VERSION_ID);
+        const key = [leadType, c.ENTITY, c.PROGRAM_CODE, c.PARAMETER_CODE].join('|');
+        if (known.has(key)) return;
+        known.add(key);
+        db.parameters.push({
+          PARAMETER_ID: c.PARAMETER_ID, LEAD_TYPE: leadType, ENTITY: c.ENTITY, PROGRAM_CODE: c.PROGRAM_CODE,
+          PARAMETER_CODE: c.PARAMETER_CODE, PARAMETER_NAME: c.PARAMETER_NAME,
+          ORDER: c.ORDER, KEY_BASE: (c.KEY_BASE || []).slice(),
+          CREATE_BY: c.CREATE_BY, CREATE_DATE: c.CREATE_DATE, UPDATE_BY: c.UPDATE_BY, UPDATE_DATE: c.UPDATE_DATE,
+        });
       });
       return db;
     }
@@ -1260,9 +1305,17 @@
         return this.parameterIdOf(entity, programCode, parameterCode) || this.nextParameterId();
       },
       nextParameterId(){
-        const max = db.paramConfigs.reduce((m,c) => Math.max(m, numOf(c.PARAMETER_ID)), 0);
+        const max = db.paramConfigs.concat(db.parameters || [])
+          .reduce((m,c) => Math.max(m, numOf(c.PARAMETER_ID)), 0);
         return fmtId('P', max + 1, 5);
       },
+      /* ---- แคตตาล็อกพารามิเตอร์ (หน้า Parameter Setup) ---- */
+      parametersOf(leadType, programCode, entity){
+        return (db.parameters || [])
+          .filter(x => x.LEAD_TYPE === leadType && x.PROGRAM_CODE === programCode && x.ENTITY === entity)
+          .sort((a,b) => Number(a.ORDER) - Number(b.ORDER));
+      },
+      parameterById(id){ return (db.parameters || []).find(x => x.PARAMETER_ID === id) || null; },
       // generic helpers shared across pages
       nameOf(list, code) { return (list.find(x => x.CODE === code)?.NAME) || code; },
       slugify(s) { return String(s).trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_|_$/g, ''); },

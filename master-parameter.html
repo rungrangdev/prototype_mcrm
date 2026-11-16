@@ -514,7 +514,7 @@ createApp({
     /* ช่องที่ยังกรอกไม่ครบ : เก็บข้อความไว้แสดงใต้ช่องนั้น ๆ */
     const cloneErr  = reactive({ name:'' });
     const rejectErr = reactive({ reason:'' });
-    const cfgErr    = reactive({ PARAMETER_NAME:'', KEY_BASE:'' });
+    const cfgErr    = reactive({ PARAMETER_ID:'', VALUES:'' });
     const critErr   = reactive({ VALUE:'', keys:{} });
     const cloneForm = reactive({ show:false, source:null, name:'' });
     function askCloneVersion(v){
@@ -637,40 +637,48 @@ createApp({
     const verStatusClass = (st) => 'vs-' + verStatusText(st).toLowerCase().replace(/ /g,'-');
 
     const showCfgForm = ref(false);
-    const isEditingCfg = ref(false);
     /* พารามิเตอร์และ value ในเวอร์ชันถือว่าใช้งานอยู่เสมอ (ACTIVE:'Y') — ถ้าไม่ใช้แล้วให้ลบทิ้ง
-       สถานะที่เหลือในหน้านี้มีแค่สถานะของ version เท่านั้น */
-    const cfgFormModel = reactive({ PARAMETER_ID:'', PARAMETER_CODE:'', PARAMETER_NAME:'', ORDER:'1', ACTIVE:'Y', KEY_BASE:[] });
-    function slugify(s){ return s.trim().toUpperCase().replace(/[^A-Z0-9]+/g,'_').replace(/^_|_$/g,''); }
+       สถานะที่เหลือในหน้านี้มีแค่สถานะของ version เท่านั้น
+
+       การเพิ่มพารามิเตอร์เข้า version = หยิบจากแคตตาล็อกหน้า Parameter Setup
+       Base Key จึงมาจากแคตตาล็อก แก้ที่หน้านี้ไม่ได้ และต้อง Set value
+       อย่างน้อย 1 รายการก่อนจึงจะบันทึกได้ (เก็บเป็น draft ไว้ในฟอร์ม) */
+    const cfgFormModel = reactive({ PARAMETER_ID:'', ORDER:'1', VALUES:[] });
+    const pickedParam = computed(() => MCRM.parameterById(cfgFormModel.PARAMETER_ID));
+    /* พารามิเตอร์ที่ยังไม่ถูกหยิบเข้า version นี้ */
+    const cfgParamOptions = computed(() => {
+      const used = new Set(cfgRecords.value.map(c => c.PARAMETER_ID));
+      return MCRM.parametersOf(cfgLeadType.value, cfgProgram.value, cfgEntity.value)
+        .filter(x => !used.has(x.PARAMETER_ID));
+    });
+
     function openAddCfg(){
-      isEditingCfg.value = false;
-      Object.assign(cfgFormModel, { PARAMETER_ID:'', PARAMETER_CODE:'', PARAMETER_NAME:'', ORDER:String((cfgRecords.value.length+1)), ACTIVE:'Y', KEY_BASE:[] });
-      cfgErr.PARAMETER_NAME = ''; cfgErr.KEY_BASE = '';
+      Object.assign(cfgFormModel, { PARAMETER_ID:'', ORDER:String((cfgRecords.value.length+1)), VALUES:[] });
+      cfgErr.PARAMETER_ID = ''; cfgErr.VALUES = '';
       showCfgForm.value = true;
     }
-    function openEditCfg(row){ isEditingCfg.value = true; Object.assign(cfgFormModel, { ...row, ACTIVE:'Y', KEY_BASE:[...row.KEY_BASE] }); cfgErr.PARAMETER_NAME = ''; cfgErr.KEY_BASE = ''; showCfgForm.value = true; }
     function closeCfgForm(){ showCfgForm.value = false; }
-    function toggleCfgKey(code){
-      cfgErr.KEY_BASE = '';
-      const i = cfgFormModel.KEY_BASE.indexOf(code);
-      if (i>=0) cfgFormModel.KEY_BASE.splice(i,1); else cfgFormModel.KEY_BASE.push(code);
-    }
-    function removeCfgKeyAt(i){ cfgFormModel.KEY_BASE.splice(i,1); }
+    function onCfgParamChange(){ cfgErr.PARAMETER_ID = ''; cfgErr.VALUES = ''; cfgFormModel.VALUES = []; }
+
     function saveCfg(){
-      cfgErr.PARAMETER_NAME = ''; cfgErr.KEY_BASE = '';
-      if (!cfgFormModel.PARAMETER_NAME.trim()){ cfgErr.PARAMETER_NAME = 'Please enter Parameter Name.'; return; }
-      if (!cfgFormModel.KEY_BASE.length){ cfgErr.KEY_BASE = 'At least one Base Key is required'; return; }
-      const code = isEditingCfg.value ? cfgFormModel.PARAMETER_CODE : slugify(cfgFormModel.PARAMETER_NAME);
-      if (isEditingCfg.value){
-        const idx = paramConfigs.findIndex(c=>c.VERSION_ID===cfgVersionId.value && c.PROGRAM_CODE===cfgProgram.value && c.ENTITY===cfgEntity.value && c.PARAMETER_CODE===code);
-        paramConfigs[idx] = { ...paramConfigs[idx], ...cfgFormModel, PARAMETER_CODE:code, UPDATE_BY:'ADMIN', UPDATE_DATE:now() };
-      } else {
-        if (paramConfigs.some(c=>c.VERSION_ID===cfgVersionId.value && c.PROGRAM_CODE===cfgProgram.value && c.ENTITY===cfgEntity.value && c.PARAMETER_CODE===code)){ showAlert('That parameter already exists'); return; }
-        paramConfigs.push({ VERSION_ID:cfgVersionId.value, PROGRAM_CODE:cfgProgram.value, ENTITY:cfgEntity.value, ...cfgFormModel,
-          PARAMETER_CODE:code, PARAMETER_ID:MCRM.parameterIdFor(cfgEntity.value, cfgProgram.value, code),
-          CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
+      cfgErr.PARAMETER_ID = ''; cfgErr.VALUES = '';
+      if (!cfgFormModel.PARAMETER_ID){ cfgErr.PARAMETER_ID = 'Please select Parameter.'; return; }
+      if (!cfgFormModel.VALUES.length){ cfgErr.VALUES = 'Please set at least one value.'; return; }
+      const src = pickedParam.value;
+      if (paramConfigs.some(c=>c.VERSION_ID===cfgVersionId.value && c.PROGRAM_CODE===cfgProgram.value && c.ENTITY===cfgEntity.value && c.PARAMETER_CODE===src.PARAMETER_CODE)){
+        showAlert('That parameter already exists'); return;
       }
-      showDone(isEditingCfg.value ? 'Parameter updated successfully' : 'Parameter created successfully');
+      paramConfigs.push({
+        VERSION_ID:cfgVersionId.value, PROGRAM_CODE:cfgProgram.value, ENTITY:cfgEntity.value,
+        PARAMETER_ID:src.PARAMETER_ID, PARAMETER_CODE:src.PARAMETER_CODE, PARAMETER_NAME:src.PARAMETER_NAME,
+        ORDER:cfgFormModel.ORDER, ACTIVE:'Y', KEY_BASE:[...src.KEY_BASE],
+        CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
+      cfgFormModel.VALUES.forEach(v => criteriaRows.push({
+        VERSION_ID:cfgVersionId.value, PROGRAM_CODE:cfgProgram.value, ENTITY:cfgEntity.value,
+        PARAMETER_CODE:src.PARAMETER_CODE, VALUE:v.VALUE, ORDER:v.ORDER, ACTIVE:'Y',
+        KEY_VALUES:JSON.parse(JSON.stringify(v.KEY_VALUES)),
+        CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() }));
+      showDone('Parameter created successfully');
       showCfgForm.value = false;
     }
     const confirmDeleteCfg = ref(null);
@@ -680,10 +688,10 @@ createApp({
       showDone('Parameter deleted successfully');
       confirmDeleteCfg.value = null;
     }
-    const cfgPreview = computed(() => ({
-      key: cfgFormModel.KEY_BASE.map(c=>nameOf(paramMaster.value,c)).join(' | '),
-      keyBase: cfgFormModel.KEY_BASE.join('|')
-    }));
+    const cfgPreview = computed(() => {
+      const keys = pickedParam.value ? pickedParam.value.KEY_BASE : [];
+      return { key: keys.map(c=>nameOf(paramMaster.value,c)).join(' | '), keyBase: keys.join('|') };
+    });
 
     /* =========================================================
        Set value — กำหนด value + key_value (operator) ของแต่ละ base key
@@ -740,16 +748,32 @@ createApp({
     const criteriaRows = MCRM.db.criteriaRows;
 
 
+    /* ไม่ใช่ null = กำลัง Set value ของพารามิเตอร์ที่ยังไม่ถูกบันทึก (draft ในฟอร์ม Add) */
+    const critDraft = ref(null);
     const showCritPanel = ref(false);
     const critMode = ref('list');        // 'list' | 'form'
     const critParamRow = ref(null);      // แถวพารามิเตอร์ที่กำลัง Set value
     const critBaseKeys = computed(() => critParamRow.value ? critParamRow.value.KEY_BASE : []);
-    const critList = computed(() => !critParamRow.value ? [] : criteriaRows
-      .filter(r => r.VERSION_ID===cfgVersionId.value && r.PROGRAM_CODE===cfgProgram.value && r.ENTITY===cfgEntity.value && r.PARAMETER_CODE===critParamRow.value.PARAMETER_CODE)
-      .sort((a,b)=>Number(a.ORDER)-Number(b.ORDER)));
+    const critList = computed(() => {
+      if (critDraft.value) return critDraft.value.slice().sort((a,b)=>Number(a.ORDER)-Number(b.ORDER));
+      if (!critParamRow.value) return [];
+      return criteriaRows
+        .filter(r => r.VERSION_ID===cfgVersionId.value && r.PROGRAM_CODE===cfgProgram.value && r.ENTITY===cfgEntity.value && r.PARAMETER_CODE===critParamRow.value.PARAMETER_CODE)
+        .sort((a,b)=>Number(a.ORDER)-Number(b.ORDER));
+    });
 
-    function openSetValue(row){ critParamRow.value = row; critMode.value = 'list'; showCritPanel.value = true; }
-    function closeCritPanel(){ showCritPanel.value = false; closePicker(); }
+    function openSetValue(row){ critDraft.value = null; critParamRow.value = row; critMode.value = 'list'; showCritPanel.value = true; }
+    /* เปิดจากฟอร์ม Add : ยังไม่มีแถวพารามิเตอร์จริง จึงเก็บ value ไว้เป็น draft ในฟอร์มก่อน */
+    function openSetValueDraft(){
+      cfgErr.VALUES = '';
+      if (!pickedParam.value){ cfgErr.PARAMETER_ID = 'Please select Parameter.'; return; }
+      critDraft.value = cfgFormModel.VALUES;
+      critParamRow.value = { PARAMETER_CODE: pickedParam.value.PARAMETER_CODE,
+                             PARAMETER_NAME: pickedParam.value.PARAMETER_NAME,
+                             KEY_BASE: pickedParam.value.KEY_BASE };
+      critMode.value = 'list'; showCritPanel.value = true;
+    }
+    function closeCritPanel(){ showCritPanel.value = false; critDraft.value = null; closePicker(); }
 
     const isEditingCrit = ref(false);
     const editingCritRow = ref(null);
@@ -778,9 +802,11 @@ createApp({
       const val = critFormModel.VALUE.trim();
       critErr.VALUE = ''; critErr.keys = {};
       if (!val){ critErr.VALUE = 'Please enter Value.'; return; }
-      const dup = criteriaRows.some(r => r !== editingCritRow.value && r.VERSION_ID===cfgVersionId.value &&
-        r.PROGRAM_CODE===cfgProgram.value && r.ENTITY===cfgEntity.value &&
-        r.PARAMETER_CODE===critParamRow.value.PARAMETER_CODE && r.VALUE===val);
+      const dup = critDraft.value
+        ? critDraft.value.some(r => r !== editingCritRow.value && r.VALUE===val)
+        : criteriaRows.some(r => r !== editingCritRow.value && r.VERSION_ID===cfgVersionId.value &&
+            r.PROGRAM_CODE===cfgProgram.value && r.ENTITY===cfgEntity.value &&
+            r.PARAMETER_CODE===critParamRow.value.PARAMETER_CODE && r.VALUE===val);
       if (dup){ showAlert('That value already exists for this parameter'); return; }
       /* ตรวจว่า op ที่ไม่ใช่ N/A ต้องมีค่า */
       const missing = critBaseKeys.value.filter(k => {
@@ -795,6 +821,11 @@ createApp({
           KEY_VALUES:JSON.parse(JSON.stringify(critFormModel.KEY_VALUES)),
           UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
         showDone('Value updated successfully');
+      } else if (critDraft.value){
+        critDraft.value.push({ VALUE:val, ORDER:critFormModel.ORDER, ACTIVE:'Y',
+          KEY_VALUES:JSON.parse(JSON.stringify(critFormModel.KEY_VALUES)) });
+        cfgErr.VALUES = '';
+        showDone('Value created successfully');
       } else {
         criteriaRows.push({
           VERSION_ID: cfgVersionId.value,
@@ -810,7 +841,8 @@ createApp({
     const confirmDeleteCritVal = ref(null);
     function askDeleteCritVal(row){ confirmDeleteCritVal.value = row; }
     function confirmDeleteCritValRow(){
-      criteriaRows.splice(criteriaRows.findIndex(r=>r===confirmDeleteCritVal.value),1);
+      const list = critDraft.value || criteriaRows;
+      list.splice(list.findIndex(r=>r===confirmDeleteCritVal.value),1);
       showDone('Value deleted successfully');
       confirmDeleteCritVal.value = null;
     }
@@ -823,12 +855,12 @@ createApp({
 
     return {
       entityMaster, leadTypeMaster, programMaster, paramMaster, nameOf,
-      cfgProgram, cfgEntity, cfgLeadType, cfgProgramId, cfgProgramOptions, programLabel, cfgRecords, showCfgForm, isEditingCfg, cfgFormModel,
-      openAddCfg, openEditCfg, closeCfgForm, toggleCfgKey, removeCfgKeyAt, saveCfg,
+      cfgProgram, cfgEntity, cfgLeadType, cfgProgramId, cfgProgramOptions, programLabel, cfgRecords, showCfgForm, cfgFormModel,
+      openAddCfg, closeCfgForm, saveCfg, cfgParamOptions, pickedParam, onCfgParamChange,
       confirmDeleteCfg, askDeleteCfg, confirmDeleteCfgRow, cfgPreview,
       cfgView, cfgVersionId, cfgVersions, openCfgSetup, backToCfgList,
       cfgVersionStatus, cfgEditable, pagePerm, verStatusText, verStatusClass,
-      cloneForm, cloneErr, rejectErr, cfgErr, critErr, askCloneVersion, confirmCloneVersion,
+      cloneForm, cloneErr, rejectErr, cfgErr, critErr, critDraft, openSetValueDraft, askCloneVersion, confirmCloneVersion,
       rejectForm, askRejectVersion, confirmRejectVersion,
       VERSION_STATUSES, verFilterLeadType, verFilterStatus, filteredVersions,
       confirmSubmitVersion, askSubmitVersion, confirmSubmitVersionYes,
@@ -1006,7 +1038,7 @@ createApp({
 
                         <div class="dropdown-menu">
                             <template v-if="cfgEditable">
-                              <button class="icon-btn" title="" @click="openEditCfg(row)">Edit</button><button class="icon-btn" title="" @click="openSetValue(row)">Set value</button><button class="icon-btn danger" title="" @click="askDeleteCfg(row)">Delete</button>
+                              <button class="icon-btn" title="" @click="openSetValue(row)">Set value</button><button class="icon-btn danger" title="" @click="askDeleteCfg(row)">Delete</button>
                             </template>
                             <template v-else>
                               <button class="icon-btn" title="" @click="openSetValue(row)">View value</button>
@@ -1100,31 +1132,39 @@ createApp({
 
     <div class="overlay" v-if="showCfgForm" @click.self="closeCfgForm">
       <div class="side-drawer">
-        <div class="side-drawer-head"><h3>{{ isEditingCfg ? 'Parameter' : 'Parameter' }} · {{ cfgProgram }} / {{ cfgEntity }}</h3><button class="close-x" @click="closeCfgForm">✕</button></div>
+        <div class="side-drawer-head"><h3>Parameter · {{ cfgProgram }} / {{ cfgEntity }}</h3><button class="close-x" @click="closeCfgForm">✕</button></div>
         <div class="side-drawer-body">
-          <div class="field"><label>Parameter ID</label><input type="text" :value="cfgFormModel.PARAMETER_ID" placeholder="Auto generates by system." readonly></div>
-          <div class="field"><label>Parameter Name <span class="req">*</span></label>
-            <input type="text" v-model="cfgFormModel.PARAMETER_NAME" placeholder="e.g. Topup Option, Flat rate OPTT1"
-                   :class="{'has-error': cfgErr.PARAMETER_NAME}" @input="cfgErr.PARAMETER_NAME=''">
-            <div class="field-error" v-if="cfgErr.PARAMETER_NAME">{{ cfgErr.PARAMETER_NAME }}</div>
+          <div class="field">
+            <label>Parameter <span class="req">*</span></label>
+            <select v-model="cfgFormModel.PARAMETER_ID" @change="onCfgParamChange"
+                    :class="{'has-error': cfgErr.PARAMETER_ID}">
+              <option value="">— Select Parameter —</option>
+              <option v-if="!cfgParamOptions.length" value="" disabled>— No parameter left in Parameter Setup —</option>
+              <option v-for="x in cfgParamOptions" :key="x.PARAMETER_ID" :value="x.PARAMETER_ID">{{ x.PARAMETER_ID }} · {{ x.PARAMETER_NAME }}</option>
+            </select>
+            <div class="field-error" v-if="cfgErr.PARAMETER_ID">{{ cfgErr.PARAMETER_ID }}</div>
           </div>
+          <div class="field"><label>Parameter ID</label><input type="text" :value="cfgFormModel.PARAMETER_ID" placeholder="Select a parameter first." readonly></div>
           <div class="field"><label>Order</label><input type="number" v-model="cfgFormModel.ORDER" readonly></div>
           <div class="field">
-            <label>Base Key <span class="req">*</span></label>
-            <div class="keybuilder" :class="{'has-error': cfgErr.KEY_BASE}">
-              <div class="key-option" v-for="p in paramMaster" :key="p.CODE" :class="{selected: cfgFormModel.KEY_BASE.includes(p.CODE)}" @click="toggleCfgKey(p.CODE)">
-                {{ p.NAME }} <span class="n" style="display:none;">{{ p.CODE }}</span>
-              </div>
-            </div>
-            <div class="field-error" v-if="cfgErr.KEY_BASE">{{ cfgErr.KEY_BASE }}</div>
+            <label>Base Key</label>
             <div class="selected-keys-box">
-              <span v-if="!cfgFormModel.KEY_BASE.length" class="placeholder">No base key selected</span>
-              <span class="sel-chip" v-for="(k,i) in cfgFormModel.KEY_BASE" :key="k"><span class="idx">{{ i+1 }}</span>{{ nameOf(paramMaster,k) }}<button @click="removeCfgKeyAt(i)">✕</button></span>
+              <span v-if="!pickedParam" class="placeholder">Select a parameter first.</span>
+              <span class="sel-chip" v-for="(k,i) in (pickedParam ? pickedParam.KEY_BASE : [])" :key="k"><span class="idx">{{ i+1 }}</span>{{ nameOf(paramMaster,k) }}</span>
             </div>
-            <div class="preview-line" v-if="cfgFormModel.KEY_BASE.length">
+            <div class="preview-line" v-if="pickedParam">
               <div><b>key:</b> {{ cfgPreview.key }}</div>
               <div><b>key_base:</b> {{ cfgPreview.keyBase }}</div>
             </div>
+          </div>
+          <div class="field" v-if="pickedParam">
+            <label>Value <span class="req">*</span></label>
+            <div class="selected-keys-box" style="margin-bottom:10px;">
+              <span v-if="!cfgFormModel.VALUES.length" class="placeholder">No value yet</span>
+              <span class="sel-chip" v-for="(v,i) in cfgFormModel.VALUES" :key="v.VALUE"><span class="idx">{{ i+1 }}</span>{{ v.VALUE }}</span>
+            </div>
+            <button class="btn btn-yellow" @click="openSetValueDraft">Set value</button>
+            <div class="field-error" v-if="cfgErr.VALUES">{{ cfgErr.VALUES }}</div>
           </div>
         </div>
         <div class="side-drawer-foot"><button class="btn btn-ghost" @click="closeCfgForm">Cancel</button><button class="btn btn-yellow" @click="saveCfg">Save</button></div>
