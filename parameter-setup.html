@@ -484,11 +484,11 @@ createApp({
         Object.assign(editingRow.value, {
           PARAMETER_NAME: formModel.PARAMETER_NAME.trim(), ORDER: formModel.ORDER,
           KEY_BASE: [...formModel.KEY_BASE], UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
-        /* version ที่หยิบพารามิเตอร์ตัวนี้ไปใช้ ให้ชื่อและ Base Key ตรงกับแคตตาล็อก */
+        /* version ที่หยิบพารามิเตอร์ตัวนี้ไปใช้ ให้ชื่อตรงกับแคตตาล็อก
+           ส่วน Base Key ไม่แตะ เพราะแต่ละ version เลือกชุดของตัวเองได้ */
         paramConfigs.forEach(c => {
           if (c.PARAMETER_ID !== editingRow.value.PARAMETER_ID) return;
           c.PARAMETER_NAME = editingRow.value.PARAMETER_NAME;
-          c.KEY_BASE = [...editingRow.value.KEY_BASE];
         });
         showDone('Parameter updated successfully');
       } else {
