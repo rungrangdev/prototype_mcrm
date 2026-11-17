@@ -480,7 +480,6 @@
                   "children": {
                     "campaign": true,
                     "program_setup": true,
-                    "parameter_setup": true,
                     "parameter_master_setup": true,
                     "validation_setup": true
                   },
@@ -579,7 +578,6 @@
                   "children": {
                     "campaign": true,
                     "program_setup": true,
-                    "parameter_setup": true,
                     "parameter_master_setup": true,
                     "validation_setup": true
                   },
@@ -678,7 +676,6 @@
                   "children": {
                     "campaign": false,
                     "program_setup": false,
-                    "parameter_setup": false,
                     "parameter_master_setup": false,
                     "validation_setup": false
                   },
@@ -777,7 +774,6 @@
                   "children": {
                     "campaign": false,
                     "program_setup": false,
-                    "parameter_setup": false,
                     "parameter_master_setup": false,
                     "validation_setup": false
                   },
@@ -876,7 +872,6 @@
                   "children": {
                     "campaign": false,
                     "program_setup": false,
-                    "parameter_setup": false,
                     "parameter_master_setup": true,
                     "validation_setup": false
                   },
@@ -975,7 +970,6 @@
                   "children": {
                     "campaign": false,
                     "program_setup": false,
-                    "parameter_setup": false,
                     "parameter_master_setup": true,
                     "validation_setup": false
                   },

@@ -726,6 +726,78 @@ createApp({
       showDone('Parameter created successfully');
       showCfgForm.value = false;
     }
+    /* =========================================================
+       Parameter Setup — แคตตาล็อกพารามิเตอร์ของ Lead Type + Program + Entity
+       ที่กำลังเปิดอยู่ เปิดเป็น modal จากหน้านี้แทนการแยกเป็นอีกเมนู
+       ========================================================= */
+    const parameters = MCRM.db.parameters;
+    const psShow = ref(false);
+    const psMode = ref('list');          // 'list' | 'form'
+    const psEditing = ref(false);
+    const psEditingRow = ref(null);
+    const psForm = reactive({ PARAMETER_ID:'', PARAMETER_CODE:'', PARAMETER_NAME:'', ORDER:'1', KEY_BASE:[] });
+    const psErr  = reactive({ PARAMETER_NAME:'', KEY_BASE:'' });
+    const psRecords = computed(() => MCRM.parametersOf(cfgLeadType.value, cfgProgram.value, cfgEntity.value));
+
+    function openParamSetup(){ psMode.value = 'list'; psShow.value = true; }
+    function closeParamSetup(){ psShow.value = false; }
+    function psClearErr(){ psErr.PARAMETER_NAME = ''; psErr.KEY_BASE = ''; }
+    function psOpenAdd(){
+      psEditing.value = false; psEditingRow.value = null;
+      Object.assign(psForm, { PARAMETER_ID:'', PARAMETER_CODE:'', PARAMETER_NAME:'', ORDER:String(psRecords.value.length+1), KEY_BASE:[] });
+      psClearErr(); psMode.value = 'form';
+    }
+    function psOpenEdit(row){
+      psEditing.value = true; psEditingRow.value = row;
+      Object.assign(psForm, { ...row, KEY_BASE:[...row.KEY_BASE] });
+      psClearErr(); psMode.value = 'form';
+    }
+    function psBackToList(){ psMode.value = 'list'; }
+    function psToggleKey(code){
+      psErr.KEY_BASE = '';
+      const i = psForm.KEY_BASE.indexOf(code);
+      if (i>=0) psForm.KEY_BASE.splice(i,1); else psForm.KEY_BASE.push(code);
+    }
+    function psRemoveKeyAt(i){ psErr.KEY_BASE = ''; psForm.KEY_BASE.splice(i,1); }
+    function psSave(){
+      psClearErr();
+      if (!psForm.PARAMETER_NAME.trim()){ psErr.PARAMETER_NAME = 'Please enter Parameter Name.'; return; }
+      if (!psForm.KEY_BASE.length){ psErr.KEY_BASE = 'At least one Base Key is required'; return; }
+      const code = psEditing.value ? psForm.PARAMETER_CODE : MCRM.slugify(psForm.PARAMETER_NAME);
+      if (psEditing.value){
+        Object.assign(psEditingRow.value, {
+          PARAMETER_NAME: psForm.PARAMETER_NAME.trim(), KEY_BASE: [...psForm.KEY_BASE],
+          UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
+        /* version ที่หยิบพารามิเตอร์ตัวนี้ไปใช้ ให้ชื่อตรงกับแคตตาล็อก
+           ส่วน Base Key ไม่แตะ เพราะแต่ละ version เลือกชุดของตัวเองได้ */
+        paramConfigs.forEach(c => {
+          if (c.PARAMETER_ID !== psEditingRow.value.PARAMETER_ID) return;
+          c.PARAMETER_NAME = psEditingRow.value.PARAMETER_NAME;
+        });
+        showDone('Parameter updated successfully');
+      } else {
+        if (psRecords.value.some(x => x.PARAMETER_CODE === code)){ showAlert('That parameter already exists'); return; }
+        parameters.push({
+          PARAMETER_ID: MCRM.nextParameterId(),
+          LEAD_TYPE: cfgLeadType.value, ENTITY: cfgEntity.value, PROGRAM_CODE: cfgProgram.value,
+          PARAMETER_CODE: code, PARAMETER_NAME: psForm.PARAMETER_NAME.trim(),
+          ORDER: psForm.ORDER, KEY_BASE: [...psForm.KEY_BASE],
+          CREATE_BY:'ADMIN', CREATE_DATE:now(), UPDATE_BY:'ADMIN', UPDATE_DATE:now() });
+        showDone('Parameter created successfully');
+      }
+      psMode.value = 'list';
+    }
+    const psConfirmDelete = ref(null);
+    function psAskDelete(row){ psConfirmDelete.value = row; }
+    function psConfirmDeleteRow(){
+      const row = psConfirmDelete.value;
+      psConfirmDelete.value = null;
+      const used = [...new Set(paramConfigs.filter(c => c.PARAMETER_ID === row.PARAMETER_ID).map(c => c.VERSION_ID))];
+      if (used.length){ showAlert(`Cannot delete this parameter because it is used in ${used.join(', ')}.`); return; }
+      parameters.splice(parameters.findIndex(x => x === row), 1);
+      showDone('Parameter deleted successfully');
+    }
+
     const confirmDeleteCfg = ref(null);
     function askDeleteCfg(row){ confirmDeleteCfg.value = row; }
     function confirmDeleteCfgRow(){
@@ -905,6 +977,9 @@ createApp({
       entityMaster, leadTypeMaster, programMaster, paramMaster, nameOf,
       cfgProgram, cfgEntity, cfgLeadType, cfgProgramId, cfgProgramOptions, programLabel, cfgRecords, showCfgForm, cfgFormModel,
       openAddCfg, openEditCfg, closeCfgForm, saveCfg, cfgParamOptions, pickedParam, onCfgParamChange,
+      psShow, psMode, psEditing, psForm, psErr, psRecords, openParamSetup, closeParamSetup,
+      psOpenAdd, psOpenEdit, psBackToList, psToggleKey, psRemoveKeyAt, psSave,
+      psConfirmDelete, psAskDelete, psConfirmDeleteRow,
       isEditingCfg, toggleCfgKey, removeCfgKeyAt,
       confirmDeleteCfg, askDeleteCfg, confirmDeleteCfgRow, cfgPreview,
       cfgView, cfgVersionId, cfgVersions, openCfgSetup, backToCfgList,
@@ -1040,6 +1115,7 @@ createApp({
           </div>
           <div style="display:flex;gap:10px;">
             <button class="btn btn-ghost" @click="backToCfgList">« Back</button>
+            <button class="btn btn-ghost" @click="openParamSetup">Parameter Setup</button>
             <button class="btn btn-primary" v-if="cfgEditable" @click="openAddCfg">+ Add</button>
           </div>
         </div>
@@ -1230,6 +1306,103 @@ createApp({
       <div class="confirm-box">
         <p>Are you sure you want to delete this parameter?</p>
         <div class="confirm-actions"><button class="cancel" @click="confirmDeleteCfg=null">Cancel</button><button class="ok" @click="confirmDeleteCfgRow">Confirm</button></div>
+      </div>
+    </div>
+
+    <!-- ============ Parameter Setup (modal) ============ -->
+    <div class="modal-overlay" v-if="psShow" @click.self="closeParamSetup">
+      <div class="modal-box wide" style="width:860px;padding:0;">
+        <div class="side-drawer-head" style="padding:18px 24px;">
+          <h3 v-if="psMode==='list'">Parameter Setup · {{ cfgProgram }} / {{ cfgEntity }}</h3>
+          <h3 v-else>{{ psEditing ? 'Edit Parameter' : 'Add Parameter' }} · {{ cfgProgram }} / {{ cfgEntity }}</h3>
+          <button class="close-x" @click="closeParamSetup">✕</button>
+        </div>
+
+        <!-- โหมดรายการ -->
+        <div style="padding:16px 24px;max-height:62vh;overflow-y:auto;" v-if="psMode==='list'">
+          <table class="data-table" v-if="psRecords.length">
+            <thead><tr><th style="width:90px">Sequence</th><th style="width:120px">Parameter ID</th><th style="width:200px">Parameter Name</th><th>Base Key</th><th style="width:80px"></th></tr></thead>
+            <tbody>
+              <tr v-for="(row,i) in psRecords" :key="row.PARAMETER_ID">
+                <td><span class="order-pill">{{ i+1 }}</span></td>
+                <td><span class="code-pill">{{ row.PARAMETER_ID }}</span></td>
+                <td class="name-cell"><strong>{{ row.PARAMETER_NAME }}</strong><span class="mono">{{ row.PARAMETER_CODE }}</span></td>
+                <td>
+                  <div class="key-chip-row">
+                    <span class="key-chip" v-for="(k,n) in row.KEY_BASE" :key="k"><span class="idx">{{ n+1 }}</span>{{ nameOf(paramMaster,k) }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="dropdown-container">
+                    <button class="btn-dots" onclick="toggleDropdown(event, this)">⋮</button>
+                    <div class="dropdown-menu">
+                      <button class="icon-btn" @click="psOpenEdit(row)">Edit</button>
+                      <button class="icon-btn danger" @click="psAskDelete(row)">Delete</button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div v-else class="empty-state" style="padding:36px 20px;">
+            <svg class="empty-art" viewBox="0 0 160 150" width="130" height="120" aria-hidden="true">
+              <rect x="38" y="22" width="78" height="86" rx="8" fill="#FFF3C4"/>
+              <rect x="50" y="36" width="54" height="7" rx="3.5" fill="#FFD95C"/>
+              <rect x="50" y="50" width="42" height="7" rx="3.5" fill="#FFE68A"/>
+              <rect x="50" y="64" width="50" height="7" rx="3.5" fill="#FFE68A"/>
+              <rect x="18" y="52" width="40" height="56" rx="6" fill="#fff" stroke="#FFE08A" stroke-width="2"/>
+              <rect x="26" y="64" width="16" height="6" rx="3" fill="#FFD95C"/>
+              <rect x="26" y="76" width="24" height="5" rx="2.5" fill="#FFECA8"/>
+              <rect x="26" y="86" width="20" height="5" rx="2.5" fill="#FFECA8"/>
+              <circle cx="92" cy="82" r="26" fill="#FFFBEA" stroke="#FFC93C" stroke-width="6"/>
+              <line x1="111" y1="101" x2="126" y2="118" stroke="#FFC93C" stroke-width="9" stroke-linecap="round"/>
+              <line x1="83" y1="73" x2="101" y2="91" stroke="#F0474B" stroke-width="7" stroke-linecap="round"/>
+              <line x1="101" y1="73" x2="83" y2="91" stroke="#F0474B" stroke-width="7" stroke-linecap="round"/>
+            </svg>
+            <h3>Data not found</h3>
+          </div>
+        </div>
+
+        <!-- โหมดฟอร์ม -->
+        <div style="padding:16px 24px;max-height:62vh;overflow-y:auto;" v-else>
+          <div class="field"><label>Parameter ID</label><input type="text" :value="psForm.PARAMETER_ID" placeholder="Auto generates by system." readonly></div>
+          <div class="field"><label>Parameter Name <span class="req">*</span></label>
+            <input type="text" v-model="psForm.PARAMETER_NAME" placeholder="e.g. Topup Option, Flat rate OPTT1"
+                   :class="{'has-error': psErr.PARAMETER_NAME}" @input="psErr.PARAMETER_NAME=''">
+            <div class="field-error" v-if="psErr.PARAMETER_NAME">{{ psErr.PARAMETER_NAME }}</div>
+          </div>
+          <div class="field">
+            <label>Base Key <span class="req">*</span></label>
+            <div class="keybuilder" :class="{'has-error': psErr.KEY_BASE}">
+              <div class="key-option" v-for="p in paramMaster" :key="p.CODE" :class="{selected: psForm.KEY_BASE.includes(p.CODE)}" @click="psToggleKey(p.CODE)">
+                {{ p.NAME }}
+              </div>
+            </div>
+            <div class="field-error" v-if="psErr.KEY_BASE">{{ psErr.KEY_BASE }}</div>
+            <div class="selected-keys-box">
+              <span v-if="!psForm.KEY_BASE.length" class="placeholder">No base key selected</span>
+              <span class="sel-chip" v-for="(k,i) in psForm.KEY_BASE" :key="k"><span class="idx">{{ i+1 }}</span>{{ nameOf(paramMaster,k) }}<button @click="psRemoveKeyAt(i)">✕</button></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="side-drawer-foot" style="padding:16px 24px;">
+          <template v-if="psMode==='list'">
+            <button class="btn btn-ghost" @click="closeParamSetup">Close</button>
+            <button class="btn btn-yellow" @click="psOpenAdd">+ Add</button>
+          </template>
+          <template v-else>
+            <button class="btn btn-ghost" @click="psBackToList">Cancel</button>
+            <button class="btn btn-yellow" @click="psSave">Save</button>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" v-if="psConfirmDelete" @click.self="psConfirmDelete=null">
+      <div class="confirm-box">
+        <p>Are you sure you want to delete this parameter?</p>
+        <div class="confirm-actions"><button class="cancel" @click="psConfirmDelete=null">Cancel</button><button class="ok" @click="psConfirmDeleteRow">Confirm</button></div>
       </div>
     </div>
 
