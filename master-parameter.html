@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Parameter Master Criteria</title>
+<title>Parameter Master Setup</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.31/vue.global.prod.min.js"></script>
 <script src="store.js"></script>
 <style>
@@ -934,7 +934,7 @@ createApp({
       <section class="panel">
         <div class="panel-head">
           <div>
-            <div class="panel-title-row"><h2>Parameter Master Criteria</h2></div>
+            <div class="panel-title-row"><h2>Parameter Master Setup</h2></div>
           </div>
         </div>
         <div class="filter-row">
@@ -1033,7 +1033,7 @@ createApp({
         <div class="panel-head">
           <div>
             <div class="panel-title-row">
-              <h2>Parameter Master Criteria Detail</h2>
+              <h2>Parameter Master Setup Detail</h2>
               <span class="ver-status" :class="verStatusClass(cfgVersionStatus)">{{ verStatusText(cfgVersionStatus) }}</span>
               <span class="view-only-tag" v-if="!cfgEditable">View only</span>
             </div>
@@ -1188,7 +1188,7 @@ createApp({
             <select v-model="cfgFormModel.PARAMETER_ID" @change="onCfgParamChange" :disabled="isEditingCfg"
                     :class="{'has-error': cfgErr.PARAMETER_ID}">
               <option value="">— Select Parameter —</option>
-              <option v-if="!cfgParamOptions.length" value="" disabled>— No parameter left in Parameter Master Setup —</option>
+              <option v-if="!cfgParamOptions.length" value="" disabled>— No parameter left in Parameter Setup —</option>
               <option v-for="x in cfgParamOptions" :key="x.PARAMETER_ID" :value="x.PARAMETER_ID">{{ x.PARAMETER_ID }} · {{ x.PARAMETER_NAME }}</option>
             </select>
             <div class="field-error" v-if="cfgErr.PARAMETER_ID">{{ cfgErr.PARAMETER_ID }}</div>
